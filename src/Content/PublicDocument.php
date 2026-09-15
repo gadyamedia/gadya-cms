@@ -17,6 +17,8 @@ namespace Gadya\Cms\Content;
  */
 class PublicDocument
 {
+    public function __construct(private readonly PageRegistry $registry) {}
+
     /**
      * @param  array<string, mixed>  $document
      * @return array<string, mixed>
@@ -47,7 +49,7 @@ class PublicDocument
         $hidden = [];
 
         foreach ($document['pages'] ?? [] as $slug => $page) {
-            if (is_array($page) && ($page['status'] ?? PageRegistry::STATUS_PUBLISHED) === PageRegistry::STATUS_ARCHIVED) {
+            if (is_array($page) && $this->registry->isHidden($page)) {
                 $hidden[] = (string) $slug;
             }
         }

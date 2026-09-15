@@ -22,7 +22,7 @@ class NoStoreWhenEditing
     {
         $response = $next($request);
 
-        if ($this->editContext->isEnabled()) {
+        if ($this->editContext->showsDraft()) {
             $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
         }
 

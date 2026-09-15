@@ -7,6 +7,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -25,13 +26,16 @@ use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Editor\EditingLock;
+use Gadya\Cms\Editor\PreviewLink;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Pages\Pages\CreatePage;
 use Gadya\Cms\Filament\Resources\Pages\Pages\EditPage;
 use Gadya\Cms\Filament\Resources\Pages\Pages\ListPages;
 use Gadya\Cms\Filament\Schemas\MediaSelect;
+use Gadya\Cms\Filament\Schemas\SeoSection;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Services\ManagePages;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -99,6 +103,22 @@ class PageResource extends Resource
                     MediaSelect::make('draft.hero_image', 'Main photo'),
                 ])
                 ->columns(2),
+            Section::make('When it is visible')
+                ->description('Leave both blank and the page is visible whenever it is not hidden.')
+                ->schema([
+                    DateTimePicker::make('draft.publish_at')
+                        ->label('Show from')
+                        ->seconds(false)
+                        ->helperText('A date still to come schedules the page.'),
+                    DateTimePicker::make('draft.unpublish_at')
+                        ->label('Hide after')
+                        ->seconds(false)
+                        ->after('draft.publish_at'),
+                ])
+                ->columns(2)
+                ->collapsible()
+                ->collapsed(fn (?Page $record): bool => blank($record?->draft['publish_at'] ?? null) && blank($record?->draft['unpublish_at'] ?? null)),
+            SeoSection::make('draft.seo.'),
             Section::make('Sections')
                 ->description('The blocks that make up the body of the page, in the order they appear.')
                 ->schema([
@@ -153,9 +173,13 @@ class PageResource extends Resource
                     ->sortable(),
                 TextColumn::make('type')->badge()->sortable(),
                 TextColumn::make('status')
+                    ->state(fn (Page $record): string => static::visibilityLabel($record))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => $state === Page::STATUS_ARCHIVED ? 'Hidden' : 'Visible')
-                    ->color(fn (string $state): string => $state === Page::STATUS_ARCHIVED ? 'gray' : 'success')
+                    ->color(fn (string $state): string => match ($state) {
+                        'Visible' => 'success',
+                        'Scheduled' => 'info',
+                        default => 'gray',
+                    })
                     ->sortable(),
                 TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(),
             ])
@@ -169,6 +193,7 @@ class PageResource extends Resource
                 EditAction::make(),
                 static::renameAction(),
                 static::editLiveAction(),
+                static::previewLinkAction(),
                 DeleteAction::make(),
             ])
             ->defaultSort('sort_order')
@@ -226,6 +251,37 @@ class PageResource extends Resource
 
                 return redirect()->to(url(static::publicPathFor($record)));
             });
+    }
+
+    /**
+     * A link to the draft of this page for someone without an account,
+     * good for a few days.
+     */
+    protected static function previewLinkAction(): Action
+    {
+        return Action::make('previewLink')
+            ->label('Share a preview')
+            ->icon(Heroicon::OutlinedLink)
+            ->modalHeading('Share a preview of the draft')
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Done')
+            ->modalContent(fn (Page $record): View => view('gadya-cms::filament.preview-link', [
+                'url' => app(PreviewLink::class)->for(static::publicPathFor($record)),
+                'expires' => now()->addHours((int) config('gadya-cms.preview.expires_hours', 72))->format('D j M, g:ia'),
+            ]));
+    }
+
+    public static function visibilityLabel(Page $page): string
+    {
+        $registry = app(PageRegistry::class);
+        $draft = $page->draft ?? [];
+
+        return match (true) {
+            $page->isArchived() => 'Hidden',
+            $registry->isScheduled($draft) => 'Scheduled',
+            ! $registry->isWithinSchedule($draft) => 'Expired',
+            default => 'Visible',
+        };
     }
 
     /**

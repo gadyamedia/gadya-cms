@@ -603,3 +603,32 @@
 .gadya-audit__tip {
     color: var(--gadya-dash-muted);
 }
+
+/* ---------------------------------------------------------- preview link */
+
+.gadya-preview__row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.gadya-preview__input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--gadya-dash-line);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    background: var(--gadya-dash-surface);
+    color: var(--gadya-dash-ink);
+}
+
+.gadya-preview__copy {
+    flex: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--gadya-cms-primary);
+    color: #fff;
+}

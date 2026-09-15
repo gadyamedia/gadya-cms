@@ -3,6 +3,7 @@
 use Gadya\Cms\Http\Controllers\AnalyticsEventController;
 use Gadya\Cms\Http\Controllers\EditModeController;
 use Gadya\Cms\Http\Controllers\InlineEditController;
+use Gadya\Cms\Http\Controllers\PreviewController;
 use Gadya\Cms\Http\Controllers\PublishController;
 use Gadya\Cms\Http\Controllers\StructureController;
 use Illuminate\Support\Facades\Route;
@@ -38,3 +39,15 @@ Route::prefix((string) config('gadya-cms.editor.prefix', 'cms'))
 Route::post((string) config('gadya-cms.editor.prefix', 'cms').'/events', AnalyticsEventController::class)
     ->middleware(['web', 'throttle:gadya-cms-events'])
     ->name('gadya-cms.events.store');
+
+/*
+ * Preview links. Signed and expiring, and open to anyone holding one: the
+ * point is to show a draft to someone without an account.
+ */
+Route::get((string) config('gadya-cms.editor.prefix', 'cms').'/preview', [PreviewController::class, 'show'])
+    ->middleware(['web', 'signed'])
+    ->name('gadya-cms.preview');
+
+Route::delete((string) config('gadya-cms.editor.prefix', 'cms').'/preview', [PreviewController::class, 'stop'])
+    ->middleware('web')
+    ->name('gadya-cms.preview.stop');

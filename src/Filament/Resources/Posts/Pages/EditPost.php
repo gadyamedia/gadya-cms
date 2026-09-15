@@ -12,9 +12,11 @@ use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Blog\ArticleRequest;
 use Gadya\Cms\Blog\ContentAudit;
 use Gadya\Cms\Blog\GenerateArticle;
+use Gadya\Cms\Editor\PreviewLink;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Models\Post;
+use Illuminate\Contracts\View\View;
 use Throwable;
 
 class EditPost extends EditRecord
@@ -33,6 +35,17 @@ class EditPost extends EditRecord
                 ->url(fn (Post $record): string => url($record->publicPath()))
                 ->openUrlInNewTab()
                 ->visible(fn (Post $record): bool => $record->isLive() && (bool) config('gadya-cms.blog.routes', true)),
+            Action::make('previewLink')
+                ->label('Share a preview')
+                ->icon(Heroicon::OutlinedLink)
+                ->modalHeading('Share a preview of the draft')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Done')
+                ->modalContent(fn (Post $record): View => view('gadya-cms::filament.preview-link', [
+                    'url' => app(PreviewLink::class)->for($record->publicPath()),
+                    'expires' => now()->addHours((int) config('gadya-cms.preview.expires_hours', 72))->format('D j M, g:ia'),
+                ]))
+                ->visible(fn (): bool => (bool) config('gadya-cms.blog.routes', true)),
             GadyaCmsPlugin::get()->hasAi() ? $this->rewriteAction() : null,
             DeleteAction::make(),
         ]));

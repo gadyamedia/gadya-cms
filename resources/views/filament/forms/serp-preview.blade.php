@@ -1,19 +1,20 @@
 @php
+    $path = $path ?? '';
+    $urlPrefix = $urlPrefix ?? '';
     $record = $getRecord();
     $state = $this->form?->getRawState() ?? [];
 
-    $title = trim(strip_tags((string) ($state['meta_title'] ?: ($record?->meta_title ?: ($state['title'] ?? $record?->title ?? '')))));
-    $description = trim(strip_tags((string) ($state['meta_description'] ?: ($record?->meta_description ?: ($state['excerpt'] ?? $record?->excerpt ?? '')))));
-    $slug = (string) ($state['slug'] ?? $record?->slug ?? '');
+    $title = trim(strip_tags((string) (data_get($state, $path.'meta_title') ?: (data_get($state, 'title') ?: $record?->title ?: ''))));
+    $description = trim(strip_tags((string) (data_get($state, $path.'meta_description') ?: (data_get($state, 'excerpt') ?: (data_get($state, 'draft.description') ?: $record?->excerpt ?: '')))));
+    $slug = (string) (data_get($state, 'slug') ?: $record?->slug ?: '');
     $host = parse_url((string) config('app.url'), PHP_URL_HOST) ?: 'example.com';
-    $prefix = trim((string) config('gadya-cms.blog.prefix', 'blog'), '/');
 @endphp
 
-{{-- Roughly how the article looks in a results page. Google rewrites
-     titles freely, but this catches one that is far too long or missing. --}}
+{{-- Roughly how it looks in a results page. Google rewrites titles
+     freely, but this catches one that is far too long or missing. --}}
 <div class="gadya-serp">
-    <p class="gadya-serp__url">{{ $host }} › {{ $prefix }} › {{ $slug ?: 'your-article' }}</p>
-    <p class="gadya-serp__title">{{ $title !== '' ? Str::limit($title, 65) : 'Untitled article' }}</p>
+    <p class="gadya-serp__url">{{ $host }}{{ $urlPrefix !== '' ? ' › '.trim($urlPrefix, '/') : '' }} › {{ $slug ?: 'your-page' }}</p>
+    <p class="gadya-serp__title">{{ $title !== '' ? Str::limit($title, 65) : 'Untitled' }}</p>
     <p class="gadya-serp__description">
         {{ $description !== '' ? Str::limit($description, 160) : 'No description yet. Google picks a sentence itself, which is rarely the one you would choose.' }}
     </p>

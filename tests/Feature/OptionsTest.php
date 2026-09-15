@@ -5,6 +5,7 @@ namespace Gadya\Cms\Tests\Feature;
 use Gadya\Cms\Models\Option;
 use Gadya\Cms\Options\Options;
 use Gadya\Cms\Tests\TestCase;
+use Illuminate\Support\Facades\Facade;
 
 class OptionsTest extends TestCase
 {
@@ -48,7 +49,7 @@ class OptionsTest extends TestCase
 
         config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
         $this->app->forgetInstance('encrypter');
-        \Illuminate\Support\Facades\Facade::clearResolvedInstances();
+        Facade::clearResolvedInstances();
 
         $this->assertNull(app(Options::class)->getSecret('ai.key'));
     }

@@ -2,8 +2,10 @@
 
 namespace Gadya\Cms\Content;
 
+use DateTimeInterface;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Models\Page;
+use Illuminate\Support\Carbon;
 
 class PageRegistry
 {
@@ -68,6 +70,55 @@ class PageRegistry
     public function isArchived(array $page): bool
     {
         return ($page['status'] ?? self::STATUS_PUBLISHED) === self::STATUS_ARCHIVED;
+    }
+
+    /**
+     * A page a visitor should not see right now: hidden by the client, or
+     * outside the dates she scheduled it for.
+     *
+     * @param  array<string, mixed>  $page
+     */
+    public function isHidden(array $page, ?DateTimeInterface $at = null): bool
+    {
+        return $this->isArchived($page) || ! $this->isWithinSchedule($page, $at);
+    }
+
+    /**
+     * @param  array<string, mixed>  $page
+     */
+    public function isWithinSchedule(array $page, ?DateTimeInterface $at = null): bool
+    {
+        $now = ($at ?? now())->getTimestamp();
+
+        $from = $this->timestamp($page['publish_at'] ?? null);
+        $until = $this->timestamp($page['unpublish_at'] ?? null);
+
+        if ($from !== null && $from > $now) {
+            return false;
+        }
+
+        return $until === null || $until > $now;
+    }
+
+    /**
+     * Visible later rather than now: a page with a publish date still to come.
+     *
+     * @param  array<string, mixed>  $page
+     */
+    public function isScheduled(array $page): bool
+    {
+        $from = $this->timestamp($page['publish_at'] ?? null);
+
+        return ! $this->isArchived($page) && $from !== null && $from > now()->getTimestamp();
+    }
+
+    private function timestamp(mixed $value): ?int
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return rescue(fn (): int => Carbon::parse($value)->getTimestamp(), null, report: false);
     }
 
     /**

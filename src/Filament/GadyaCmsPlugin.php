@@ -17,6 +17,7 @@ use Gadya\Cms\Filament\Pages\ThemeSettings;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
 use Gadya\Cms\Filament\Resources\Pages\PageResource;
 use Gadya\Cms\Filament\Resources\Posts\PostResource;
+use Gadya\Cms\Filament\Resources\Redirects\RedirectResource;
 use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
 use Illuminate\Contracts\View\View;
@@ -33,6 +34,8 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasBlog = true;
 
     protected bool $hasAi = true;
+
+    protected bool $hasRedirects = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -141,6 +144,19 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasAi;
     }
 
+    /** The table of old addresses and where they go now. */
+    public function redirects(bool $condition = true): static
+    {
+        $this->hasRedirects = $condition;
+
+        return $this;
+    }
+
+    public function hasRedirects(): bool
+    {
+        return $this->hasRedirects;
+    }
+
     /** Where the CMS puts itself in a panel that has navigation of its own. */
     public function navigationGroups(?string $content = 'Content', ?string $appearance = 'Appearance'): static
     {
@@ -184,6 +200,7 @@ class GadyaCmsPlugin implements Plugin
                 RevisionResource::class,
                 $this->hasTeam() ? UserResource::class : null,
                 $this->hasBlog() ? PostResource::class : null,
+                $this->hasRedirects() ? RedirectResource::class : null,
             ]))
             ->pages(array_filter([
                 $this->hasAnalytics() ? Dashboard::class : null,

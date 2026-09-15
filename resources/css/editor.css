@@ -228,3 +228,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* ---------------------------------------------------------- preview bar */
+
+/*
+ * Someone holding a preview link sees a slimmer bar than an editor: no
+ * publish button, nothing to save, just a reminder that this is a draft
+ * and a way out of it.
+ */
+.gadya-cms-toolbar--preview {
+    border-top-color: var(--gadya-cms-accent, #f0e56c);
+}

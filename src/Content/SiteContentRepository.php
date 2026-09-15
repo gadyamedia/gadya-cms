@@ -61,7 +61,7 @@ class SiteContentRepository
      */
     public function forRequest(): array
     {
-        return app(EditContext::class)->isEnabled() ? $this->draft() : $this->published();
+        return app(EditContext::class)->showsDraft() ? $this->draft() : $this->published();
     }
 
     /**

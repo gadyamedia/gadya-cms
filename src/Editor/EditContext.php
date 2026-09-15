@@ -15,7 +15,11 @@ class EditContext
 {
     public const SESSION_KEY = 'gadya-cms.editing';
 
+    public const PREVIEW_SESSION_KEY = 'gadya-cms.previewing-until';
+
     private bool $enabled = false;
+
+    private bool $previewing = false;
 
     private ?string $basePath = null;
 
@@ -25,6 +29,9 @@ class EditContext
     {
         $this->enabled = Gate::allows((string) config('gadya-cms.gate', 'manage-content'))
             && session(self::SESSION_KEY) === true;
+
+        $until = session(self::PREVIEW_SESSION_KEY);
+        $this->previewing = is_int($until) && $until > now()->getTimestamp();
     }
 
     public function isEnabled(): bool
@@ -38,7 +45,16 @@ class EditContext
      */
     public function isPreviewing(): bool
     {
-        return false;
+        return $this->previewing;
+    }
+
+    /**
+     * Whether the request should be rendered from the draft rather than the
+     * live document, for either reason.
+     */
+    public function showsDraft(): bool
+    {
+        return $this->enabled || $this->previewing;
     }
 
     /**

@@ -29,6 +29,13 @@ return [
     ],
 
     /*
+     * How long a preview link stays good for.
+     */
+    'preview' => [
+        'expires_hours' => 72,
+    ],
+
+    /*
      * How many published revisions are retained before the oldest are pruned.
      */
     'revisions' => [
@@ -217,6 +224,23 @@ return [
         /* The layout the shipped templates extend; it must yield `content`. */
         'layout' => 'layouts.app',
         'per_page' => 12,
+    ],
+
+    /*
+     * What search engines and link previews are told. The site name and
+     * suffix decorate a page that has no snippet of its own; the sitemap
+     * and robots file are generated from what is published, unless a
+     * static file in public/ already answers.
+     */
+    'seo' => [
+        'site_name' => null,
+        'title_suffix' => '',
+        'default_description' => '',
+        'default_image' => null,
+        'sitemap' => true,
+        'sitemap_extra' => [],
+        'robots' => true,
+        'robots_disallow' => ['/admin', '/cms'],
     ],
 
     /*

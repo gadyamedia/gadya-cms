@@ -18,11 +18,14 @@ use Gadya\Cms\Content\SlugPagePaths;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
+use Gadya\Cms\Http\Middleware\HandleRedirects;
 use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
 use Gadya\Cms\Models\Page;
+use Gadya\Cms\Models\Redirect;
 use Gadya\Cms\Models\Setting;
+use Gadya\Cms\Observers\FlushRedirectMap;
 use Gadya\Cms\Observers\InvalidatePublishedDocument;
 use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\SiteContext;
@@ -87,6 +90,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             $this->loadRoutesFrom(__DIR__.'/../routes/blog.php');
         }
 
+        $this->loadRoutesFrom(__DIR__.'/../routes/seo.php');
+
         $this->publishes([
             __DIR__.'/../resources/js' => resource_path('js/vendor/gadya-cms'),
             __DIR__.'/../resources/css' => resource_path('css/vendor/gadya-cms'),
@@ -99,6 +104,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->registerBroadcastChannel();
 
         Page::observe(InvalidatePublishedDocument::class);
+        Redirect::observe(FlushRedirectMap::class);
         Setting::observe(InvalidatePublishedDocument::class);
 
         Livewire::component('gadya-cms.media-picker', MediaPicker::class);
@@ -112,6 +118,12 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             Css::make('gadya-cms-panel', __DIR__.'/../resources/css/panel.css'),
         ], package: 'gadya/cms');
 
+        /*
+         * Global rather than in the web group: an old address has no route,
+         * so group middleware would never run for it - the router says 404
+         * first.
+         */
+        $this->app->make(Kernel::class)->pushMiddleware(HandleRedirects::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);
 
@@ -128,7 +140,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");
         Blade::directive('editableGlobal', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->globalAttributes({$expression}); ?>");
         Blade::directive('editableFor', fn (string $expression): string => "<?php app(\Gadya\Cms\Editor\EditContext::class)->for({$expression}); ?>");
-        Blade::directive('cmsToolbar', fn (): string => "<?php if (app(\Gadya\Cms\Editor\EditContext::class)->isEnabled()) { echo view('gadya-cms::editor.toolbar')->render(); } ?>");
+        Blade::directive('cmsSeo', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Seo\\SeoHead::class)->render({$expression})->render(); ?>");
+        Blade::directive('cmsToolbar', fn (): string => "<?php if (app(\Gadya\Cms\Editor\EditContext::class)->isEnabled()) { echo view('gadya-cms::editor.toolbar')->render(); } elseif (app(\Gadya\Cms\Editor\EditContext::class)->isPreviewing()) { echo view('gadya-cms::editor.preview-bar')->render(); } ?>");
     }
 
     /**

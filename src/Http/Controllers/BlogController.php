@@ -42,7 +42,7 @@ class BlogController extends Controller
     {
         $this->editContext->boot();
 
-        $post = $this->editContext->isEnabled() || $this->editContext->isPreviewing()
+        $post = $this->editContext->showsDraft()
             ? $this->blog->findAny($slug)
             : $this->blog->findLive($slug);
 

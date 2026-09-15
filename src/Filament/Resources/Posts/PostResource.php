@@ -28,6 +28,7 @@ use Gadya\Cms\Filament\Resources\Posts\Pages\CreatePost;
 use Gadya\Cms\Filament\Resources\Posts\Pages\EditPost;
 use Gadya\Cms\Filament\Resources\Posts\Pages\ListPosts;
 use Gadya\Cms\Filament\Schemas\MediaSelect;
+use Gadya\Cms\Filament\Schemas\SeoSection;
 use Gadya\Cms\Models\Post;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -174,11 +175,13 @@ class PostResource extends Resource
 
                     Section::make('In search results')
                         ->icon(Heroicon::OutlinedMagnifyingGlass)
+                        ->headerActions(array_values(array_filter([SeoSection::writeAction('')])))
                         ->schema([
                             ViewField::make('serp')
                                 ->hiddenLabel()
                                 ->dehydrated(false)
-                                ->view('gadya-cms::filament.forms.serp-preview'),
+                                ->view('gadya-cms::filament.forms.serp-preview')
+                                ->viewData(['path' => '', 'urlPrefix' => (string) config('gadya-cms.blog.prefix', 'blog')]),
                             TextInput::make('meta_title')
                                 ->label('Title in search results')
                                 ->maxLength(70)
