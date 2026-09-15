@@ -13,6 +13,8 @@ use Gadya\Cms\Console\MakeEditorCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
+use Gadya\Cms\Content\SlugPagePaths;
+use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
 use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
@@ -65,6 +67,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     {
         $this->configureFilamentEcho();
 
+        $this->app->bind(ResolvesPagePaths::class, fn (): ResolvesPagePaths => $this->app->make((string) config('gadya-cms.pages.paths', SlugPagePaths::class)));
         $this->app->singleton(SiteImage::class);
         $this->app->scoped(SiteContext::class);
         $this->app->scoped(EditContext::class);

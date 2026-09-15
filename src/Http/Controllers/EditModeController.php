@@ -25,7 +25,7 @@ class EditModeController extends Controller
         $user = $request->user();
         $lock->acquire($user);
 
-        return redirect()->to($this->publicUrlFor($data['page'] ?? null));
+        return redirect()->to($registry->publicUrlFor($data['page'] ?? 'home', $registry->draftDocument()));
     }
 
     public function disable(Request $request, EditingLock $lock): RedirectResponse
@@ -37,20 +37,5 @@ class EditModeController extends Controller
         $lock->release($user);
 
         return back();
-    }
-
-    /**
-     * Resolve a validated `page` slug to its public URL. The slug is always
-     * checked against `Rule::in()` before this runs, so only known site
-     * pages (or the literal "home") ever reach `route()` here - never a
-     * raw, user-supplied URL.
-     */
-    private function publicUrlFor(?string $page): string
-    {
-        if ($page === null || $page === 'home') {
-            return route('home');
-        }
-
-        return route('pages.show', $page);
     }
 }

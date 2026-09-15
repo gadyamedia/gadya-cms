@@ -6,6 +6,7 @@ use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Gadya\Cms\Analytics\AnalyticsReport;
+use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Revision;
 use Gadya\Cms\Support\ImageCapabilities;
@@ -110,16 +111,13 @@ class Dashboard extends Page
     public function getPageTitlesProperty(): array
     {
         $document = app(SiteContentRepository::class)->published();
-        $titles = ['/' => 'Home'];
+        $registry = app(PageRegistry::class);
+        $titles = [];
 
         foreach ($document['pages'] ?? [] as $slug => $page) {
             if (is_array($page)) {
-                $titles['/'.$slug] = (string) ($page['title'] ?? $slug);
+                $titles[$registry->publicPathFor((string) $slug, $document)] = (string) ($page['title'] ?? $slug);
             }
-        }
-
-        foreach ($document['locations'] ?? [] as $key => $slug) {
-            $titles['/party-places/'.$key] = (string) ($document['pages'][$slug]['title'] ?? $key);
         }
 
         return $titles;

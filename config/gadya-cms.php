@@ -1,5 +1,7 @@
 <?php
 
+use Gadya\Cms\Content\SlugPagePaths;
+
 return [
     /*
      * The Filament panel the CMS registers its resources and pages on.
@@ -89,6 +91,19 @@ return [
      * never take because a real route already owns them.
      */
     'pages' => [
+        /*
+         * The slug of the page served at the site root.
+         */
+        'home_slug' => 'home',
+
+        /*
+         * Where a page lives on the public site. The default answers "/" for
+         * the home page and "/slug" for everything else; a site that nests
+         * some pages under a prefix names a class implementing
+         * Gadya\Cms\Contracts\ResolvesPagePaths here.
+         */
+        'paths' => SlugPagePaths::class,
+
         'section_types' => ['cards', 'text-grid', 'gallery', 'menu', 'application'],
         'creatable_types' => ['content', 'legal'],
         'reserved_slugs' => ['admin', 'cms', 'up', 'storage', 'livewire', 'booking', 'lead-forms', 'm', 'party-places', 'home'],

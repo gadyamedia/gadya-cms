@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Content;
 
+use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Models\Page;
 
 class PageRegistry
@@ -10,7 +11,10 @@ class PageRegistry
 
     public const STATUS_ARCHIVED = Page::STATUS_ARCHIVED;
 
-    public function __construct(private readonly SiteContentRepository $repository) {}
+    public function __construct(
+        private readonly SiteContentRepository $repository,
+        private readonly ResolvesPagePaths $paths,
+    ) {}
 
     /**
      * Slugs the client may never take: those that collide with a real route,
@@ -95,25 +99,20 @@ class PageRegistry
     }
 
     /**
-     * The one true public address for a page.
-     *
-     * A location is reachable both at its own slug and under
-     * /party-places, which is two addresses for one page: bad for search
-     * engines, and confusing in the panel, where the address shown was
-     * never the one the client sees in the browser. The location route is
-     * the canonical one, and the bare slug redirects to it.
+     * The one true public address for a page, as the application serves
+     * it. Delegated because only the application knows its routes: a site
+     * that nests some pages under a prefix binds its own resolver.
      *
      * @param  array<string, mixed>  $document
      */
     public function publicPathFor(string $slug, array $document): string
     {
-        $locationKey = $this->locationKeyFor($slug, $document);
+        return $this->paths->publicPathFor($slug, $document);
+    }
 
-        if ($locationKey !== null) {
-            return '/'.trim(parse_url(route('locations.show', $locationKey), PHP_URL_PATH) ?? '', '/');
-        }
-
-        return $slug === 'home' ? '/' : '/'.$slug;
+    public function publicUrlFor(string $slug, array $document): string
+    {
+        return url($this->publicPathFor($slug, $document));
     }
 
     /**
@@ -130,6 +129,14 @@ class PageRegistry
         }
 
         return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function draftDocument(): array
+    {
+        return $this->repository->draft();
     }
 
     /**

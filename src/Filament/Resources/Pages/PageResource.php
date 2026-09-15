@@ -224,9 +224,7 @@ class PageResource extends Resource
                     $lock->acquire($user);
                 }
 
-                return redirect()->to($record->slug === 'home'
-                    ? route('home')
-                    : route('pages.show', $record->slug));
+                return redirect()->to(url(static::publicPathFor($record)));
             });
     }
 
