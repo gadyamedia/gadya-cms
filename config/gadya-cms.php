@@ -16,6 +16,12 @@ return [
     'default_site' => env('GADYA_CMS_SITE', 'default'),
 
     /*
+     * The config key holding the document the application ships with, which
+     * a fresh install is seeded from and the live site falls back to.
+     */
+    'document' => 'site',
+
+    /*
      * The gate that guards every CMS screen and every live-editor write.
      */
     'gate' => 'manage-content',
@@ -89,6 +95,11 @@ return [
      * carries its own answer.
      */
     'navigation' => [
+        /*
+         * The page type whose entries in the `locations` map are nested
+         * under it in the menu. Null for a site with no such page.
+         */
+        'locations_type' => 'locations',
         'default_end_slugs' => [],
         'default_highlight_slugs' => [],
     ],
@@ -110,6 +121,19 @@ return [
          * Gadya\Cms\Contracts\ResolvesPagePaths here.
          */
         'paths' => SlugPagePaths::class,
+
+        /*
+         * The fields at the top of every page's edit screen, in order. Each
+         * is `text`, `textarea` or `image`, with an optional label and
+         * length. These are structure; the words themselves are edited on
+         * the page.
+         */
+        'content_fields' => [
+            'heading' => ['label' => 'Heading', 'type' => 'text', 'max' => 120],
+            'cta' => ['label' => 'Button text', 'type' => 'text', 'max' => 60],
+            'description' => ['label' => 'Description', 'type' => 'textarea', 'rows' => 4],
+            'hero_image' => ['label' => 'Main photo', 'type' => 'image'],
+        ],
 
         'section_types' => ['cards', 'text-grid', 'gallery', 'menu', 'application'],
         'creatable_types' => ['content', 'legal'],

@@ -78,7 +78,7 @@ class NavigationTree
     public function locationsParentSlug(array $document): ?string
     {
         foreach ($document['pages'] ?? [] as $slug => $page) {
-            if (is_array($page) && ($page['type'] ?? null) === 'locations') {
+            if (is_array($page) && ($page['type'] ?? null) === config('gadya-cms.navigation.locations_type', 'locations')) {
                 return (string) $slug;
             }
         }

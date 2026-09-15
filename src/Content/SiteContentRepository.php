@@ -108,7 +108,7 @@ class SiteContentRepository
      */
     public function defaults(): array
     {
-        return (array) config('site', []);
+        return (array) config((string) config('gadya-cms.document', 'site'), []);
     }
 
     /**

@@ -6,16 +6,27 @@ use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
+use function Laravel\Prompts\confirm;
+
 /**
- * Brings a fresh install to a working state: a site row, the document the
- * application ships with loaded as both the draft and the live site, and
- * the images already in the repository indexed in the photo library.
+ * Everything between `composer require` and a working site, in one
+ * command: the config file to edit, the tables, the first person who can
+ * sign in, the document the application ships with loaded as the live
+ * site, and the photos already in the repository indexed.
+ *
+ * Safe to run again: every step checks whether it has already happened.
  */
 class InstallCommand extends Command
 {
-    protected $signature = 'gadya-cms:install {--force : Re-seed the document even if content already exists}';
+    protected $signature = 'gadya-cms:install
+        {--force : Re-seed the document even if content already exists}
+        {--no-admin : Do not offer to create the first administrator}
+        {--admin-name= : Name for the first administrator}
+        {--admin-email= : Email for the first administrator}
+        {--admin-password= : Password for the first administrator}';
 
     protected $description = 'Set up the CMS for this application';
 
@@ -24,30 +35,93 @@ class InstallCommand extends Command
         SiteContentRepository $repository,
         PublishSiteContent $publish,
     ): int {
+        $this->publishConfig();
+
+        $this->components->task('Running migrations', fn (): bool => $this->callSilently('migrate', ['--force' => true]) === self::SUCCESS);
+
         $site = $siteContext->get();
 
         if ($site === null) {
-            $this->error('No site could be created. Run `php artisan migrate` first.');
+            $this->components->error('No site could be created; check the database connection and run `php artisan migrate`.');
 
             return self::FAILURE;
         }
 
-        $this->info("Site [{$site->key}] is ready.");
+        $this->components->info("Site [{$site->key}] is ready.");
 
         if ($site->pages()->exists() && ! $this->option('force')) {
-            $this->line('Content already exists; skipping the seed. Pass --force to re-seed.');
+            $this->components->twoColumnDetail('Content', 'already present, skipped (pass --force to re-seed)');
         } else {
             $repository->saveDraft($repository->defaults());
             $publish->handle(null, 'Initial content');
-            $this->info('Seeded the site document from the application defaults.');
+            $this->components->twoColumnDetail('Content', 'seeded from the application defaults');
         }
 
-        $this->call(ImportLegacyMediaCommand::class);
+        $this->callSilently(ImportLegacyMediaCommand::class);
+        $this->components->twoColumnDetail('Photos', 'indexed');
+
+        $this->callSilently('filament:assets');
+        $this->components->twoColumnDetail('Panel assets', 'published');
+
+        $this->createAdministrator();
 
         if (Schema::hasTable('site_contents')) {
-            $this->line('A legacy [site_contents] table is present. Run `php artisan gadya-cms:import-legacy-content` to bring its content across.');
+            $this->components->warn('A legacy [site_contents] table is present. Run `php artisan gadya-cms:import-legacy-content` to bring its content across.');
         }
 
+        $this->newLine();
+        $this->components->info('Done. Sign in at '.url('/'.trim((string) config('gadya-cms.panel_path', 'admin'), '/')).' and press Publish when the site looks right.');
+
         return self::SUCCESS;
+    }
+
+    private function publishConfig(): void
+    {
+        $target = config_path('gadya-cms.php');
+
+        if (File::exists($target)) {
+            $this->components->twoColumnDetail('Config', 'config/gadya-cms.php already published');
+
+            return;
+        }
+
+        $this->callSilently('vendor:publish', ['--tag' => 'gadya-cms-config']);
+        $this->components->twoColumnDetail('Config', 'published to config/gadya-cms.php');
+    }
+
+    /**
+     * The first person who can sign in. Skipped when someone with the
+     * administrator role already exists, or the command is told not to
+     * ask - a deploy script has no one to answer the question.
+     */
+    private function createAdministrator(): void
+    {
+        if ($this->option('no-admin')) {
+            return;
+        }
+
+        $model = (string) config('auth.providers.users.model');
+        $adminRole = (string) config('gadya-cms.users.admin_role', 'admin');
+
+        if ($model::query()->where('role', $adminRole)->exists()) {
+            $this->components->twoColumnDetail('Administrator', 'already exists');
+
+            return;
+        }
+
+        $email = $this->option('admin-email');
+
+        if ($email === null && ($this->option('no-interaction') || ! confirm('Create the first administrator now?', default: true))) {
+            $this->components->twoColumnDetail('Administrator', 'skipped; run `php artisan gadya-cms:editor` later');
+
+            return;
+        }
+
+        $this->call(MakeEditorCommand::class, array_filter([
+            '--name' => $this->option('admin-name'),
+            '--email' => $email,
+            '--password' => $this->option('admin-password'),
+            '--role' => $adminRole,
+        ], fn ($value): bool => $value !== null));
     }
 }

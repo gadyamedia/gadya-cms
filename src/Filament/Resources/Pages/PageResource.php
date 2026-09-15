@@ -14,6 +14,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -96,12 +97,7 @@ class PageResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Content')
-                ->schema([
-                    TextInput::make('draft.heading')->label('Heading')->maxLength(120),
-                    TextInput::make('draft.cta')->label('Button text')->maxLength(60),
-                    Textarea::make('draft.description')->label('Description')->rows(4)->columnSpanFull(),
-                    MediaSelect::make('draft.hero_image', 'Main photo'),
-                ])
+                ->schema(static::contentFields())
                 ->columns(2),
             Section::make('When it is visible')
                 ->description('Leave both blank and the page is visible whenever it is not hidden.')
@@ -251,6 +247,35 @@ class PageResource extends Resource
 
                 return redirect()->to(url(static::publicPathFor($record)));
             });
+    }
+
+    /**
+     * The fields at the top of every page, as the application configured
+     * them. A site whose pages carry different fields lists them in
+     * `gadya-cms.pages.content_fields` rather than replacing this screen.
+     *
+     * @return list<Component>
+     */
+    protected static function contentFields(): array
+    {
+        $fields = [];
+
+        foreach ((array) config('gadya-cms.pages.content_fields', []) as $name => $field) {
+            if (! is_array($field) || ! is_string($name)) {
+                continue;
+            }
+
+            $label = (string) ($field['label'] ?? Str::headline($name));
+            $path = 'draft.'.$name;
+
+            $fields[] = match ($field['type'] ?? 'text') {
+                'textarea' => Textarea::make($path)->label($label)->rows((int) ($field['rows'] ?? 4))->maxLength((int) ($field['max'] ?? 2000))->columnSpanFull(),
+                'image' => MediaSelect::make($path, $label),
+                default => TextInput::make($path)->label($label)->maxLength((int) ($field['max'] ?? 120)),
+            };
+        }
+
+        return $fields;
     }
 
     /**
