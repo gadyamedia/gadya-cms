@@ -227,6 +227,37 @@ return [
     ],
 
     /*
+     * The forms the public site may post to. Only the fields listed are
+     * kept, under the rules given; `notify` is who is emailed; the
+     * `analytics_event` is what the dashboard counts it as (null for none).
+     *
+     * In a template:
+     *
+     *     <form method="POST" action="{{ route('gadya-cms.forms.store', 'contact') }}">
+     *         @cmsForm('contact')
+     *         ...
+     *     </form>
+     *     @cmsFormStatus('contact')
+     */
+    'forms' => [
+        'honeypot' => 'website',
+        'forms' => [
+            'contact' => [
+                'label' => 'Contact',
+                'fields' => [
+                    'name' => ['required', 'string', 'max:120'],
+                    'email' => ['required', 'email', 'max:255'],
+                    'phone' => ['nullable', 'string', 'max:40'],
+                    'message' => ['required', 'string', 'max:5000'],
+                ],
+                'notify' => [],
+                'success' => 'Thank you. We will be in touch soon.',
+                'analytics_event' => 'lead_form_submit',
+            ],
+        ],
+    ],
+
+    /*
      * What search engines and link previews are told. The site name and
      * suffix decorate a page that has no snippet of its own; the sitemap
      * and robots file are generated from what is published, unless a

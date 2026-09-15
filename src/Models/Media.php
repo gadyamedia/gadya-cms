@@ -35,6 +35,8 @@ class Media extends Model
         'height',
         'size',
         'alt_text',
+        'folder',
+        'tags',
         'uploaded_by',
         'is_legacy',
         'status',
@@ -54,6 +56,7 @@ class Media extends Model
     {
         return [
             'is_legacy' => 'boolean',
+            'tags' => 'array',
             'width' => 'integer',
             'height' => 'integer',
             'size' => 'integer',
@@ -64,6 +67,26 @@ class Media extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeInFolder(Builder $query, ?string $folder): Builder
+    {
+        return $folder === null || $folder === '' ? $query : $query->where('folder', $folder);
+    }
+
+    /**
+     * Every folder in use, for a select. Folders are just a label on the
+     * row: nothing moves on disk when one is renamed.
+     *
+     * @return list<string>
+     */
+    public static function folders(): array
+    {
+        return static::query()->whereNotNull('folder')->where('folder', '!=', '')->distinct()->orderBy('folder')->pluck('folder')->all();
     }
 
     public function isReady(): bool

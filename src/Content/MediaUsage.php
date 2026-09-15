@@ -2,6 +2,9 @@
 
 namespace Gadya\Cms\Content;
 
+use Gadya\Cms\Models\Post;
+use Illuminate\Database\QueryException;
+
 class MediaUsage
 {
     /**
@@ -60,6 +63,10 @@ class MediaUsage
 
         $map = [];
 
+        foreach ($this->postsUsingImages() as $filename => $titles) {
+            $map[$filename] = $titles;
+        }
+
         foreach ([$this->repository->draft(), $this->repository->published()] as $document) {
             foreach ($document['pages'] ?? [] as $slug => $page) {
                 if (! is_array($page)) {
@@ -72,6 +79,29 @@ class MediaUsage
                     }
                 }
             }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Articles hold their photo in a column rather than the document, and
+     * an article's photo is as much in use as a page's.
+     *
+     * @return array<string, list<string>>
+     */
+    private function postsUsingImages(): array
+    {
+        $map = [];
+
+        try {
+            $posts = Post::query()->whereNotNull('image')->get(['image', 'title']);
+        } catch (QueryException) {
+            return [];
+        }
+
+        foreach ($posts as $post) {
+            $map[(string) $post->image][] = 'Article: '.$post->title;
         }
 
         return $map;

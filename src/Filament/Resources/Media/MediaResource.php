@@ -4,8 +4,10 @@ namespace Gadya\Cms\Filament\Resources\Media;
 
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -22,7 +24,9 @@ use Gadya\Cms\Filament\Resources\Media\Pages\ListMedia;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Services\StoreMediaUpload;
 use Gadya\Cms\Support\ImageCapabilities;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 class MediaResource extends Resource
@@ -51,6 +55,10 @@ class MediaResource extends Resource
                 ->label('Description for screen readers')
                 ->maxLength(255)
                 ->helperText('What the photo shows, for visitors who cannot see it.'),
+            static::folderInput(),
+            TagsInput::make('tags')
+                ->placeholder('Add a tag')
+                ->helperText('Anything that helps find it again: an event, a room, a season.'),
         ]);
     }
 
@@ -64,6 +72,8 @@ class MediaResource extends Resource
                     ->square(),
                 TextColumn::make('original_name')->label('Name')->searchable()->sortable(),
                 TextColumn::make('alt_text')->label('Description')->toggleable()->wrap(),
+                TextColumn::make('folder')->badge()->color('gray')->placeholder('—')->sortable()->toggleable(),
+                TextColumn::make('tags')->badge()->separator(',')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -78,6 +88,7 @@ class MediaResource extends Resource
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('folder')->options(fn (): array => array_combine(Media::folders(), Media::folders())),
                 SelectFilter::make('status')->options([
                     Media::STATUS_READY => 'Ready',
                     Media::STATUS_PROCESSING => 'Processing',
@@ -90,6 +101,10 @@ class MediaResource extends Resource
             ->recordActions([
                 EditAction::make()->label('Describe'),
                 static::deleteAction(),
+            ])
+            ->toolbarActions([
+                static::moveAction(),
+                static::deleteBulkAction(),
             ])
             ->defaultSort('id', 'desc');
     }
@@ -111,10 +126,11 @@ class MediaResource extends Resource
                     ->maxSize((int) config('gadya-cms.media.max_kilobytes', 15360))
                     ->storeFiles(false)
                     ->required(),
+                static::folderInput(),
             ])
             ->action(function (array $data, StoreMediaUpload $store): void {
                 foreach ($data['uploads'] as $upload) {
-                    $store->handle($upload, auth()->id());
+                    $store->handle($upload, auth()->id(), $data['folder'] ?? null);
                 }
 
                 Notification::make()
@@ -123,6 +139,71 @@ class MediaResource extends Resource
                     ->body('Your photos are being prepared and will appear here in a moment.')
                     ->send();
             });
+    }
+
+    protected static function folderInput(): TextInput
+    {
+        return TextInput::make('folder')
+            ->maxLength(80)
+            ->datalist(fn (): array => Media::folders())
+            ->placeholder('No folder')
+            ->helperText('Type a new folder name or pick one you already use.');
+    }
+
+    protected static function moveAction(): BulkAction
+    {
+        return BulkAction::make('move')
+            ->label('Move to folder')
+            ->icon(Heroicon::OutlinedFolder)
+            ->schema([static::folderInput()])
+            ->action(function (Collection $records, array $data): void {
+                $records->each->update(['folder' => $data['folder'] ?: null]);
+
+                Notification::make()->success()->title('Moved')->send();
+            })
+            ->deselectRecordsAfterCompletion();
+    }
+
+    /**
+     * Deleting several at once keeps the same guard as deleting one: a
+     * photo still on a page or an article is skipped and named, rather
+     * than the whole batch failing or a hole appearing on the site.
+     */
+    protected static function deleteBulkAction(): BulkAction
+    {
+        return BulkAction::make('delete')
+            ->label('Delete')
+            ->icon(Heroicon::OutlinedTrash)
+            ->color('danger')
+            ->requiresConfirmation()
+            ->action(function (Collection $records, MediaUsage $usage): void {
+                $kept = [];
+                $deleted = 0;
+
+                foreach ($records as $record) {
+                    if ($usage->pagesUsing($record->filename) !== []) {
+                        $kept[] = $record->original_name;
+
+                        continue;
+                    }
+
+                    if (! $record->is_legacy) {
+                        Storage::disk($record->disk)->delete(array_filter([$record->path, $record->thumbnail_path]));
+                    }
+
+                    $record->delete();
+                    $deleted++;
+                }
+
+                if ($kept !== []) {
+                    Notification::make()->warning()->title('Some photos are still in use')->body('Kept: '.implode(', ', $kept))->persistent()->send();
+                }
+
+                if ($deleted > 0) {
+                    Notification::make()->success()->title($deleted.' '.Str::plural('photo', $deleted).' deleted')->send();
+                }
+            })
+            ->deselectRecordsAfterCompletion();
     }
 
     /**

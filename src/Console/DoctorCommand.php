@@ -4,7 +4,6 @@ namespace Gadya\Cms\Console;
 
 use Gadya\Cms\Support\ImageCapabilities;
 use Illuminate\Console\Command;
-use Imagick;
 
 class DoctorCommand extends Command
 {
@@ -17,11 +16,12 @@ class DoctorCommand extends Command
         $missing = $capabilities->missingBinaries();
 
         $this->table(['Capability', 'Status'], [
-            ['Imagick extension', class_exists(Imagick::class) ? 'available' : 'MISSING'],
+            ['Image driver', $capabilities->driverName().($capabilities->hasImagick() ? '' : ' (Imagick missing; HEIC uploads are off)')],
+            ['WebP output', $capabilities->supportsWebp() ? 'available' : 'MISSING'],
             ['HEIC decoding', $capabilities->supportsHeic() ? 'available' : 'MISSING'],
             ['Optimiser binaries', $missing === [] ? 'available' : 'MISSING: '.implode(', ', $missing)],
         ]);
 
-        return ($missing === [] && class_exists(Imagick::class)) ? self::SUCCESS : self::FAILURE;
+        return ($missing === [] && $capabilities->supportsWebp()) ? self::SUCCESS : self::FAILURE;
     }
 }

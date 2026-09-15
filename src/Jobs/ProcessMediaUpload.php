@@ -10,7 +10,6 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\ImageManager;
 use RuntimeException;
 use Spatie\LaravelImageOptimizer\Facades\ImageOptimizer;
@@ -64,7 +63,7 @@ class ProcessMediaUpload implements ShouldQueue
         try {
             $sourceContents = $sourceDisk->get($this->sourcePath);
 
-            $manager = new ImageManager(new Driver, strip: true);
+            $manager = new ImageManager($capabilities->driver(), strip: true);
             $image = $manager->read($sourceContents);
             $image->scaleDown(width: $maxEdge, height: $maxEdge);
 

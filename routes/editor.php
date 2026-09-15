@@ -2,6 +2,7 @@
 
 use Gadya\Cms\Http\Controllers\AnalyticsEventController;
 use Gadya\Cms\Http\Controllers\EditModeController;
+use Gadya\Cms\Http\Controllers\FormSubmissionController;
 use Gadya\Cms\Http\Controllers\InlineEditController;
 use Gadya\Cms\Http\Controllers\PreviewController;
 use Gadya\Cms\Http\Controllers\PublishController;
@@ -51,3 +52,12 @@ Route::get((string) config('gadya-cms.editor.prefix', 'cms').'/preview', [Previe
 Route::delete((string) config('gadya-cms.editor.prefix', 'cms').'/preview', [PreviewController::class, 'stop'])
     ->middleware('web')
     ->name('gadya-cms.preview.stop');
+
+/*
+ * Where the site's forms post to. Throttled per address, and every form
+ * name is checked against the configuration before anything is read.
+ */
+Route::post((string) config('gadya-cms.editor.prefix', 'cms').'/forms/{form}', [FormSubmissionController::class, 'store'])
+    ->where('form', '[a-z0-9-]+')
+    ->middleware(['web', 'throttle:gadya-cms-forms'])
+    ->name('gadya-cms.forms.store');

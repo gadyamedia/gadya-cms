@@ -19,6 +19,7 @@ use Gadya\Cms\Filament\Resources\Pages\PageResource;
 use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Filament\Resources\Redirects\RedirectResource;
 use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
+use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Blade;
@@ -36,6 +37,8 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasAi = true;
 
     protected bool $hasRedirects = true;
+
+    protected bool $hasForms = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -144,6 +147,19 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasAi;
     }
 
+    /** The inbox of what visitors sent through the site's forms. */
+    public function forms(bool $condition = true): static
+    {
+        $this->hasForms = $condition;
+
+        return $this;
+    }
+
+    public function hasForms(): bool
+    {
+        return $this->hasForms;
+    }
+
     /** The table of old addresses and where they go now. */
     public function redirects(bool $condition = true): static
     {
@@ -201,6 +217,7 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasTeam() ? UserResource::class : null,
                 $this->hasBlog() ? PostResource::class : null,
                 $this->hasRedirects() ? RedirectResource::class : null,
+                $this->hasForms() ? SubmissionResource::class : null,
             ]))
             ->pages(array_filter([
                 $this->hasAnalytics() ? Dashboard::class : null,

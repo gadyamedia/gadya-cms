@@ -16,7 +16,7 @@ class StoreMediaUpload
 {
     public function __construct(private readonly SiteContext $siteContext) {}
 
-    public function handle(UploadedFile $upload, ?int $uploadedBy = null): Media
+    public function handle(UploadedFile $upload, ?int $uploadedBy = null, ?string $folder = null): Media
     {
         $stagingDisk = (string) config('gadya-cms.media.staging_disk', 'local');
 
@@ -27,6 +27,7 @@ class StoreMediaUpload
             'disk' => (string) config('gadya-cms.media.disk', 'public'),
             'path' => '',
             'uploaded_by' => $uploadedBy,
+            'folder' => $folder !== null && trim($folder) !== '' ? trim($folder) : null,
             'status' => Media::STATUS_PROCESSING,
         ]);
 

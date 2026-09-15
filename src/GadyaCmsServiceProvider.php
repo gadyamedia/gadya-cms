@@ -12,6 +12,7 @@ use Gadya\Cms\Console\ImportLegacyMediaCommand;
 use Gadya\Cms\Console\InstallCommand;
 use Gadya\Cms\Console\MakeEditorCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
+use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Content\SlugPagePaths;
@@ -65,6 +66,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 ImportLegacyContentCommand::class,
                 ImportLegacyMediaCommand::class,
                 PruneAnalyticsCommand::class,
+                SendAnalyticsDigestCommand::class,
             ]);
     }
 
@@ -140,6 +142,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");
         Blade::directive('editableGlobal', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->globalAttributes({$expression}); ?>");
         Blade::directive('editableFor', fn (string $expression): string => "<?php app(\Gadya\Cms\Editor\EditContext::class)->for({$expression}); ?>");
+        Blade::directive('cmsForm', fn (string $expression): string => "<?php echo view('gadya-cms::forms.fields', ['form' => {$expression}, 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')])->render(); ?>");
+        Blade::directive('cmsFormStatus', fn (string $expression): string => "<?php echo view('gadya-cms::forms.status', ['form' => {$expression}])->render(); ?>");
         Blade::directive('cmsSeo', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Seo\\SeoHead::class)->render({$expression})->render(); ?>");
         Blade::directive('cmsToolbar', fn (): string => "<?php if (app(\Gadya\Cms\Editor\EditContext::class)->isEnabled()) { echo view('gadya-cms::editor.toolbar')->render(); } elseif (app(\Gadya\Cms\Editor\EditContext::class)->isPreviewing()) { echo view('gadya-cms::editor.preview-bar')->render(); } ?>");
     }
@@ -219,6 +223,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     {
         RateLimiter::for('gadya-cms-inline', fn (Request $request): Limit => Limit::perMinute(120)
             ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
+
+        RateLimiter::for('gadya-cms-forms', fn (Request $request): Limit => Limit::perMinute(6)->by($request->ip()));
 
         RateLimiter::for('gadya-cms-events', fn (Request $request): Limit => Limit::perMinute(60)->by($request->ip()));
     }

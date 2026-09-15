@@ -632,3 +632,42 @@
     background: var(--gadya-cms-primary);
     color: #fff;
 }
+
+/* ------------------------------------------------------------ enquiries */
+
+.gadya-submission {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.gadya-submission__row dt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gadya-dash-muted);
+    margin: 0 0 0.125rem;
+}
+
+.gadya-submission__row dd {
+    margin: 0;
+    color: var(--gadya-dash-ink);
+    white-space: pre-line;
+}
+
+.gadya-submission__row dd a {
+    color: var(--gadya-cms-primary);
+    text-decoration: underline;
+}
+
+.gadya-submission__row--meta {
+    border-top: 1px solid var(--gadya-dash-line);
+    padding-top: 0.875rem;
+}
+
+.gadya-submission__row--meta dd {
+    font-size: 0.8125rem;
+    color: var(--gadya-dash-muted);
+}

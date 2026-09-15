@@ -3,16 +3,25 @@
 namespace Gadya\Cms\Filament\Pages;
 
 use BackedEnum;
+use Closure;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
+use Gadya\Cms\Analytics\AnalyticsExport;
 use Gadya\Cms\Analytics\AnalyticsReport;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Revision;
+use Gadya\Cms\Notifications\AnalyticsDigest;
+use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\ImageCapabilities;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * What the client sees first: how the site is doing, in her words.
@@ -152,6 +161,67 @@ class Dashboard extends Page
         }
 
         return $notices;
+    }
+
+    /**
+     * @return list<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('export')
+                ->label('Download CSV')
+                ->icon(Heroicon::OutlinedArrowDownTray)
+                ->color('gray')
+                ->action(fn (AnalyticsExport $export): StreamedResponse => $export->download($this->days)),
+            Action::make('emailMe')
+                ->label('Email me this')
+                ->icon(Heroicon::OutlinedEnvelope)
+                ->color('gray')
+                ->action(function (): void {
+                    auth()->user()?->notify(new AnalyticsDigest($this->days));
+
+                    Notification::make()->success()->title('On its way')->body('The summary is being emailed to you.')->send();
+                }),
+            Action::make('digest')
+                ->label('Weekly email')
+                ->icon(Heroicon::OutlinedCalendarDays)
+                ->color('gray')
+                ->modalHeading('A summary every week')
+                ->modalDescription('Every Monday morning, the last seven days on the site, by email. Leave the list empty to stop it.')
+                ->fillForm(fn (Options $options): array => ['recipients' => implode("\n", (array) $options->get('analytics.digest_recipients', []))])
+                ->schema([
+                    Textarea::make('recipients')
+                        ->label('Send it to')
+                        ->rows(3)
+                        ->placeholder("one@example.com\ntwo@example.com")
+                        ->helperText('One email address per line.')
+                        ->rule(function (): Closure {
+                            return function (string $attribute, mixed $value, Closure $fail): void {
+                                foreach (static::splitRecipients((string) $value) as $email) {
+                                    if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                                        $fail("{$email} is not an email address.");
+                                    }
+                                }
+                            };
+                        }),
+                ])
+                ->action(function (array $data, Options $options): void {
+                    $recipients = static::splitRecipients((string) ($data['recipients'] ?? ''));
+
+                    $options->set('analytics.digest_recipients', $recipients);
+
+                    Notification::make()->success()->title($recipients === [] ? 'Weekly email stopped' : 'Weekly email set up')->send();
+                }),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function splitRecipients(string $value): array
+    {
+        return array_values(array_unique(array_filter(array_map('trim', preg_split('/[\s,;]+/', $value) ?: []))));
     }
 
     public static function canAccess(): bool
