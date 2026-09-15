@@ -1,6 +1,6 @@
 {
     "name": "gadya/cms",
-    "description": "A client-editable CMS for Laravel and Filament, with live on-page editing, first-party analytics and team invitations.",
+    "description": "A client-editable CMS for Laravel and Filament: live on-page editing, draft and publish, articles written with AI, SEO, forms, first-party analytics and team invitations.",
     "type": "library",
     "license": "MIT",
     "require": {

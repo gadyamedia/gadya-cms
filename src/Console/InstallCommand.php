@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Console;
 
+use Filament\Facades\Filament;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Support\SiteContext;
@@ -70,7 +71,7 @@ class InstallCommand extends Command
         }
 
         $this->newLine();
-        $this->components->info('Done. Sign in at '.url('/'.trim((string) config('gadya-cms.panel_path', 'admin'), '/')).' and press Publish when the site looks right.');
+        $this->components->info('Done. Sign in at '.rescue(fn (): string => Filament::getPanel((string) config('gadya-cms.panel', 'admin'))->getUrl(), url('/admin'), report: false).' and press Publish when the site looks right.');
 
         return self::SUCCESS;
     }
@@ -111,7 +112,7 @@ class InstallCommand extends Command
 
         $email = $this->option('admin-email');
 
-        if ($email === null && ($this->option('no-interaction') || ! confirm('Create the first administrator now?', default: true))) {
+        if ($email === null && (! $this->input->isInteractive() || ! confirm('Create the first administrator now?', default: true))) {
             $this->components->twoColumnDetail('Administrator', 'skipped; run `php artisan gadya-cms:editor` later');
 
             return;
