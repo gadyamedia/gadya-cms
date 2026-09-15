@@ -1,0 +1,240 @@
+<?php
+
+namespace Gadya\Cms\Filament;
+
+use Filament\Contracts\Plugin;
+use Filament\Panel;
+use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Gadya\Cms\Content\SiteImage;
+use Gadya\Cms\Filament\Pages\Dashboard;
+use Gadya\Cms\Filament\Pages\Navigation;
+use Gadya\Cms\Filament\Pages\SiteDetails;
+use Gadya\Cms\Filament\Pages\ThemeSettings;
+use Gadya\Cms\Filament\Resources\Media\MediaResource;
+use Gadya\Cms\Filament\Resources\Pages\PageResource;
+use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
+use Gadya\Cms\Filament\Resources\Users\UserResource;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Blade;
+
+class GadyaCmsPlugin implements Plugin
+{
+    protected bool $hasAnalytics = true;
+
+    protected bool $hasTeam = true;
+
+    protected bool $hasBrand = true;
+
+    protected ?string $contentNavigationGroup = 'Content';
+
+    protected ?string $appearanceNavigationGroup = 'Appearance';
+
+    public static function make(): static
+    {
+        return app(static::class);
+    }
+
+    /**
+     * The plugin as the current panel configured it.
+     *
+     * Falls back to a default instance rather than throwing: a resource may
+     * be asked for its navigation group outside any panel - in a test, or a
+     * console command - and that should answer rather than fail.
+     */
+    public static function get(): static
+    {
+        return rescue(
+            fn (): Plugin => filament(app(static::class)->getId()),
+            fn (): static => app(static::class),
+            report: false,
+        );
+    }
+
+    public function getId(): string
+    {
+        return 'gadya-cms';
+    }
+
+    /**
+     * The dashboard and its visitor figures. A site that already has
+     * analytics elsewhere can leave them out and keep the rest.
+     */
+    public function analytics(bool $condition = true): static
+    {
+        $this->hasAnalytics = $condition;
+
+        return $this;
+    }
+
+    public function hasAnalytics(): bool
+    {
+        return $this->hasAnalytics;
+    }
+
+    /** Inviting people to help manage the site. */
+    public function team(bool $condition = true): static
+    {
+        $this->hasTeam = $condition;
+
+        return $this;
+    }
+
+    public function hasTeam(): bool
+    {
+        return $this->hasTeam;
+    }
+
+    /**
+     * The panel's logo, colours and type. Off leaves the panel looking like
+     * stock Filament, for an application that brands its own.
+     */
+    public function brand(bool $condition = true): static
+    {
+        $this->hasBrand = $condition;
+
+        return $this;
+    }
+
+    public function hasBrand(): bool
+    {
+        return $this->hasBrand;
+    }
+
+    /** Where the CMS puts itself in a panel that has navigation of its own. */
+    public function navigationGroups(?string $content = 'Content', ?string $appearance = 'Appearance'): static
+    {
+        $this->contentNavigationGroup = $content;
+        $this->appearanceNavigationGroup = $appearance;
+
+        return $this;
+    }
+
+    public function getContentNavigationGroup(): ?string
+    {
+        return $this->contentNavigationGroup;
+    }
+
+    public function getAppearanceNavigationGroup(): ?string
+    {
+        return $this->appearanceNavigationGroup;
+    }
+
+    public function register(Panel $panel): void
+    {
+        /*
+         * The application may keep Livewire's asset auto-injection off so a
+         * public site ships no Livewire JS to visitors. The panel cannot
+         * work without the runtime - Filament's own scripts wait for
+         * `livewire:init`, and without it nothing boots: every
+         * `wire:loading` spinner stays visible forever and no table or
+         * widget ever loads. Injecting through the panel's own render hooks
+         * keeps this scoped to panel responses, rather than flipping a
+         * process-wide flag that would leak into public requests under a
+         * persistent worker.
+         */
+        $panel
+            ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => Blade::render('@livewireStyles'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn (): string => static::livewireScripts());
+
+        $panel
+            ->resources(array_filter([
+                PageResource::class,
+                MediaResource::class,
+                RevisionResource::class,
+                $this->hasTeam() ? UserResource::class : null,
+            ]))
+            ->pages(array_filter([
+                $this->hasAnalytics() ? Dashboard::class : null,
+                ThemeSettings::class,
+                SiteDetails::class,
+                Navigation::class,
+            ]));
+
+        if (! $this->hasBrand()) {
+            return;
+        }
+
+        $panel
+            ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('gadya-cms::filament.brand-head', static::brandTokens()))
+            ->brandName((string) config('gadya-cms.brand.name'))
+            ->brandLogo(fn (): ?string => static::brandLogo())
+            ->brandLogoHeight((string) config('gadya-cms.brand.logo_height', '2.75rem'))
+            ->favicon(fn (): ?string => static::brandLogo())
+            ->font((string) config('gadya-cms.brand.fonts.body', 'Inter'))
+            ->colors([
+                'primary' => Color::hex((string) config('gadya-cms.brand.primary', '#9f12c7')),
+                'info' => Color::hex((string) config('gadya-cms.brand.secondary', '#f54fa3')),
+            ]);
+    }
+
+    public function boot(Panel $panel): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::SIDEBAR_FOOTER,
+            fn (): View => view('gadya-cms::filament.view-site-link'),
+        );
+    }
+
+    /**
+     * Livewire's script tag, with the cache key widened to cover the build
+     * variant.
+     *
+     * Livewire versions that URL by its own release hash alone, which does
+     * not move when `csp_safe` changes even though the bundle it serves is
+     * completely different - and the asset is sent with a year of
+     * `max-age`. Switching that setting would otherwise leave every browser
+     * that had already loaded the panel on the old bundle until someone
+     * thought to hard-refresh.
+     */
+    protected static function livewireScripts(): string
+    {
+        $variant = config('livewire.csp_safe') ? 'csp' : 'std';
+
+        return (string) preg_replace(
+            '~(livewire(?:\.min)?\.js\?id=[A-Za-z0-9]+)~',
+            '$1-'.$variant,
+            Blade::render('@livewireScripts'),
+        );
+    }
+
+    /**
+     * The brand mark, resolved through the photo library so it follows the
+     * image if it is ever re-uploaded. Null leaves Filament showing the
+     * brand name as text.
+     *
+     * Deliberately resolved from a closure at render time rather than when
+     * the panel is configured: the library is memoised for the life of the
+     * request, and reading it during registration would freeze it before
+     * anything else had a chance to touch it.
+     */
+    protected static function brandLogo(): ?string
+    {
+        $logo = config('gadya-cms.brand.logo');
+
+        if (! is_string($logo) || $logo === '') {
+            return null;
+        }
+
+        return app(SiteImage::class)->url($logo);
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    protected static function brandTokens(): array
+    {
+        return [
+            'primary' => (string) config('gadya-cms.brand.primary', '#9f12c7'),
+            'secondary' => (string) config('gadya-cms.brand.secondary', '#f54fa3'),
+            'background' => (string) config('gadya-cms.brand.background', '#fffdf3'),
+            'ink' => (string) config('gadya-cms.brand.ink', '#000000'),
+            'accent' => (string) config('gadya-cms.brand.accent', '#f0e56c'),
+            'displayFont' => (string) config('gadya-cms.brand.fonts.display', 'Georgia'),
+            'logoHeight' => (string) config('gadya-cms.brand.logo_height', '2.75rem'),
+            'logoHeightAuth' => (string) config('gadya-cms.brand.logo_height_auth', '5rem'),
+            'fontStylesheet' => config('gadya-cms.brand.fonts.stylesheet'),
+        ];
+    }
+}

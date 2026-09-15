@@ -1,0 +1,230 @@
+/*
+ * The live editor's own chrome. Everything here is scoped to the editor so
+ * it can be dropped onto any site without touching the site's own styles,
+ * and it is plain CSS rather than Tailwind utilities so the host app never
+ * has to add this package to its Tailwind sources.
+ */
+:root {
+    --gadya-cms-primary: #9f12c7;
+    --gadya-cms-secondary: #f54fa3;
+    --gadya-cms-surface: #ffffff;
+    --gadya-cms-ink: #171717;
+    --gadya-cms-danger: #dc2626;
+}
+
+[data-cms-path] {
+    outline: 2px dashed color-mix(in oklab, currentColor 35%, transparent);
+    outline-offset: 4px;
+    cursor: text;
+}
+
+[data-cms-path]:hover {
+    outline-style: solid;
+}
+
+[data-cms-path][data-cms-type="image"] {
+    cursor: pointer;
+}
+
+.gadya-cms-toolbar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    background: var(--gadya-cms-surface);
+    border-top: 4px solid var(--gadya-cms-primary);
+    box-shadow: 0 -10px 30px rgb(0 0 0 / 0.18);
+    padding: 0.75rem 1.25rem;
+    color: var(--gadya-cms-ink);
+}
+
+.gadya-cms-toolbar__inner {
+    margin-inline: auto;
+    max-width: 72rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+
+.gadya-cms-toolbar__label {
+    font-size: 0.875rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--gadya-cms-primary);
+}
+
+.gadya-cms-toolbar__status {
+    font-size: 0.875rem;
+}
+
+.gadya-cms-toolbar__actions {
+    margin-inline-start: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.gadya-cms-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background: var(--gadya-cms-primary);
+    color: #fff;
+    font-weight: 800;
+    padding: 0.5rem 1.25rem;
+    border: 0;
+    cursor: pointer;
+}
+
+.gadya-cms-button:hover {
+    background: var(--gadya-cms-secondary);
+}
+
+.gadya-cms-link {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: underline;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: inherit;
+}
+
+.gadya-cms-error {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gadya-cms-danger);
+}
+
+.gadya-cms-note {
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.gadya-cms-input {
+    flex: 1 1 12rem;
+    border: 2px solid #d4d4d4;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.gadya-cms-panel {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-end: 0;
+    z-index: 70;
+    width: min(28rem, 100%);
+    overflow-y: auto;
+    background: var(--gadya-cms-surface);
+    border-inline-start: 4px solid var(--gadya-cms-primary);
+    padding: 1.5rem;
+    color: var(--gadya-cms-ink);
+}
+
+.gadya-cms-panel[hidden] {
+    display: none;
+}
+
+.gadya-cms-panel__label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+}
+
+.gadya-cms-panel textarea {
+    min-height: 16rem;
+    width: 100%;
+    border: 2px solid #d4d4d4;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    font: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 400;
+}
+
+.gadya-cms-panel__actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.gadya-cms-dialog {
+    width: 100%;
+    max-width: 56rem;
+    border: 0;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+}
+
+.gadya-cms-dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+}
+
+.gadya-cms-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.gadya-cms-picker__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+
+.gadya-cms-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+@media (min-width: 640px) {
+    .gadya-cms-picker__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.gadya-cms-picker__item {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 4px solid #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.gadya-cms-picker__item[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gadya-cms-picker__item img {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gadya-cms-picker__item span {
+    display: block;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

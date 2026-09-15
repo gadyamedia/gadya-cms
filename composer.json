@@ -1,0 +1,56 @@
+{
+    "name": "gadya/cms",
+    "description": "A client-editable CMS for Laravel and Filament, with live on-page editing, first-party analytics and team invitations.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^5.0",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/support": "^13.0",
+        "intervention/image": "^3.0",
+        "livewire/livewire": "^4.3",
+        "spatie/laravel-image-optimizer": "^1.8",
+        "spatie/laravel-package-tools": "^1.90"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gadya\\Cms\\": "src/",
+            "Gadya\\Cms\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Gadya\\Cms\\GadyaCmsServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "keywords": [
+        "laravel",
+        "filament",
+        "cms",
+        "filament-plugin",
+        "analytics",
+        "page-builder",
+        "inline-editing"
+    ],
+    "homepage": "https://github.com/gadyamedia/gadya-cms",
+    "authors": [
+        {
+            "name": "Gadya Media",
+            "email": "antony@gadyamedia.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/gadyamedia/gadya-cms/issues",
+        "source": "https://github.com/gadyamedia/gadya-cms"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
