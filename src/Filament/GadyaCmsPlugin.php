@@ -8,12 +8,15 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Gadya\Cms\Content\SiteImage;
+use Gadya\Cms\Filament\Pages\AiSettings;
+use Gadya\Cms\Filament\Pages\ArticleGenerator;
 use Gadya\Cms\Filament\Pages\Dashboard;
 use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\SiteDetails;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
 use Gadya\Cms\Filament\Resources\Pages\PageResource;
+use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
 use Illuminate\Contracts\View\View;
@@ -26,6 +29,10 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasTeam = true;
 
     protected bool $hasBrand = true;
+
+    protected bool $hasBlog = true;
+
+    protected bool $hasAi = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -102,6 +109,38 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasBrand;
     }
 
+    /**
+     * Articles, written by hand or drafted by AI. Off for a site that is
+     * pages only.
+     */
+    public function blog(bool $condition = true): static
+    {
+        $this->hasBlog = $condition;
+
+        return $this;
+    }
+
+    public function hasBlog(): bool
+    {
+        return $this->hasBlog;
+    }
+
+    /**
+     * Writing with AI: the settings screen, the generator and the buttons
+     * beside every search snippet. Off leaves everything written by hand.
+     */
+    public function ai(bool $condition = true): static
+    {
+        $this->hasAi = $condition;
+
+        return $this;
+    }
+
+    public function hasAi(): bool
+    {
+        return $this->hasAi;
+    }
+
     /** Where the CMS puts itself in a panel that has navigation of its own. */
     public function navigationGroups(?string $content = 'Content', ?string $appearance = 'Appearance'): static
     {
@@ -144,12 +183,15 @@ class GadyaCmsPlugin implements Plugin
                 MediaResource::class,
                 RevisionResource::class,
                 $this->hasTeam() ? UserResource::class : null,
+                $this->hasBlog() ? PostResource::class : null,
             ]))
             ->pages(array_filter([
                 $this->hasAnalytics() ? Dashboard::class : null,
                 ThemeSettings::class,
                 SiteDetails::class,
                 Navigation::class,
+                $this->hasAi() ? AiSettings::class : null,
+                $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
             ]));
 
         if (! $this->hasBrand()) {

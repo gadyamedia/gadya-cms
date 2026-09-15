@@ -106,7 +106,7 @@ return [
 
         'section_types' => ['cards', 'text-grid', 'gallery', 'menu', 'application'],
         'creatable_types' => ['content', 'legal'],
-        'reserved_slugs' => ['admin', 'cms', 'up', 'storage', 'livewire', 'booking', 'lead-forms', 'm', 'party-places', 'home'],
+        'reserved_slugs' => ['admin', 'cms', 'up', 'storage', 'livewire', 'blog', 'home'],
 
         /*
          * Single-segment URIs that already belong to a real route. The public
@@ -200,6 +200,31 @@ return [
 
         'skip_prefixes' => ['admin', 'cms', 'livewire', 'up', 'storage', 'build', 'vendor', '.well-known', 'booking', 'lead-forms'],
         'skip_paths' => ['robots.txt', 'sitemap.xml', 'favicon.ico'],
+    ],
+
+    /*
+     * Articles. The panel manages them whenever the plugin has the blog
+     * switched on; the public routes and templates are optional, for an
+     * application that does not have its own.
+     */
+    'blog' => [
+        'routes' => true,
+        'prefix' => 'blog',
+        'title' => 'Blog',
+        'heading' => null,
+        'description' => '',
+
+        /* The layout the shipped templates extend; it must yield `content`. */
+        'layout' => 'layouts.app',
+        'per_page' => 12,
+    ],
+
+    /*
+     * Writing with AI. The service, model and key are chosen in the panel
+     * and stored encrypted; this only says who may change them.
+     */
+    'ai' => [
+        'gate' => 'manage-users',
     ],
 
     /*

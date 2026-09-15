@@ -4,6 +4,7 @@ namespace Gadya\Cms;
 
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
 use Gadya\Cms\Console\ImportLegacyContentCommand;
@@ -23,6 +24,7 @@ use Gadya\Cms\Livewire\MediaPicker;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Setting;
 use Gadya\Cms\Observers\InvalidatePublishedDocument;
+use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -72,12 +74,18 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(SiteContext::class);
         $this->app->scoped(EditContext::class);
         $this->app->scoped(SiteContentRepository::class);
+        $this->app->scoped(Options::class);
+        $this->app->scoped(AiSettings::class);
     }
 
     public function packageBooted(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes/editor.php');
+
+        if (config('gadya-cms.blog.routes', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/blog.php');
+        }
 
         $this->publishes([
             __DIR__.'/../resources/js' => resource_path('js/vendor/gadya-cms'),

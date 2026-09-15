@@ -58,6 +58,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('site', require __DIR__.'/Fixtures/site.php');
         $app['config']->set('livewire.inject_assets', false);
         $app['config']->set('livewire.csp_safe', false);
+        $app['config']->set('view.paths', [__DIR__.'/Fixtures/views']);
     }
 
     protected function defineDatabaseMigrations(): void

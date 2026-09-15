@@ -33,6 +33,15 @@ class EditContext
     }
 
     /**
+     * Whether the request is showing the draft to someone holding a
+     * preview link, without the editor switched on.
+     */
+    public function isPreviewing(): bool
+    {
+        return false;
+    }
+
+    /**
      * Set the document path the next `attributes()` calls hang off, so a
      * template can say `@editable('heading')` rather than repeating the
      * whole `pages.about.heading` path on every element.
