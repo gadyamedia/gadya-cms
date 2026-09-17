@@ -61,12 +61,24 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Gadya\\Cms\\Tests\\": "tests/"
+            "Gadya\\Cms\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
         "lint": "vendor/bin/pint",
-        "sync-docs": "cp docs/*.md resources/boost/skills/gadya-cms-development/references/"
+        "sync-docs": "cp docs/*.md resources/boost/skills/gadya-cms-development/references/",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ],
+        "demo": [
+            "@build",
+            "@php -S 127.0.0.1:8000 -t vendor/orchestra/testbench-core/laravel/public vendor/orchestra/testbench-core/laravel/server.php"
+        ]
     }
 }

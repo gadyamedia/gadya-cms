@@ -1,0 +1,43 @@
+laravel: vendor/orchestra/testbench-core/laravel
+
+providers:
+  - Workbench\App\Providers\WorkbenchServiceProvider
+  - Workbench\App\Providers\AdminPanelProvider
+
+migrations:
+  - workbench/database/migrations
+  - database/migrations
+
+seeders:
+  - Workbench\Database\Seeders\DatabaseSeeder
+
+env:
+  - APP_NAME="Springfield Parties"
+  - APP_KEY=base64:pLPJeyLdBjLb+tWTXtydIWtCSasdNdSO/rUQ3zSpUJ0=
+  - APP_URL=http://127.0.0.1:8000
+  - DB_CONNECTION=sqlite
+  - DB_DATABASE=workbench.sqlite
+  - QUEUE_CONNECTION=sync
+  - MAIL_MAILER=log
+  - CACHE_STORE=file
+  - SESSION_DRIVER=file
+  - FILESYSTEM_DISK=public
+
+workbench:
+  start: /
+  install: true
+  discovers:
+    web: true
+    views: true
+  build:
+    - asset-publish
+    - create-sqlite-db
+    - db-wipe
+    - migrate-fresh:
+        --seed: true
+        --seeder: Workbench\Database\Seeders\DatabaseSeeder
+  assets:
+    - filament-assets
+  sync:
+    - from: public
+      to: public

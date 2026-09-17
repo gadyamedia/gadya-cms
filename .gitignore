@@ -3,3 +3,6 @@
 composer.lock
 .phpunit.result.cache
 .DS_Store
+
+/workbench.sqlite
+/vendor/orchestra/testbench-core/laravel/public/vendor/gadya-cms
