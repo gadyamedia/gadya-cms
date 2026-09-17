@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\File;
 
 class ExportSiteContentCommand extends Command
 {
-    protected $signature = 'gadya-cms:export {--path= : Where to write the exported array}';
+    protected $signature = 'gadya-cms:export-array {--path= : Where to write the exported array}';
 
     protected $description = 'Export the published site document to a PHP array file';
 

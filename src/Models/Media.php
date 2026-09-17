@@ -30,6 +30,7 @@ class Media extends Model
         'disk',
         'path',
         'thumbnail_path',
+        'variants',
         'mime_type',
         'width',
         'height',
@@ -57,6 +58,7 @@ class Media extends Model
         return [
             'is_legacy' => 'boolean',
             'tags' => 'array',
+            'variants' => 'array',
             'width' => 'integer',
             'height' => 'integer',
             'size' => 'integer',

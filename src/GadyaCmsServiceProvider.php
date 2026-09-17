@@ -7,11 +7,14 @@ use Filament\Support\Facades\FilamentAsset;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\DoctorCommand;
+use Gadya\Cms\Console\ExportSiteCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
 use Gadya\Cms\Console\ImportLegacyContentCommand;
 use Gadya\Cms\Console\ImportLegacyMediaCommand;
+use Gadya\Cms\Console\ImportSiteCommand;
 use Gadya\Cms\Console\InstallCommand;
 use Gadya\Cms\Console\MakeEditorCommand;
+use Gadya\Cms\Console\MakeMediaVariantsCommand;
 use Gadya\Cms\Console\MakePageTemplateCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
@@ -71,6 +74,9 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 PruneAnalyticsCommand::class,
                 SendAnalyticsDigestCommand::class,
                 MakePageTemplateCommand::class,
+                MakeMediaVariantsCommand::class,
+                ExportSiteCommand::class,
+                ImportSiteCommand::class,
             ]);
     }
 
@@ -143,6 +149,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     private function registerBladeDirectives(): void
     {
         Blade::directive('siteImage', fn (string $expression): string => "<?php echo e(app(\Gadya\Cms\Content\SiteImage::class)->url({$expression})); ?>");
+        Blade::directive('siteSrcset', fn (string $expression): string => "<?php echo e(app(\\Gadya\\Cms\\Content\\SiteImage::class)->srcset({$expression})); ?>");
         Blade::directive('siteThumbnail', fn (string $expression): string => "<?php echo e(app(\Gadya\Cms\Content\SiteImage::class)->thumbnailUrl({$expression})); ?>");
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");
         Blade::directive('editableGlobal', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->globalAttributes({$expression}); ?>");

@@ -55,6 +55,13 @@ return [
         'legacy_directory' => 'images/site',
         'max_edge' => 2400,
         'thumbnail_edge' => 400,
+
+        /*
+         * Widths written for every upload, so a template can offer a srcset
+         * and a phone never downloads the 2400px original. Only widths
+         * smaller than the photo are written.
+         */
+        'variants' => [480, 960, 1600],
         'quality' => 82,
         'thumbnail_quality' => 78,
         'max_kilobytes' => 15360,

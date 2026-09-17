@@ -80,6 +80,26 @@ class ProcessMediaUpload implements ShouldQueue
             $this->putOrFail($disk, $thumbnailPath, (string) $thumbnail->toWebp((int) config('gadya-cms.media.thumbnail_quality', 78)));
             $writtenPaths[] = $thumbnailPath;
 
+            /*
+             * Responsive variants, narrower than the photo only: a width
+             * the photo cannot fill would just be the original again.
+             */
+            $variants = [];
+
+            foreach ((array) config('gadya-cms.media.variants', []) as $width) {
+                $width = (int) $width;
+
+                if ($width <= 0 || $width >= $image->width()) {
+                    continue;
+                }
+
+                $variantPath = "{$directory}/variants/{$base}-{$width}.webp";
+                $variant = $manager->read($sourceContents)->scaleDown(width: $width);
+                $this->putOrFail($disk, $variantPath, (string) $variant->toWebp((int) config('gadya-cms.media.quality', 82)));
+                $writtenPaths[] = $variantPath;
+                $variants[(string) $width] = $variantPath;
+            }
+
             if ($capabilities->missingBinaries() === []) {
                 foreach ($writtenPaths as $path) {
                     ImageOptimizer::optimize($disk->path($path));
@@ -89,6 +109,7 @@ class ProcessMediaUpload implements ShouldQueue
             $this->mediaItem->update([
                 'path' => $webpPath,
                 'thumbnail_path' => $thumbnailPath,
+                'variants' => $variants,
                 'mime_type' => 'image/webp',
                 'width' => $image->width(),
                 'height' => $image->height(),

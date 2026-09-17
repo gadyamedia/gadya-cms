@@ -14,7 +14,11 @@ use Illuminate\Support\Facades\Storage;
  */
 class SiteImage
 {
-    public function url(string $reference): string
+    /**
+     * The photo's URL - or, given a width, the smallest variant at least
+     * that wide, so a card never loads the full-size original.
+     */
+    public function url(string $reference, ?int $width = null): string
     {
         $item = $this->library()->get($reference);
 
@@ -22,7 +26,58 @@ class SiteImage
             return asset(config('gadya-cms.media.legacy_directory', 'images/site').'/'.$reference);
         }
 
+        if ($width !== null) {
+            foreach ($this->variantsOf($item) as $variantWidth => $path) {
+                if ($variantWidth >= $width) {
+                    return Storage::disk($item->disk)->url($path);
+                }
+            }
+        }
+
         return Storage::disk($item->disk)->url($item->path);
+    }
+
+    /**
+     * A `srcset` attribute value: every variant plus the original, each
+     * with its width, so the browser picks the one its layout needs.
+     * A photo with no variants answers with the original alone, which is
+     * still valid.
+     */
+    public function srcset(string $reference): string
+    {
+        $item = $this->library()->get($reference);
+
+        if ($item === null || $item->is_legacy) {
+            return $this->url($reference);
+        }
+
+        $candidates = [];
+
+        foreach ($this->variantsOf($item) as $width => $path) {
+            $candidates[] = Storage::disk($item->disk)->url($path).' '.$width.'w';
+        }
+
+        $candidates[] = Storage::disk($item->disk)->url($item->path).($item->width ? ' '.$item->width.'w' : '');
+
+        return implode(', ', $candidates);
+    }
+
+    /**
+     * @return array<int, string> width => path, narrowest first
+     */
+    private function variantsOf(Media $item): array
+    {
+        $variants = [];
+
+        foreach ((array) ($item->variants ?? []) as $width => $path) {
+            if (is_string($path) && (int) $width > 0) {
+                $variants[(int) $width] = $path;
+            }
+        }
+
+        ksort($variants);
+
+        return $variants;
     }
 
     public function thumbnailUrl(string $reference): string
