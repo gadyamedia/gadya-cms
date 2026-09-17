@@ -80,3 +80,18 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 ## Commands
 
 `gadya-cms:install`, `gadya-cms:editor`, `gadya-cms:doctor`, `gadya-cms:export`, `gadya-cms:import-legacy-content`, `gadya-cms:import-legacy-media`, `gadya-cms:prune-analytics`, `gadya-cms:analytics-digest`. Deploys: `migrate --force`, `filament:assets`, `optimize:clear`, a queue worker.
+
+## References
+
+The full documentation ships inside this skill, so read the relevant file before implementing rather than guessing at an API:
+
+- `references/installation.md` - requirements, the plugin, gates, switches, scheduling, queues
+- `references/site-document.md` - how content is shaped and stored, `ResolvesPagePaths`, page fields, publishing
+- `references/live-editor.md` - the layout, every directive, the allow-list, locks, preview links
+- `references/articles-and-ai.md` - the writing screen, the public blog, providers, faking agents in tests
+- `references/seo.md` - `@cmsSeo`, sitemap, robots, redirects
+- `references/forms.md` - configuration, the template, the inbox
+- `references/analytics.md` - what is counted, events, live updates, reports, `AnalyticsReport`
+- `references/media-and-team.md` - the photo pipeline, folders, usage; invitations and the last-administrator rule
+- `references/commands.md` - every Artisan command, config publishing, deploy steps
+- `references/upgrading.md` - what each release asks of an application

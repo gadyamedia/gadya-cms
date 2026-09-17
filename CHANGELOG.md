@@ -2,6 +2,10 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.2.2
+
+- The Boost skill carries the whole `docs/` folder as references, kept identical by a test and `composer sync-docs`.
+
 ## 0.2.1
 
 - Laravel Boost guideline and `gadya-cms-development` skill, installed by `boost:update --discover`.

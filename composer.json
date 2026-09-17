@@ -66,6 +66,7 @@
     },
     "scripts": {
         "test": "vendor/bin/phpunit",
-        "lint": "vendor/bin/pint"
+        "lint": "vendor/bin/pint",
+        "sync-docs": "cp docs/*.md resources/boost/skills/gadya-cms-development/references/"
     }
 }
