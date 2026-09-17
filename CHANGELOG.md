@@ -2,6 +2,10 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.2.1
+
+- Laravel Boost guideline and `gadya-cms-development` skill, installed by `boost:update --discover`.
+
 ## 0.2.0
 
 The package now stands on its own: it is tested against a minimal host
