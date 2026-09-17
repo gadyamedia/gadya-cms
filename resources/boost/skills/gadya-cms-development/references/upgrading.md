@@ -1,5 +1,19 @@
 # Upgrading
 
+## 0.2 → 0.3
+
+Run the migrations (photo variants, search snapshots, page scores) and `filament:assets`.
+
+**Roles.** `users.roles` may now carry abilities. A role left as a plain label keeps working (everything but settings and the team). To use the new *contributor* role, add it to your role enum and to `canManageContent()`, and list it in `users.roles`. Redirects, AI and Search & speed now need the `settings` ability - an editor no longer sees them unless you grant it.
+
+**Site details.** The announcement, phone and address moved from *Site details* to **Appearance → Everywhere**, driven by the new `globals` config; *Site details* is now *Locations*. Tests that filled those fields on `SiteDetails` should target `Gadya\Cms\Filament\Pages\Globals`.
+
+**Published config.** Add the nested keys 0.3 reads to any array you override: `globals`, `media.variants`, `seo.llms`, `seo.markdown`, `seo.ai_crawlers`, `seo.organization`, `users.roles` (new shape).
+
+**Export.** `gadya-cms:export` now writes a zip/JSON of the whole site; the old PHP-array format is `--array`.
+
+**Doctor mocks** are unchanged from 0.2.
+
 ## 0.1 → 0.2
 
 Run the migrations; they add the options, articles, redirects, form submissions and photo folder tables and columns.

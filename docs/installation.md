@@ -82,6 +82,7 @@ GadyaCmsPlugin::make()
     ->ai(false)           // nothing written by AI
     ->redirects(false)    // no redirects table
     ->forms(false)        // no enquiries inbox
+    ->search(false)       // no Search Console, PageSpeed or readiness cards
     ->navigationGroups(content: 'Website', appearance: 'Design');
 ```
 
@@ -94,6 +95,7 @@ In `routes/console.php`:
 ```php
 Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');
 Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
+Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
 ```
 
 ## Queues

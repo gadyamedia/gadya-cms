@@ -58,7 +58,8 @@ import '../../vendor/gadya/cms/resources/js/analytics.js';
 | `@editableFor($path)` | Set the path later `@editable` calls hang off |
 | `@editable($field, $type)` | Mark an element editable, relative to that path |
 | `@editableGlobal($path, $type)` | Mark an element editable by absolute path |
-| `@siteImage($ref)` / `@siteThumbnail($ref)` | Resolve a stored filename to a URL |
+| `@siteImage($ref, $width)` / `@siteThumbnail($ref)` | Resolve a stored filename to a URL, at a width if given |
+| `@siteSrcset($ref)` | Every responsive variant of a photo, for `srcset` |
 | `@cmsToolbar` | The toolbar when editing; the preview bar when previewing |
 | `@cmsSeo($page)` | The head tags - see [SEO](seo.md) |
 

@@ -2,7 +2,7 @@
 
 `gadya/cms` is a client-editable CMS for Filament 5: pages live in a nested *site document* (draft + published copies), the client edits words and photos on the real page with the live editor, and nothing reaches the public site until she presses **Publish changes**. It also ships articles (optionally written by AI), SEO head tags, a sitemap, redirects, a forms inbox, first-party analytics and team invitations.
 
-- Activate the `gadya-cms-development` skill before touching templates, controllers, `config/gadya-cms.php`, or anything under `Gadya\Cms\`.
+- Activate the `gadya-cms-development` skill before touching templates, and `gadya-cms-content` when helping someone edit or publish rather than build, controllers, `config/gadya-cms.php`, or anything under `Gadya\Cms\`.
 - Templates read the document as an array (`$page['heading']`, `$site['phone']`) and mark editable elements with directives, never by writing to the database directly:
 
 @verbatim

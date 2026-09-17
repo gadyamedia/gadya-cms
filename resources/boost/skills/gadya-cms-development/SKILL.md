@@ -30,7 +30,11 @@ Use it when adding or changing public templates or controllers, adding editable 
 | `Seo\SeoHead` | `render($pageOrPost)` behind `@cmsSeo` |
 | `Forms\FormDefinition` | the configured forms; `route('gadya-cms.forms.store', 'contact')` |
 | `Analytics\AnalyticsReport` | `for($days)->headline()/daily()/topPages()/referrers()/events()` |
-| `Filament\GadyaCmsPlugin` | `::get()->hasBlog()`, `hasAi()`, `hasForms()` ... |
+| `Filament\GadyaCmsPlugin` | `::get()->hasBlog()`, `hasAi()`, `hasForms()`, `hasSearch()` ... |
+| `Access\Abilities` | `allows($user, 'publish')`, `forRole()`; gates are `gadya-cms.{ability}` |
+| `Transfer\SiteExporter` / `SiteImporter` | move a site between installs; secrets never travel |
+| `Search\SearchConsole` / `Search\PageSpeed` | Google data on the dashboard; both fake with `Http::fake()` |
+| `Seo\AgentReadiness` / `Seo\LlmsText` / `Seo\Markdown` | the AI-assistant side of SEO |
 
 ## Controller pattern
 
@@ -58,7 +62,9 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 
 - `@editableFor($path)` once, then `@editable($field, 'text'|'multiline'|'image')` on elements; `@editableGlobal('phone')` for top-level keys.
 - Array indexes go into paths (`sections.{$index}.title`); `PublicDocument` preserves keys for that reason - never `array_values()` a card list before rendering.
-- Images: store filenames, render with `@siteImage($ref)` / `@siteThumbnail($ref)`.
+- Images: store filenames, render with `@siteImage($ref, $width)` and `srcset="@siteSrcset($ref)"`; `@siteThumbnail($ref)` for lists.
+- Globals (announcement, phone, footer): `@editableGlobal('footer.tagline', 'multiline')`, listed in `gadya-cms.globals`.
+- New page type: `php artisan gadya-cms:make:page-template pages/types/name` first, then adjust.
 - Layout: `@cmsSeo($page)` in head; editor assets only when `EditContext::isEnabled()`; `@cmsToolbar` before `</body>`; `data-analytics-endpoint="{{ route('gadya-cms.events.store') }}"` on body; `data-analytics="booking_start"` on things worth counting (names must be in `analytics.events`).
 - Forms: `<form method="POST" action="{{ route('gadya-cms.forms.store', 'contact') }}">@cmsForm('contact') ...</form> @cmsFormStatus('contact')`; define fields/rules/notify under `forms.forms.contact`.
 - Blog templates ship as `gadya-cms::blog.index/show` extending `blog.layout`; style `cms-blog__*` / `cms-article__*` or publish the views with `--tag=gadya-cms-views`.
@@ -68,7 +74,9 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - Published config overrides package arrays wholesale: when you override `pages`, `navigation`, `analytics`, `users`, `seo`, `blog`, `forms`, copy every nested key.
 - New editable paths → `editable_fields`. New page URL prefixes → a `ResolvesPagePaths` implementation in `pages.paths` and the slug in `pages.reserved_slugs` + `pages.route_excluded_slugs`.
 - Page edit-screen fields → `pages.content_fields` (`text`, `textarea`, `image`).
-- Plugin switches: `GadyaCmsPlugin::make()->blog(false)->ai(false)->forms(false)->redirects(false)->team(false)->analytics(false)->brand(false)`.
+- Plugin switches: `GadyaCmsPlugin::make()->blog(false)->ai(false)->forms(false)->redirects(false)->search(false)->team(false)->analytics(false)->brand(false)`.
+- Roles: `users.roles.{role} = ['label' => ..., 'abilities' => [...]]`; abilities are content, articles, photos, enquiries, publish, settings. The host's `canManageContent()` must include every role. Screens check `Abilities::gate(Abilities::X)` in `canAccess()`.
+- The AI-assistant checks (`seo.llms`, `seo.markdown`, `seo.ai_crawlers`, `seo.organization`) are on by default; `gadya-cms:agent-ready` scores them.
 
 ## Testing
 
@@ -76,10 +84,12 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - Fake AI: `ArticleWriter::fake([[...structured fields...]])`, `MetaWriter::fake([...])`, `ConnectionCheck::fake(['OK'])` after `app(AiSettings::class)->save([...])`.
 - Filament tables: `Livewire::test(ListPosts::class)->selectTableRecords([...])->callAction(TestAction::make('x')->table()->bulk())`.
 - Never mock `ImageCapabilities` without `driverName()`, `hasImagick()`, `supportsWebp()`.
+- Google services: `Http::fake(['oauth2.googleapis.com/token' => ..., 'www.googleapis.com/webmasters/v3/sites/*' => ..., PageSpeed::ENDPOINT.'*' => ...])`; a service-account key for tests is any RSA PEM in `{client_email, private_key}` JSON.
+- The demo host under `workbench/` is a full example application: controller, layout, template, seeder.
 
 ## Commands
 
-`gadya-cms:install`, `gadya-cms:editor`, `gadya-cms:doctor`, `gadya-cms:export`, `gadya-cms:import-legacy-content`, `gadya-cms:import-legacy-media`, `gadya-cms:prune-analytics`, `gadya-cms:analytics-digest`. Deploys: `migrate --force`, `filament:assets`, `optimize:clear`, a queue worker.
+`gadya-cms:install`, `gadya-cms:editor`, `gadya-cms:doctor`, `gadya-cms:export` / `gadya-cms:import`, `gadya-cms:make:page-template`, `gadya-cms:media-variants`, `gadya-cms:import-legacy-content`, `gadya-cms:import-legacy-media`, `gadya-cms:prune-analytics`, `gadya-cms:analytics-digest`, `gadya-cms:search-console`, `gadya-cms:pagespeed`, `gadya-cms:agent-ready`. Deploys: `migrate --force`, `filament:assets`, `optimize:clear`, a queue worker.
 
 ## References
 
@@ -94,4 +104,8 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/analytics.md` - what is counted, events, live updates, reports, `AnalyticsReport`
 - `references/media-and-team.md` - the photo pipeline, folders, usage; invitations and the last-administrator rule
 - `references/commands.md` - every Artisan command, config publishing, deploy steps
+- `references/roles-and-globals.md` - abilities per role, the Everywhere screen
+- `references/transfer.md` - moving a site, responsive photos
+- `references/search-and-readiness.md` - Search Console, PageSpeed, the AI-readiness checks
+- `references/demo.md` - the demo site and the template generator
 - `references/upgrading.md` - what each release asks of an application

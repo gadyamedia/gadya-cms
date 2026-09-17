@@ -5,7 +5,13 @@
 | `gadya-cms:install` | Publish config, migrate, seed, index photos, publish assets, create the first administrator. Safe to repeat. |
 | `gadya-cms:editor` | Create a user who can sign in (`--name`, `--email`, `--password`, `--role=admin`) |
 | `gadya-cms:doctor` | Report the image driver, WebP support, HEIC support and optimiser binaries |
-| `gadya-cms:export` | Write the published document out as a PHP array (`--path=`) |
+| `gadya-cms:export` | The whole site as a zip or JSON (`--path=`, `--with-media`, `--array` for the old PHP array) |
+| `gadya-cms:import` | Bring an export into this install (`--replace`) |
+| `gadya-cms:make:page-template` | Scaffold a Blade template wired to the live editor |
+| `gadya-cms:media-variants` | Generate responsive variants for older photos (`--force`) |
+| `gadya-cms:search-console` | Fetch queries and landing pages from Google (`--days=28`) |
+| `gadya-cms:pagespeed` | Run Lighthouse through PageSpeed Insights (`--url=`, `--limit=5`, `--strategy=`) |
+| `gadya-cms:agent-ready` | Score readiness for search engines and AI assistants (`--live`) |
 | `gadya-cms:import-legacy-media` | Index images already shipped with the site |
 | `gadya-cms:import-legacy-content` | Import from a pre-Filament `site_contents` table |
 | `gadya-cms:prune-analytics` | Delete page views and events past the retention window (`--days=`) |

@@ -20,13 +20,15 @@ It also counts its own visitors without Google or a cookie banner, keeps what pe
 | **Pages** | One row each, with a type, a status, sections, a photo, a search snippet, and dates to appear and disappear. |
 | **Live editor** | `@editable` marks an element; the client edits it on the page. Text inline, prose in a side panel, photos from the library. One editor at a time, with a lock. |
 | **Draft and publish** | Every change is a draft until published. Preview links show a draft to someone with no account. Revisions restore any publish. |
-| **Photos** | Uploads resized, stripped of metadata, converted to WebP, optimised, with folders, tags, alt text, and "used on". Never deletable while on a page. |
+| **Photos** | Uploads resized, stripped of metadata, converted to WebP with responsive variants for `srcset`, optimised, with folders, tags, alt text, and "used on". Never deletable while on a page. |
 | **Articles** | A writing screen with a findability score on every save. Scheduled publishing. Public routes in your own layout, or read them yourself. |
 | **Writing with AI** | Provider, model and key chosen in the panel, stored encrypted. A voice for the business. Whole drafts, rewrites, and search snippets from the page's own words. Any provider Laravel's AI SDK speaks. |
 | **SEO** | `@cmsSeo` renders every head tag with sensible fallbacks. A generated sitemap and robots file. A redirects table the client edits, with hit counts. |
 | **Forms** | Configured fields, a honeypot, an email with reply-to, an inbox in the panel with CSV download. |
 | **Analytics** | First-party, no cookie, no address stored. Live panel over a websocket. CSV download, a weekly email. |
-| **Team** | Invitations by single-use link. Nobody can remove themselves; the last administrator stays. |
+| **Team** | Invitations by single-use link. Roles with abilities: a contributor writes articles but cannot publish a page. Nobody can remove themselves; the last administrator stays. |
+| **Search & speed** | Search Console queries and landing pages, Lighthouse scores from PageSpeed Insights, and a readiness score for AI assistants - `llms.txt`, AI-crawler rules, JSON-LD, Markdown on request. |
+| **Moving a site** | One zip with everything, photos included; import in place or replace. |
 | **Look & feel** | Brand colours, a curated font list, the site's own logo in the panel. |
 
 Every one of those is a switch on the plugin, so a project takes only what it wants.
@@ -69,6 +71,17 @@ That is the whole idea. [Installation](docs/installation.md) has the rest of the
 
 The package ships a Boost guideline and a `gadya-cms-development` skill. In an application with `laravel/boost`, run `php artisan boost:update --discover` after installing and your agent learns how to work with the CMS.
 
+## Try it
+
+```bash
+git clone https://github.com/gadyamedia/gadya-cms && cd gadya-cms
+composer install && composer demo
+```
+
+A whole sample site on http://127.0.0.1:8000, admin at `/admin` (admin@example.com / password). See [the demo](docs/demo.md).
+
+![The dashboard](docs/images/dashboard.png)
+
 ## Documentation
 
 - [Installation](docs/installation.md) - requirements, the plugin, gates, switches, scheduling, queues
@@ -79,6 +92,10 @@ The package ships a Boost guideline and a `gadya-cms-development` skill. In an a
 - [Forms](docs/forms.md) - configuration, the template, the inbox
 - [Analytics](docs/analytics.md) - what is counted and how, events, live updates, reports
 - [Photos and team](docs/media-and-team.md)
+- [Roles, abilities and Everywhere](docs/roles-and-globals.md)
+- [Search Console, page speed and AI readiness](docs/search-and-readiness.md)
+- [Moving a site, and responsive photos](docs/transfer.md)
+- [The demo site, and scaffolding a template](docs/demo.md)
 - [Commands, configuration and deploying](docs/commands.md)
 - [Upgrading](docs/upgrading.md)
 
@@ -93,6 +110,7 @@ GadyaCmsPlugin::make()
     ->ai(false)
     ->redirects(false)
     ->forms(false)
+    ->search(false)
     ->navigationGroups(content: 'Website', appearance: 'Design');
 ```
 

@@ -2,6 +2,27 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.3.0
+
+### Added
+
+- **Roles with abilities** (`content`, `articles`, `photos`, `enquiries`, `publish`, `settings`); a contributor role that writes articles but cannot publish a page. Plain-label roles keep working.
+- **Everywhere**: the announcement, phone, footer text and any other global, from a configured list, on one screen and on the page.
+- **Publish changes** on every screen that saves a draft.
+- **`gadya-cms:make:page-template`**: a Blade template with every configured field already editable.
+- **A demo site** (`composer demo`) that uses every feature, for trying, screenshots and development.
+- **Moving a site**: `gadya-cms:export` (zip or JSON, photos included) and `gadya-cms:import`. Secrets never travel.
+- **Responsive photos**: variants at configured widths, `@siteSrcset`, `@siteImage($ref, $width)`, and a backfill command.
+- **Search Console** on the dashboard through a service account; **PageSpeed Insights** scores for the top pages; a **readiness score for AI assistants**.
+- **For AI assistants**: `/llms.txt`, named AI crawlers in `robots.txt`, Organisation/WebSite/Article JSON-LD, and every page and article as `text/markdown` on request.
+- A second Boost skill, `gadya-cms-content`, for people who write and publish rather than build.
+
+### Changed
+
+- *Site details* is now *Locations*; the announcement, phone and address moved to *Everywhere*.
+- Redirects, AI settings and Search & speed need the `settings` ability.
+- `gadya-cms:export` writes the new format; `--array` gives the old one.
+
 ## 0.2.2
 
 - The Boost skill carries the whole `docs/` folder as references, kept identical by a test and `composer sync-docs`.
