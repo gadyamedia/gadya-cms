@@ -24,7 +24,7 @@ class SeoHead
      */
     public function render(array|Post $subject, ?string $canonical = null): View
     {
-        return view('gadya-cms::seo.head', ['tags' => $this->tags($subject, $canonical)]);
+        return view('gadya-cms::seo.head', ['tags' => $this->tags($subject, $canonical), 'structured' => $this->structuredData($subject, $canonical)]);
     }
 
     /**
@@ -61,6 +61,56 @@ class SeoHead
             'type' => $subject instanceof Post ? 'article' : 'website',
             'site_name' => (string) config('gadya-cms.seo.site_name', config('gadya-cms.brand.name', config('app.name'))),
         ];
+    }
+
+    /**
+     * What the page is, in the vocabulary machines share: the organisation
+     * and its website on every page, and the article itself on an article.
+     * The FAQ block on an article is rendered by its template.
+     *
+     * @param  array<string, mixed>|Post  $subject
+     * @return list<array<string, mixed>>
+     */
+    public function structuredData(array|Post $subject, ?string $canonical = null): array
+    {
+        $tags = $this->tags($subject, $canonical);
+        $organisation = (array) config('gadya-cms.seo.organization', []);
+        $logo = (string) config('gadya-cms.brand.logo', '');
+
+        $organisationNode = array_filter([
+            '@type' => (string) ($organisation['type'] ?? 'LocalBusiness'),
+            '@id' => url('/').'#organization',
+            'name' => $tags['site_name'],
+            'url' => url('/'),
+            'logo' => $logo !== '' ? $this->images->url($logo) : null,
+            'telephone' => $organisation['telephone'] ?? null,
+            'email' => $organisation['email'] ?? null,
+            'address' => $organisation['address'] ?? null,
+            'areaServed' => $organisation['area'] ?? null,
+            'sameAs' => array_values(array_filter((array) ($organisation['same_as'] ?? []))) ?: null,
+        ], fn ($value): bool => $value !== null && $value !== []);
+
+        $nodes = [
+            ['@context' => 'https://schema.org', ...$organisationNode],
+            ['@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => $tags['site_name'], 'url' => url('/'), 'publisher' => ['@id' => url('/').'#organization']],
+        ];
+
+        if ($subject instanceof Post) {
+            $nodes[] = array_filter([
+                '@context' => 'https://schema.org',
+                '@type' => 'Article',
+                'headline' => $subject->title,
+                'description' => $tags['description'],
+                'image' => $tags['image'],
+                'datePublished' => $subject->published_at?->toIso8601String(),
+                'dateModified' => $subject->updated_at?->toIso8601String(),
+                'mainEntityOfPage' => $tags['canonical'],
+                'author' => ['@id' => url('/').'#organization'],
+                'publisher' => ['@id' => url('/').'#organization'],
+            ], fn ($value): bool => $value !== null);
+        }
+
+        return $nodes;
     }
 
     private function withSuffix(string $title): string

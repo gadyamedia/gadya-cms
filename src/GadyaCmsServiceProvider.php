@@ -6,9 +6,12 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
+use Gadya\Cms\Console\AgentReadyCommand;
+use Gadya\Cms\Console\CheckPageSpeedCommand;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
+use Gadya\Cms\Console\FetchSearchConsoleCommand;
 use Gadya\Cms\Console\ImportLegacyContentCommand;
 use Gadya\Cms\Console\ImportLegacyMediaCommand;
 use Gadya\Cms\Console\ImportSiteCommand;
@@ -25,6 +28,7 @@ use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
 use Gadya\Cms\Http\Middleware\HandleRedirects;
+use Gadya\Cms\Http\Middleware\NegotiateMarkdown;
 use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
@@ -77,6 +81,9 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 MakeMediaVariantsCommand::class,
                 ExportSiteCommand::class,
                 ImportSiteCommand::class,
+                FetchSearchConsoleCommand::class,
+                CheckPageSpeedCommand::class,
+                AgentReadyCommand::class,
             ]);
     }
 
@@ -138,6 +145,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          */
         $this->app->make(Kernel::class)->pushMiddleware(HandleRedirects::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
+        $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);
 
     }

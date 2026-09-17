@@ -12,6 +12,10 @@ if (config('gadya-cms.seo.sitemap', true)) {
     Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('gadya-cms.sitemap');
 }
 
+if (config('gadya-cms.seo.llms', true)) {
+    Route::get('llms.txt', [SeoController::class, 'llms'])->name('gadya-cms.llms');
+}
+
 if (config('gadya-cms.seo.robots', true)) {
     Route::get('robots.txt', [SeoController::class, 'robots'])->name('gadya-cms.robots');
 }

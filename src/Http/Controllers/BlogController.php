@@ -6,7 +6,9 @@ use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Content\PublicDocument;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
+use Gadya\Cms\Seo\Markdown;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 
 /**
@@ -38,7 +40,7 @@ class BlogController extends Controller
         ]);
     }
 
-    public function show(string $slug): View
+    public function show(string $slug): View|Response
     {
         $this->editContext->boot();
 
@@ -47,6 +49,12 @@ class BlogController extends Controller
             : $this->blog->findLive($slug);
 
         abort_if($post === null, 404);
+
+        if (Markdown::wanted(request())) {
+            return response(app(Markdown::class)->forPost($post, request()->url()))
+                ->header('Content-Type', 'text/markdown; charset=utf-8')
+                ->header('Vary', 'Accept');
+        }
 
         return view('gadya-cms::blog.show', [
             'post' => $post,

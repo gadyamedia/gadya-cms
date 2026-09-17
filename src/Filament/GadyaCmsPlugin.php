@@ -13,6 +13,7 @@ use Gadya\Cms\Filament\Pages\ArticleGenerator;
 use Gadya\Cms\Filament\Pages\Dashboard;
 use Gadya\Cms\Filament\Pages\Globals;
 use Gadya\Cms\Filament\Pages\Navigation;
+use Gadya\Cms\Filament\Pages\SearchSettings;
 use Gadya\Cms\Filament\Pages\SiteDetails;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
@@ -40,6 +41,8 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasRedirects = true;
 
     protected bool $hasForms = true;
+
+    protected bool $hasSearch = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -148,6 +151,22 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasAi;
     }
 
+    /**
+     * Search Console, PageSpeed and the agent-readiness score on the
+     * dashboard, with the settings screen that connects them.
+     */
+    public function search(bool $condition = true): static
+    {
+        $this->hasSearch = $condition;
+
+        return $this;
+    }
+
+    public function hasSearch(): bool
+    {
+        return $this->hasSearch;
+    }
+
     /** The inbox of what visitors sent through the site's forms. */
     public function forms(bool $condition = true): static
     {
@@ -227,6 +246,7 @@ class GadyaCmsPlugin implements Plugin
                 SiteDetails::class,
                 Navigation::class,
                 $this->hasAi() ? AiSettings::class : null,
+                $this->hasSearch() ? SearchSettings::class : null,
                 $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
             ]));
 

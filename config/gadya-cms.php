@@ -321,6 +321,36 @@ return [
         'sitemap_extra' => [],
         'robots' => true,
         'robots_disallow' => ['/admin', '/cms'],
+
+        /*
+         * A description of the site for AI assistants at /llms.txt, and
+         * Markdown versions of every page and article for a reader that
+         * sends `Accept: text/markdown`.
+         */
+        'llms' => true,
+        'markdown' => true,
+
+        /*
+         * Which AI crawlers may read the site. Named ones get their own
+         * block in robots.txt; anything unnamed follows the general rules.
+         */
+        'ai_crawlers' => [
+            'allow' => ['GPTBot', 'ClaudeBot', 'Claude-Web', 'anthropic-ai', 'PerplexityBot', 'Google-Extended', 'Applebot-Extended', 'CCBot'],
+            'block' => [],
+        ],
+
+        /*
+         * The organisation behind the site, for the JSON-LD on every page.
+         * The name and logo come from the brand; these are the rest.
+         */
+        'organization' => [
+            'type' => 'LocalBusiness',
+            'telephone' => null,
+            'email' => null,
+            'address' => null,
+            'area' => null,
+            'same_as' => [],
+        ],
     ],
 
     /*

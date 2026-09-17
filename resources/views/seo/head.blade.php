@@ -15,3 +15,6 @@
 @endif
 <meta name="twitter:title" content="{{ $tags['title'] }}">
 <meta name="twitter:description" content="{{ $tags['description'] }}">
+@foreach ($structured ?? [] as $node)
+<script type="application/ld+json">{!! json_encode($node, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+@endforeach

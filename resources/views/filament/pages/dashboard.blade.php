@@ -155,6 +155,10 @@
             </div>
         </div>
 
+        @if (\Gadya\Cms\Filament\GadyaCmsPlugin::get()->hasSearch())
+            @include('gadya-cms::filament.partials.dashboard-search')
+        @endif
+
         <div class="gadya-dash__card gadya-dash__card--flush">
             <p class="gadya-dash__title">Recently published</p>
             @forelse ($this->recentPublishes as $revision)

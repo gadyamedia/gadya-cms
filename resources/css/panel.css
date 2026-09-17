@@ -671,3 +671,31 @@
     font-size: 0.8125rem;
     color: var(--gadya-dash-muted);
 }
+
+/* ---------------------------------------------------------- page speed */
+
+.gadya-speed {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.gadya-speed__pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.gadya-speed__pill--good { background: #dcfce7; color: #15803d; }
+.gadya-speed__pill--fair { background: #fef3c7; color: #b45309; }
+.gadya-speed__pill--poor { background: #fee2e2; color: #b91c1c; }
+.gadya-speed__pill--none { background: var(--gadya-dash-chip); color: var(--gadya-dash-muted); }
+
+.gadya-dash__empty a {
+    color: var(--gadya-cms-primary);
+    text-decoration: underline;
+}
