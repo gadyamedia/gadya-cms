@@ -17,12 +17,12 @@
         <div class="gadya-cms-toolbar__actions">
             <a class="gadya-cms-link" href="{{ $panelUrl }}">Admin</a>
 
-            @unless ($heldByOther)
+            @if (! $heldByOther && auth()->user()?->can(\Gadya\Cms\Access\Abilities::gate(\Gadya\Cms\Access\Abilities::PUBLISH)))
                 <form method="POST" action="{{ route('gadya-cms.publish') }}">
                     @csrf
                     <button class="gadya-cms-button" type="submit">Publish</button>
                 </form>
-            @endunless
+            @endif
 
             <form method="POST" action="{{ route('gadya-cms.edit-mode.disable') }}">
                 @csrf

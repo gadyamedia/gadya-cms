@@ -23,6 +23,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
@@ -373,6 +374,11 @@ class PageResource extends Resource
         $types = app(PageRegistry::class)->sectionTypes();
 
         return array_combine($types, array_map(Str::headline(...), $types));
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can(Abilities::gate(Abilities::CONTENT)) ?? false;
     }
 
     public static function getPages(): array

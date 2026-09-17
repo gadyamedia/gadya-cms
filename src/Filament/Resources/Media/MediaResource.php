@@ -17,6 +17,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\MediaUsage;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
@@ -237,6 +238,11 @@ class MediaResource extends Resource
 
                 Notification::make()->success()->title('Photo deleted')->send();
             });
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can(Abilities::gate(Abilities::PHOTOS)) ?? false;
     }
 
     public static function getPages(): array

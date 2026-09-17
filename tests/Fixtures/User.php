@@ -31,7 +31,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canManageContent(): bool
     {
-        return in_array($this->role, ['editor', 'admin'], true);
+        return in_array($this->role, ['contributor', 'editor', 'admin'], true);
     }
 
     public function isAdministrator(): bool

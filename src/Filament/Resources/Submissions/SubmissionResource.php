@@ -12,6 +12,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Submissions\Pages\ListSubmissions;
 use Gadya\Cms\Forms\FormDefinition;
@@ -178,7 +179,7 @@ class SubmissionResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can((string) config('gadya-cms.gate', 'manage-content')) ?? false;
+        return auth()->user()?->can(Abilities::gate(Abilities::ENQUIRIES)) ?? false;
     }
 
     public static function canCreate(): bool

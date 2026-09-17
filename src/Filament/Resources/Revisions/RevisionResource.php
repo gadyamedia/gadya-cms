@@ -10,6 +10,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Revisions\Pages\ListRevisions;
 use Gadya\Cms\Models\Revision;
@@ -77,6 +78,11 @@ class RevisionResource extends Resource
 
                 Notification::make()->success()->title('Version restored')->send();
             });
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can(Abilities::gate(Abilities::PUBLISH)) ?? false;
     }
 
     public static function getPages(): array

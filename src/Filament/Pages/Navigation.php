@@ -15,8 +15,10 @@ use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\NavigationTree;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Filament\Actions\PublishChangesAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use UnitEnum;
 
@@ -230,8 +232,19 @@ class Navigation extends Page
         return $options;
     }
 
+    /**
+     * Saving writes the draft; this is what makes it live. On the screen
+     * itself, so nobody has to know to go and find it elsewhere.
+     *
+     * @return list<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [PublishChangesAction::make()];
+    }
+
     public static function canAccess(): bool
     {
-        return auth()->user()?->can((string) config('gadya-cms.gate', 'manage-content')) ?? false;
+        return auth()->user()?->can(Abilities::gate(Abilities::CONTENT)) ?? false;
     }
 }

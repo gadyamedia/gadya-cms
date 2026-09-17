@@ -4,6 +4,7 @@ namespace Gadya\Cms;
 
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
@@ -11,6 +12,7 @@ use Gadya\Cms\Console\ImportLegacyContentCommand;
 use Gadya\Cms\Console\ImportLegacyMediaCommand;
 use Gadya\Cms\Console\InstallCommand;
 use Gadya\Cms\Console\MakeEditorCommand;
+use Gadya\Cms\Console\MakePageTemplateCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Content\SiteContentRepository;
@@ -37,6 +39,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
@@ -67,6 +70,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 ImportLegacyMediaCommand::class,
                 PruneAnalyticsCommand::class,
                 SendAnalyticsDigestCommand::class,
+                MakePageTemplateCommand::class,
             ]);
     }
 
@@ -101,6 +105,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         $this->registerBladeDirectives();
         $this->registerRateLimiters();
+        $this->registerAbilityGates();
 
         $this->recordLastLogin();
         $this->registerBroadcastChannel();
@@ -217,6 +222,24 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             PageViewed::channel(),
             fn ($user): bool => $user->can((string) config('gadya-cms.gate', 'manage-content')),
         ), report: false);
+    }
+
+    /**
+     * One gate per ability, on top of the application's own content gate:
+     * a person must be allowed into the CMS at all, and then allowed to do
+     * this. An application that defines a gate of the same name first
+     * keeps its own.
+     */
+    private function registerAbilityGates(): void
+    {
+        foreach (Abilities::all() as $ability) {
+            if (Gate::has(Abilities::gate($ability))) {
+                continue;
+            }
+
+            Gate::define(Abilities::gate($ability), fn ($user): bool => $user->can((string) config('gadya-cms.gate', 'manage-content'))
+                && app(Abilities::class)->allows($user, $ability));
+        }
     }
 
     private function registerRateLimiters(): void

@@ -14,6 +14,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Filament\Resources\Users\Pages\ListUsers;
 use Gadya\Cms\Services\InvitePanelUser;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,9 +59,10 @@ class UserResource extends Resource
             Select::make('role')
                 ->options(fn (): array => static::roleOptions())
                 ->required()
-                ->helperText(fn (?Model $record): ?string => static::isLastAdministrator($record)
+                ->live()
+                ->helperText(fn (?Model $record, ?string $state): ?string => static::isLastAdministrator($record)
                     ? 'This is the only administrator, so their role cannot be changed.'
-                    : null)
+                    : static::describeRole($state))
                 ->disabled(fn (?Model $record): bool => static::isLastAdministrator($record)),
         ])->columns(1);
     }
@@ -138,6 +140,8 @@ class UserResource extends Resource
                 Select::make('role')
                     ->options(fn (): array => static::roleOptions())
                     ->default((string) config('gadya-cms.users.default_role', 'editor'))
+                    ->live()
+                    ->helperText(fn (?string $state): ?string => static::describeRole($state))
                     ->required(),
             ])
             ->action(function (array $data, InvitePanelUser $invite): void {
@@ -218,6 +222,21 @@ class UserResource extends Resource
         };
     }
 
+    /**
+     * What a role may do, in the client's words, so choosing one is not a
+     * guess.
+     */
+    public static function describeRole(?string $role): ?string
+    {
+        $abilities = app(Abilities::class)->forRole($role);
+
+        if ($abilities === []) {
+            return null;
+        }
+
+        return 'Can: '.implode('; ', array_map(fn (string $ability): string => lcfirst(Abilities::labels()[$ability] ?? $ability), $abilities)).'.';
+    }
+
     protected static function adminRole(): string
     {
         return (string) config('gadya-cms.users.admin_role', 'admin');
@@ -234,10 +253,7 @@ class UserResource extends Resource
      */
     protected static function roleOptions(): array
     {
-        /** @var array<string, string> $roles */
-        $roles = config('gadya-cms.users.roles', []);
-
-        return $roles;
+        return Abilities::roleLabels();
     }
 
     /**

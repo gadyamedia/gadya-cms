@@ -90,6 +90,18 @@ return [
     ],
 
     /*
+     * Words and pictures that appear on every page: each is a top-level
+     * path in the site document, edited under Appearance → Everywhere and
+     * on the page itself through @editableGlobal. Types: text, textarea,
+     * image. Group them however reads best.
+     */
+    'globals' => [
+        'announcement' => ['label' => 'Announcement bar', 'type' => 'text', 'max' => 120, 'required' => true, 'group' => 'Top of every page'],
+        'phone' => ['label' => 'Phone number', 'type' => 'text', 'max' => 40, 'required' => true, 'group' => 'Contact details'],
+        'address' => ['label' => 'Address', 'type' => 'text', 'max' => 255, 'group' => 'Contact details'],
+    ],
+
+    /*
      * Where a top-level menu item sits when the document does not say.
      * Only applies until the client saves the menu, after which every item
      * carries its own answer.
@@ -180,9 +192,15 @@ return [
      */
     'users' => [
         'gate' => 'manage-users',
+        /*
+         * Each role's label and what it may do. A role given as a plain
+         * label may do everything but manage the team. Abilities: content,
+         * articles, photos, enquiries, publish, settings - or '*'.
+         */
         'roles' => [
-            'editor' => 'Editor',
-            'admin' => 'Administrator',
+            'contributor' => ['label' => 'Contributor', 'abilities' => ['articles', 'photos']],
+            'editor' => ['label' => 'Editor', 'abilities' => ['content', 'articles', 'photos', 'enquiries', 'publish']],
+            'admin' => ['label' => 'Administrator', 'abilities' => ['*']],
         ],
         'default_role' => 'editor',
         'admin_role' => 'admin',

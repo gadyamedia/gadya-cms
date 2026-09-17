@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Filament\Resources\Redirects\Pages\ListRedirects;
 use Gadya\Cms\Models\Redirect;
 use Gadya\Cms\Support\SiteContext;
@@ -113,7 +114,7 @@ class RedirectResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can((string) config('gadya-cms.gate', 'manage-content')) ?? false;
+        return auth()->user()?->can(Abilities::gate(Abilities::SETTINGS)) ?? false;
     }
 
     public static function getPages(): array

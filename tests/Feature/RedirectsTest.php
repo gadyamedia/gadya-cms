@@ -70,8 +70,7 @@ class RedirectsTest extends TestCase
 
     public function test_the_panel_refuses_to_redirect_its_own_tools_away(): void
     {
-        Livewire::actingAs($this->editor())
-            ->test(ListRedirects::class)
+        Livewire::actingAs($this->administrator())->test(ListRedirects::class)
             ->callAction('create', ['from_path' => '/admin/pages', 'to_path' => '/about', 'status_code' => 301])
             ->assertHasFormErrors(['from_path']);
 
@@ -80,8 +79,7 @@ class RedirectsTest extends TestCase
 
     public function test_an_editor_can_add_a_redirect_from_the_panel(): void
     {
-        Livewire::actingAs($this->editor())
-            ->test(ListRedirects::class)
+        Livewire::actingAs($this->administrator())->test(ListRedirects::class)
             ->callAction('create', ['from_path' => '/summer-2025', 'to_path' => '/pricing', 'status_code' => 301])
             ->assertHasNoFormErrors();
 

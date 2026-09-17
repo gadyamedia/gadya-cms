@@ -5,6 +5,7 @@ namespace Gadya\Cms\Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Editor\EditingLock;
 use Gadya\Cms\Services\PublishSiteContent;
 
@@ -21,6 +22,7 @@ class PublishChangesAction
             ->label('Publish changes')
             ->icon(Heroicon::OutlinedRocketLaunch)
             ->color('success')
+            ->visible(fn (): bool => auth()->user()?->can(Abilities::gate(Abilities::PUBLISH)) ?? false)
             ->requiresConfirmation()
             ->modalHeading('Publish changes')
             ->modalDescription('Everything you have edited becomes visible to visitors straight away.')

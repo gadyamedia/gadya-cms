@@ -11,6 +11,7 @@ use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Filament\Pages\AiSettings;
 use Gadya\Cms\Filament\Pages\ArticleGenerator;
 use Gadya\Cms\Filament\Pages\Dashboard;
+use Gadya\Cms\Filament\Pages\Globals;
 use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\SiteDetails;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
@@ -222,6 +223,7 @@ class GadyaCmsPlugin implements Plugin
             ->pages(array_filter([
                 $this->hasAnalytics() ? Dashboard::class : null,
                 ThemeSettings::class,
+                Globals::class,
                 SiteDetails::class,
                 Navigation::class,
                 $this->hasAi() ? AiSettings::class : null,

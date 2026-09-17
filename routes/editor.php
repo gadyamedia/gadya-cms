@@ -1,5 +1,6 @@
 <?php
 
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Http\Controllers\AnalyticsEventController;
 use Gadya\Cms\Http\Controllers\EditModeController;
 use Gadya\Cms\Http\Controllers\FormSubmissionController;
@@ -21,7 +22,9 @@ Route::prefix((string) config('gadya-cms.editor.prefix', 'cms'))
         Route::post('edit-mode', [EditModeController::class, 'enable'])->name('edit-mode.enable');
         Route::delete('edit-mode', [EditModeController::class, 'disable'])->name('edit-mode.disable');
 
-        Route::post('publish', PublishController::class)->name('publish');
+        Route::post('publish', PublishController::class)
+            ->middleware('can:'.Abilities::gate(Abilities::PUBLISH))
+            ->name('publish');
 
         Route::post('inline', [InlineEditController::class, 'update'])
             ->middleware('throttle:gadya-cms-inline')

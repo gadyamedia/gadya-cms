@@ -1,0 +1,50 @@
+{{--
+    A page from the site document. $page is the page array, $site the whole
+    document (already through PublicDocument), $slug the page's slug.
+    Everything marked @editable can be changed on the page itself once the
+    live editor is on; the allow-list is gadya-cms.editable_fields.
+--}}
+@extends('{{ layout }}')
+
+@section('content')
+    @editableFor("pages.{$slug}")
+
+    <article class="page page--{{ $page['type'] ?? 'content' }}">
+{{ fields }}
+
+        @foreach ($page['sections'] ?? [] as $index => $section)
+            <section class="page-section page-section--{{ $section['type'] ?? 'text' }}">
+                @if (! empty($section['title']))
+                    <h2 @editable("sections.{$index}.title")>{{ $section['title'] }}</h2>
+                @endif
+                @if (! empty($section['subtitle']))
+                    <p class="page-section__subtitle" @editable("sections.{$index}.subtitle")>{{ $section['subtitle'] }}</p>
+                @endif
+                @if (! empty($section['text']))
+                    <p @editable("sections.{$index}.text", 'multiline')>{{ $section['text'] }}</p>
+                @endif
+
+                @if (($section['type'] ?? null) === 'gallery')
+                    <div class="page-gallery">
+                        @foreach ($section['images'] ?? [] as $imageIndex => $image)
+                            <img src="@siteImage($image)" alt="" @editable("sections.{$index}.images.{$imageIndex}", 'image')>
+                        @endforeach
+                    </div>
+                @else
+                    {{-- Keys are kept as they are: the editor writes the index into the path. --}}
+                    <div class="page-cards">
+                        @foreach ($section['items'] ?? [] as $itemIndex => $item)
+                            <div class="page-card">
+                                @if (! empty($item['image']))
+                                    <img src="@siteImage($item['image'])" alt="" @editable("sections.{$index}.items.{$itemIndex}.image", 'image')>
+                                @endif
+                                <h3 @editable("sections.{$index}.items.{$itemIndex}.title")>{{ $item['title'] ?? '' }}</h3>
+                                <p @editable("sections.{$index}.items.{$itemIndex}.text", 'multiline')>{{ $item['text'] ?? '' }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
+        @endforeach
+    </article>
+@endsection

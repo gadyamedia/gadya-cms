@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Blog\ArticleRequest;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
@@ -148,6 +149,6 @@ class ArticleGenerator extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->can((string) config('gadya-cms.gate', 'manage-content')) ?? false;
+        return auth()->user()?->can(Abilities::gate(Abilities::ARTICLES)) ?? false;
     }
 }
