@@ -2,6 +2,35 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.0
+
+The release that answers "but WordPress does…".
+
+### Added
+
+- **Categories and tags** for articles, with archive pages of their own, and **related articles** at the foot of each one.
+- **Comments**, off unless a site wants them, moderated unless it says otherwise, emailed in full.
+- **Duplicate** for pages and articles.
+- **A trash**: a deleted page is off the site at once and back in one click for thirty days, then emptied by `gadya-cms:prune-trash`.
+- **Fields per page type**, so a location is not edited through a form built for a legal page.
+- **Saved blocks**: keep a section and drop a copy of it into another page.
+- **The site's own search box**, with what people searched for - and did not find - counted on the dashboard.
+- **Events**: things that happen on a date, sorted for you, with an `.ics` feed and `Event` structured data.
+- **A mailing list** with an unsubscribe link that needs no account and an export in the columns mailing services read.
+- **A focal point** per photo, rendered by `@siteFocus`, and **alt text written by looking at the photograph**.
+- **A profile page**, **unsaved-changes warnings**, and **more than one menu**.
+- **An activity log**: who changed what, when.
+- **Publishing at a time**: hold the whole draft until Friday at nine.
+- **Coming-soon mode** that closes the site without closing the panel, with a password link to share.
+- **Broken links** from both ends - what visitors asked for and what the site links to - fixed with one click.
+- **Automatic replies**: the thank-you email each form sends, written in the panel.
+- `gadya-cms:prune-trash`, `gadya-cms:prune-activity`, `gadya-cms:publish-due`, `gadya-cms:check-links`.
+
+### Changed
+
+- Pages are soft-deleted; `Page::query()` no longer sees deleted rows. See [upgrading](docs/upgrading.md).
+- **Publish changes** asks when, so it can be scheduled; passing no time still publishes now.
+
 ## 0.3.0
 
 ### Added

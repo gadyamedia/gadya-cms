@@ -10,6 +10,11 @@ class ListEvents extends ListRecords
 {
     protected static string $resource = EventResource::class;
 
+    public function getTitle(): string
+    {
+        return (string) config('gadya-cms.events.title', 'What’s on');
+    }
+
     protected function getHeaderActions(): array
     {
         return [CreateAction::make()->label('Add an event')];

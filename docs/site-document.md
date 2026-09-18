@@ -117,6 +117,39 @@ The fields at the top of a page's edit screen are configuration:
 
 Sections (`sections.*`) always carry a `type`, a `title`, a `subtitle`, `text`, and either `items` (title, text, image) or `images` for a gallery.
 
+### Fields per page type
+
+Not every page is the same shape: a location has an address, a legal page does not. A type may carry its own fields and its own section kinds, and a type that says nothing gets the site's defaults:
+
+```php
+'pages' => [
+    'types' => [
+        'location' => [
+            'label' => 'Party place',
+            'creatable' => true,
+            'fields' => [
+                'heading' => ['label' => 'Heading', 'type' => 'text'],
+                'address' => ['label' => 'Address', 'type' => 'text', 'max' => 255],
+                'hero_image' => ['label' => 'Main photo', 'type' => 'image'],
+            ],
+            'section_types' => ['cards', 'gallery'],
+        ],
+    ],
+],
+```
+
+The edit screen follows the type as it is chosen. `Gadya\Cms\Content\PageTypes` answers `fieldsFor($type)`, `sectionTypesFor($type)`, `label($type)` and `creatable()`.
+
+### Saved blocks
+
+A section can be kept and used again: **Save as a block** on any section, **Add a saved block** at the top of the sections list, and **Content → Saved blocks** to rename or remove them. A block is stored under `blocks` in the document and inserted as a *copy*, because a client who changes it on one page almost never means to change it on the other three.
+
+```php
+$blocks = app(\Gadya\Cms\Content\SiteBlocks::class);
+$blocks->options();          // key => label, for a select
+$blocks->section($key);      // a fresh copy, ready to drop into a page
+```
+
 ## Publishing and revisions
 
 Nothing reaches the live site until **Publish changes** is pressed. Publishing copies every draft column onto its published twin, records the whole document as a revision, flushes the cache, and prunes revisions past `gadya-cms.revisions.keep`. Any revision can be restored from **Revision history**.

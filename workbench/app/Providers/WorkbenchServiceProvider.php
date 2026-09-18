@@ -30,6 +30,9 @@ class WorkbenchServiceProvider extends ServiceProvider
             'gadya-cms.seo.site_name' => 'Springfield Parties',
             'gadya-cms.seo.title_suffix' => ' | Springfield Parties',
             'gadya-cms.forms.forms.contact.notify' => ['hello@example.test'],
+            'gadya-cms.blog.comments.enabled' => true,
+            'gadya-cms.blog.comments.notify' => ['hello@example.test'],
+            'gadya-cms.navigation.menus' => ['primary' => 'Main menu', 'footer' => 'Footer menu'],
             'livewire.inject_assets' => false,
             'livewire.csp_safe' => false,
         ]);

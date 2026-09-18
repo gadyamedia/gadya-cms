@@ -17,8 +17,16 @@ return [
             ['label' => 'School events', 'slug' => 'school-events'],
         ]],
         ['label' => 'Pricing', 'slug' => 'pricing'],
+        ['label' => 'What’s on', 'slug' => 'events-index', 'side' => 'end'],
         ['label' => 'Blog', 'slug' => 'blog-index', 'side' => 'end'],
         ['label' => 'Contact', 'slug' => 'contact', 'side' => 'end', 'highlight' => true],
+    ],
+    'menus' => [
+        'footer' => [
+            ['label' => 'Pricing', 'slug' => 'pricing'],
+            ['label' => 'School events', 'slug' => 'school-events'],
+            ['label' => 'Contact', 'slug' => 'contact'],
+        ],
     ],
     'theme' => ['primary' => '#0f766e', 'secondary' => '#f97316'],
     'pages' => [
@@ -72,6 +80,13 @@ return [
                     ['title' => 'The whole works', 'text' => '$650: castle, entertainer, face painter and party bags.'],
                 ]],
             ],
+        ],
+        'events-index' => [
+            'title' => 'What’s on',
+            'type' => 'content',
+            'heading' => 'What’s on',
+            'description' => 'Open days, camps and classes.',
+            'sections' => [],
         ],
         'blog-index' => [
             'title' => 'Blog',

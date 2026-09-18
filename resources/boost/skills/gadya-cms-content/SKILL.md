@@ -11,7 +11,7 @@ Use it when the person is an editor, writer or site owner asking how to change s
 
 ## The one rule
 
-**Nothing reaches visitors until Publish changes is pressed.** Saving in the admin, or editing on the page, changes the *draft*. Every screen that saves a draft has a green **Publish changes** button; the live editor's toolbar has **Publish**. If "I changed it and the site still shows the old one": they saved but did not publish. Every publish is kept under **History** and can be restored.
+**Nothing reaches visitors until Publish changes is pressed.** (And it asks *when* - leave the time blank for now, or set a time and the whole draft goes live then.) Saving in the admin, or editing on the page, changes the *draft*. Every screen that saves a draft has a green **Publish changes** button; the live editor's toolbar has **Publish**. If "I changed it and the site still shows the old one": they saved but did not publish. Every publish is kept under **History** and can be restored.
 
 ## Where things are
 
@@ -24,12 +24,22 @@ Use it when the person is an editor, writer or site owner asking how to change s
 | Colours and fonts | **Appearance → Look & feel** |
 | Places on the contact map | **Appearance → Locations** |
 | Write or edit an article | **Content → Articles**; **Write with AI** for a draft |
+| File articles under categories, or tag them | **Content → Categories & tags**, or from the article itself |
+| Read or approve comments | **Content → Comments** (nothing shows until you approve it) |
+| Add an open day, a camp, a class | **Content → What's on** |
+| See who is on the mailing list, or export it | **Content → Mailing list** |
+| Copy a page or an article to start the next one | **Duplicate**, on its row |
+| Get back a page you deleted | **Content → Pages**, the **Trash** filter |
 | Upload or organise photos | **Content → Photos** (folders, tags, "Describe" for alt text) |
 | Read what visitors sent | **Content → Enquiries** (opening one marks it read) |
 | See visitors, searches, page speed | **Dashboard** |
 | Forward an old web address | **Settings → Redirects** |
 | Invite someone | **Settings → Team** (they get an email link; no password is sent) |
 | Set up the AI writer | **Settings → AI** |
+| Close the site while you work on it | **Settings → Coming soon mode** |
+| Change the thank-you email a form sends | **Settings → Automatic replies** |
+| Find out who changed something | **Settings → Activity** |
+| Fix a link that goes nowhere | **Settings → Broken links** |
 | Connect Google Search Console / PageSpeed | **Settings → Search & speed** |
 | Show a draft to someone without an account | **Share a preview** on a page or article - a link that expires |
 
@@ -62,6 +72,8 @@ The writer sounds like whatever is written here, so be concrete:
 ## Photos
 
 - Upload once; the site makes the sizes it needs. Prefer landscape, at least 1600px wide.
+- **Keep this part in view** decides what stays in frame when a page crops the photo. If a face is being cut off, that is the setting.
+- **Describe with AI** writes the description by looking at the photo; correct it if it is wrong.
 - **Describe** every photo (what is in it, one sentence) - screen readers and image search read it.
 - A photo still on a page cannot be deleted; the message says where it is.
 
@@ -72,6 +84,11 @@ The writer sounds like whatever is written here, so be concrete:
 - One H1 per page (the heading); sections as H2; never skip a level.
 - Answer the reader's question in the first paragraph; assistants quote opening paragraphs.
 
+## Categories, tags and comments
+
+- A **category** is a shelf ("Party ideas"); keep them few. A **tag** is a word articles share; have as many as you like. Each gets a page of its own, and only categories with something in them are shown.
+- Comments wait for you. The email carries the whole comment, so you can judge it without opening the panel; **Show it** puts it under the article, **Spam** throws it away.
+
 ## When something looks wrong
 
 1. Did they publish? (See the one rule.)
@@ -79,6 +96,8 @@ The writer sounds like whatever is written here, so be concrete:
 3. Is someone else editing? The toolbar says who holds the lock; wait, or ask them to exit.
 4. Is the photo still processing? The photo library shows *processing* for a moment after upload.
 5. A preview link expired? They last three days; share a new one.
+6. Is the site in coming-soon mode? You can see it because you are signed in; a visitor cannot. **Settings → Coming soon mode**.
+7. Is a publish waiting for a time? The dashboard says so at the top.
 
 ## Numbers on the dashboard
 
@@ -87,3 +106,4 @@ The writer sounds like whatever is written here, so be concrete:
 - **In Google search** appears once Search Console is connected; it lags two days.
 - **Page speed** is Lighthouse on a phone; green is 90 or more.
 - **Ready for AI assistants** lists what would help assistants find and quote the site; each item names its fix.
+- **What people searched for here** - and especially what they searched for and did not find - is the clearest list of what the site is missing, in the visitor's own words.

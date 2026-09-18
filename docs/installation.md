@@ -83,6 +83,10 @@ GadyaCmsPlugin::make()
     ->redirects(false)    // no redirects table
     ->forms(false)        // no enquiries inbox
     ->search(false)       // no Search Console, PageSpeed or readiness cards
+    ->events(false)       // no diary or calendar feed
+    ->newsletter(false)   // no mailing list
+    ->profile(false)      // no profile page (you have your own)
+    ->unsavedChangesAlerts(false)
     ->navigationGroups(content: 'Website', appearance: 'Design');
 ```
 
@@ -96,7 +100,11 @@ In `routes/console.php`:
 Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');
 Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
 Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
+Schedule::command('gadya-cms:publish-due')->everyFiveMinutes();
+Schedule::command('gadya-cms:prune-trash')->daily();
 ```
+
+The full list is in [Running a site](operations.md).
 
 ## Queues
 
