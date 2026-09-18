@@ -7,7 +7,15 @@ The document stores the filename, never a URL, so a photo can be re-processed or
 - **Folders and tags** - a folder is a label on the row (nothing moves on disk); filter by it, or move several photos at once.
 - **Used on** - every page and article a photo appears on, from both the draft and the live document.
 - **Deleting** - a photo still in use is never deleted, singly or in bulk; the panel says where it is.
-- **Describe** - alt text, for screen readers and image search.
+- **Describe** - alt text, for screen readers and image search, and **Describe with AI**, which looks at the photograph and writes the first draft. A picture that is only decoration is given an empty description on purpose, which is the correct answer for a divider or a texture.
+- **Keep this part in view** - where a template that crops the photo should stay centred, chosen in words (top, left, middle) because that is how the complaint arrives. Render it with `@siteFocus`:
+
+```blade
+<img src="@siteImage($page['hero_image'], 1200)"
+     srcset="@siteSrcset($page['hero_image'])"
+     style="@siteFocus($page['hero_image'])"
+     alt="...">
+```
 
 Images already shipped with the site (`public/images/site`) are indexed as *legacy* photos by `gadya-cms:import-legacy-media` and never deleted from disk.
 

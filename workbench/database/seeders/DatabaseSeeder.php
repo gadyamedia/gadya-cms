@@ -3,11 +3,15 @@
 namespace Workbench\Database\Seeders;
 
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Models\Comment;
+use Gadya\Cms\Models\Event;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\PageView;
 use Gadya\Cms\Models\Post;
 use Gadya\Cms\Models\Redirect;
+use Gadya\Cms\Models\Subscriber;
+use Gadya\Cms\Models\Term;
 use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Database\Seeder;
@@ -39,7 +43,9 @@ class DatabaseSeeder extends Seeder
         app(PublishSiteContent::class)->handle(User::query()->first(), 'Demo site');
 
         $this->articles($siteId);
+        $this->events($siteId);
         $this->enquiries($siteId);
+        $this->subscribers($siteId);
         $this->traffic($siteId);
 
         Redirect::query()->updateOrCreate(['site_id' => $siteId, 'from_path' => '/parties'], ['to_path' => '/birthday-parties', 'hits' => 42, 'last_hit_at' => now()->subHours(3)]);
@@ -96,6 +102,42 @@ class DatabaseSeeder extends Seeder
         }
     }
 
+    private function events(?int $siteId): void
+    {
+        foreach ([
+            ['Summer open day', 'summer-open-day', now()->addWeeks(2)->setTime(10, 0), now()->addWeeks(2)->setTime(16, 0), false, 'Free, no need to book'],
+            ['Half term soft play camp', 'half-term-camp', now()->addMonth()->setTime(9, 30), now()->addMonth()->addDays(2)->setTime(15, 0), false, '£95 for the three days'],
+            ['Springfield summer fair', 'summer-fair', now()->addMonths(2)->startOfDay(), null, true, 'Free'],
+            ['Last winter’s party', 'last-winter', now()->subMonths(3)->setTime(14, 0), now()->subMonths(3)->setTime(17, 0), false, 'Free'],
+        ] as [$title, $slug, $starts, $ends, $allDay, $price]) {
+            Event::query()->updateOrCreate(['site_id' => $siteId, 'slug' => $slug], [
+                'title' => $title,
+                'summary' => 'Come along - bouncy castles, face painting and a very patient dinosaur.',
+                'body' => '<p>Everything we do, in one afternoon, with the kettle on for the grown-ups.</p>',
+                'image' => 'party-1.jpg',
+                'hero_alt' => 'Children at a party',
+                'starts_at' => $starts,
+                'ends_at' => $ends,
+                'all_day' => $allDay,
+                'location' => '12 Evergreen Terrace, Springfield',
+                'price' => $price,
+                'booking_url' => 'https://example.test/book',
+                'status' => Event::STATUS_PUBLISHED,
+            ]);
+        }
+    }
+
+    private function subscribers(?int $siteId): void
+    {
+        foreach (['pat@example.com' => 'Pat Morgan', 'sam@example.com' => 'Sam Lee', 'jo@example.com' => null] as $email => $name) {
+            Subscriber::query()->updateOrCreate(['site_id' => $siteId, 'email' => $email], [
+                'name' => $name,
+                'source' => '/contact',
+                'status' => Subscriber::SUBSCRIBED,
+            ]);
+        }
+    }
+
     private function articles(?int $siteId): void
     {
         $body = fn (string $topic): string => "<h2>Why {$topic} matters</h2><p>".Str::repeat('Every party needs a plan, and this is the part most people skip. ', 12)."</p><h2>What we do differently</h2><p>See our <a href=\"/pricing\">pricing</a> and <a href=\"/birthday-parties\">birthday parties</a>.</p><h2>Is {$topic} worth it?</h2><p>Yes. ".Str::repeat('Here is why. ', 40).'</p>';
@@ -120,6 +162,45 @@ class DatabaseSeeder extends Seeder
                 'status' => $status,
                 'published_at' => $date,
                 'source' => $slug === 'summer-schedule' ? 'ai' : 'manual',
+            ]);
+        }
+
+        /* Two shelves and a few words they share, so the archives have something on them. */
+        $categories = collect(['Party ideas', 'Safety', 'News'])->mapWithKeys(fn (string $name): array => [
+            $name => Term::query()->updateOrCreate(['site_id' => $siteId, 'taxonomy' => Term::CATEGORY, 'slug' => Str::slug($name)], ['name' => $name]),
+        ]);
+
+        $tags = collect(['bouncy castles', 'face painting', 'planning'])->mapWithKeys(fn (string $name): array => [
+            $name => Term::query()->updateOrCreate(['site_id' => $siteId, 'taxonomy' => Term::TAG, 'slug' => Str::slug($name)], ['name' => $name]),
+        ]);
+
+        $filing = [
+            'plan-a-birthday-party' => ['Party ideas', 'planning'],
+            'bouncy-castle-safety' => ['Safety', 'bouncy castles'],
+            'face-painting-ideas' => ['Party ideas', 'face painting'],
+        ];
+
+        foreach ($filing as $slug => $names) {
+            $post = Post::query()->where('site_id', $siteId)->where('slug', $slug)->first();
+
+            $post?->terms()->sync(collect($names)->map(fn (string $name) => ($categories[$name] ?? $tags[$name])->getKey())->all());
+        }
+
+        /* A comment waiting, and one already showing. */
+        $post = Post::query()->where('site_id', $siteId)->where('slug', 'plan-a-birthday-party')->first();
+
+        if ($post !== null) {
+            Comment::query()->updateOrCreate(['site_id' => $siteId, 'post_id' => $post->getKey(), 'author_name' => 'Jo Rivers'], [
+                'author_email' => 'jo@example.com',
+                'body' => 'The six-week rule saved us. Booked in March for a July party and got the castle we wanted.',
+                'status' => Comment::APPROVED,
+                'approved_at' => now()->subDays(4),
+            ]);
+
+            Comment::query()->updateOrCreate(['site_id' => $siteId, 'post_id' => $post->getKey(), 'author_name' => 'Alex Doyle'], [
+                'author_email' => 'alex@example.com',
+                'body' => 'Do you do anything for teenagers, or is it all little ones?',
+                'status' => Comment::PENDING,
             ]);
         }
     }

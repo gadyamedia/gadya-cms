@@ -35,6 +35,49 @@ $posts = $blog->live();            // paginated, published, dated in the past
 $post = $blog->findLive($slug);    // or null
 ```
 
+## Categories and tags
+
+An article is filed under categories - the few shelves it sits on - and tagged with as many words as it shares with others. Both are managed in **Content → Categories & tags**, or added from the article itself while writing.
+
+Each gets a page of its own: `/blog/category/{slug}` and `/blog/tag/{slug}`, listing the live articles filed there, with the term's own name and description at the top so it reads as a page rather than a filtered list. Only categories with something in them are offered on the blog index.
+
+At the foot of every article, **Read next** suggests the articles sharing the most categories and tags, falling back to the most recent.
+
+```php
+'blog' => [
+    'category_prefix' => 'category',
+    'tag_prefix' => 'tag',
+    'related' => 3,
+],
+```
+
+```php
+$blog->inTerm($term);            // live articles on that shelf, paginated
+$blog->related($post, 3);        // what to read next
+$blog->termsInUse();             // categories with at least one live article
+```
+
+## Comments
+
+Off unless a site wants them, because a comment box nobody reads is worse than none.
+
+```php
+'blog' => [
+    'comments' => [
+        'enabled' => true,
+        'moderate' => true,                    // nothing appears until approved
+        'notify' => ['hello@example.com'],
+        'pending_message' => 'Thank you. Your comment will appear once it has been read.',
+    ],
+],
+```
+
+The article template renders the approved comments and the form; a honeypot and the forms rate limiter take care of the obvious spam; and the email carries the whole comment, so it can be judged without opening the panel. **Content → Comments** shows what is waiting, with a badge, and lets it through or marks it spam, singly or in bulk.
+
+## Duplicating an article
+
+**Duplicate** on the articles list makes a draft copy with `(copy)` on the title, its own address, and the same categories and tags - the fastest way to write the next in a series.
+
 ## Setting up AI
 
 **Settings → AI** (administrators only):
@@ -72,4 +115,4 @@ ArticleWriter::fake([[
 ArticleWriter::assertPrompted(fn ($prompt) => str_contains($prompt->prompt, 'birthday'));
 ```
 
-`MetaWriter` and `ConnectionCheck` fake the same way. The settings still have to be saved first, because the SDK resolves the provider by the name the package registers.
+`MetaWriter`, `AltTextWriter` and `ConnectionCheck` fake the same way. The settings still have to be saved first, because the SDK resolves the provider by the name the package registers.

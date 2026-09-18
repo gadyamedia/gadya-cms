@@ -33,6 +33,9 @@ class ActivityResource extends Resource
 
     protected static ?string $pluralModelLabel = 'activity';
 
+    /* The model is called AuditLog; the client is looking for Activity. */
+    protected static ?string $slug = 'activity';
+
     protected static ?int $navigationSort = 5;
 
     public static function table(Table $table): Table

@@ -20,15 +20,18 @@ It also counts its own visitors without Google or a cookie banner, keeps what pe
 | **Pages** | One row each, with a type, a status, sections, a photo, a search snippet, and dates to appear and disappear. |
 | **Live editor** | `@editable` marks an element; the client edits it on the page. Text inline, prose in a side panel, photos from the library. One editor at a time, with a lock. |
 | **Draft and publish** | Every change is a draft until published. Preview links show a draft to someone with no account. Revisions restore any publish. |
-| **Photos** | Uploads resized, stripped of metadata, converted to WebP with responsive variants for `srcset`, optimised, with folders, tags, alt text, and "used on". Never deletable while on a page. |
-| **Articles** | A writing screen with a findability score on every save. Scheduled publishing. Public routes in your own layout, or read them yourself. |
+| **Photos** | Uploads resized, stripped of metadata, converted to WebP with responsive variants for `srcset`, optimised, with folders, tags, a focal point, alt text written by looking at the photo, and "used on". Never deletable while on a page. |
+| **Articles** | A writing screen with a findability score on every save. Categories, tags and their own archive pages, related articles, comments with a moderation queue, scheduled publishing. |
 | **Writing with AI** | Provider, model and key chosen in the panel, stored encrypted. A voice for the business. Whole drafts, rewrites, and search snippets from the page's own words. Any provider Laravel's AI SDK speaks. |
 | **SEO** | `@cmsSeo` renders every head tag with sensible fallbacks. A generated sitemap and robots file. A redirects table the client edits, with hit counts. |
-| **Forms** | Configured fields, a honeypot, an email with reply-to, an inbox in the panel with CSV download. |
+| **Forms** | Configured fields, a honeypot, an email with reply-to, an automatic reply written in the panel, an inbox with CSV download, and a mailing list that exports to any service. |
 | **Analytics** | First-party, no cookie, no address stored. Live panel over a websocket. CSV download, a weekly email. |
 | **Team** | Invitations by single-use link. Roles with abilities: a contributor writes articles but cannot publish a page. Nobody can remove themselves; the last administrator stays. |
 | **Search & speed** | Search Console queries and landing pages, Lighthouse scores from PageSpeed Insights, and a readiness score for AI assistants - `llms.txt`, AI-crawler rules, JSON-LD, Markdown on request. |
 | **Moving a site** | One zip with everything, photos included; import in place or replace. |
+| **What's on** | Events that sort themselves by date, stay listed until they end, and publish a calendar a phone can subscribe to. |
+| **Search** | The site's own search box - and a count of what people searched for and did not find. |
+| **Running it** | A trash with a thirty-day undo, duplicate anything, an activity log, a publish held until Friday at nine, coming-soon mode with a password link, and a broken-link list fixed with one click. |
 | **Look & feel** | Brand colours, a curated font list, the site's own logo in the panel. |
 
 Every one of those is a switch on the plugin, so a project takes only what it wants.
@@ -95,6 +98,8 @@ A whole sample site on http://127.0.0.1:8000, admin at `/admin` (admin@example.c
 - [Roles, abilities and Everywhere](docs/roles-and-globals.md)
 - [Search Console, page speed and AI readiness](docs/search-and-readiness.md)
 - [Moving a site, and responsive photos](docs/transfer.md)
+- [Events, search and the mailing list](docs/events-and-search.md)
+- [Running a site: trash, activity, scheduling, coming soon, broken links](docs/operations.md)
 - [The demo site, and scaffolding a template](docs/demo.md)
 - [Commands, configuration and deploying](docs/commands.md)
 - [Upgrading](docs/upgrading.md)
@@ -111,6 +116,9 @@ GadyaCmsPlugin::make()
     ->redirects(false)
     ->forms(false)
     ->search(false)
+    ->events(false)
+    ->newsletter(false)
+    ->profile(false)
     ->navigationGroups(content: 'Website', appearance: 'Design');
 ```
 

@@ -47,6 +47,14 @@ A request with `Accept: application/json` gets `{"ok": true, "message": "..."}` 
 
 Submissions are throttled to six a minute per address (`gadya-cms-forms` rate limiter).
 
+## Automatic replies
+
+**Settings → Automatic replies** holds the thank-you email each form sends back, in the client's own words. `{{ name }}`, `{{ business }}` and the name of any field are replaced; a blank line starts a new paragraph. Only sent when the form collected an email address.
+
+## The mailing list
+
+A sign-up box is not a contact form - it needs dedupe, an unsubscribe link and an export. See [Events, search and the mailing list](events-and-search.md).
+
 ## The inbox
 
 Opening an enquiry marks it read; the navigation badge counts the rest. Enquiries can be archived, deleted, and downloaded as CSV with one column per field.
