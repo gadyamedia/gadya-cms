@@ -53,6 +53,10 @@ class GadyaCmsPlugin implements Plugin
 
     protected bool $hasEvents = true;
 
+    protected bool $hasProfile = true;
+
+    protected bool $warnsAboutUnsavedChanges = true;
+
     protected ?string $contentNavigationGroup = 'Content';
 
     protected ?string $appearanceNavigationGroup = 'Appearance';
@@ -176,6 +180,39 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasSearch;
     }
 
+    /**
+     * Somewhere for a person to change their own name and password,
+     * without an administrator having to do it for them.
+     */
+    public function profile(bool $condition = true): static
+    {
+        $this->hasProfile = $condition;
+
+        return $this;
+    }
+
+    public function hasProfile(): bool
+    {
+        return $this->hasProfile;
+    }
+
+    /**
+     * Ask before leaving a screen with unsaved edits on it. The whole
+     * point of a draft is that work is not lost, and a closed tab is the
+     * one way it still could be.
+     */
+    public function unsavedChangesAlerts(bool $condition = true): static
+    {
+        $this->warnsAboutUnsavedChanges = $condition;
+
+        return $this;
+    }
+
+    public function warnsAboutUnsavedChanges(): bool
+    {
+        return $this->warnsAboutUnsavedChanges;
+    }
+
     /** Open days, camps and classes, with a calendar file for them. */
     public function events(bool $condition = true): static
     {
@@ -263,6 +300,14 @@ class GadyaCmsPlugin implements Plugin
         $panel
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => Blade::render('@livewireStyles'))
             ->renderHook(PanelsRenderHook::BODY_END, fn (): string => static::livewireScripts());
+
+        if ($this->warnsAboutUnsavedChanges()) {
+            $panel->unsavedChangesAlerts();
+        }
+
+        if ($this->hasProfile()) {
+            $panel->profile(isSimple: false);
+        }
 
         $panel
             ->resources(array_filter([

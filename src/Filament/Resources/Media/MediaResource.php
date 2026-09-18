@@ -7,6 +7,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -18,6 +19,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
+use Gadya\Cms\Ai\Agents\AltTextWriter;
+use Gadya\Cms\Ai\AiSettings;
+use Gadya\Cms\Ai\Prompter;
 use Gadya\Cms\Content\MediaUsage;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
@@ -28,6 +32,8 @@ use Gadya\Cms\Support\ImageCapabilities;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Laravel\Ai\Files\Image;
+use Throwable;
 use UnitEnum;
 
 class MediaResource extends Resource
@@ -56,6 +62,12 @@ class MediaResource extends Resource
                 ->label('Description for screen readers')
                 ->maxLength(255)
                 ->helperText('What the photo shows, for visitors who cannot see it.'),
+            Select::make('focus')
+                ->label('Keep this part in view')
+                ->options(fn (): array => array_map(fn (array $preset): string => $preset['label'], Media::focusPresets()))
+                ->default('centre')
+                ->native(false)
+                ->helperText('When a page crops the photo to fit, this part stays in the middle.'),
             static::folderInput(),
             TagsInput::make('tags')
                 ->placeholder('Add a tag')
@@ -100,7 +112,21 @@ class MediaResource extends Resource
                 static::uploadAction(),
             ])
             ->recordActions([
-                EditAction::make()->label('Describe'),
+                static::describeWithAiAction(),
+                EditAction::make()
+                    ->label('Describe')
+                    ->fillForm(fn (Media $record): array => [...$record->attributesToArray(), 'focus' => $record->focusPreset()])
+                    ->using(function (Media $record, array $data): Media {
+                        $preset = Media::focusPresets()[$data['focus'] ?? 'centre'] ?? Media::focusPresets()['centre'];
+
+                        $record->update([
+                            ...$data,
+                            'focal_x' => $preset['x'],
+                            'focal_y' => $preset['y'],
+                        ]);
+
+                        return $record;
+                    }),
                 static::deleteAction(),
             ])
             ->toolbarActions([
@@ -138,6 +164,47 @@ class MediaResource extends Resource
                     ->success()
                     ->title('Uploaded')
                     ->body('Your photos are being prepared and will appear here in a moment.')
+                    ->send();
+            });
+    }
+
+    /**
+     * The first draft of a photo's description, written by looking at it.
+     * A description a person then corrects is worth more than the empty
+     * box it would otherwise have been.
+     */
+    protected static function describeWithAiAction(): Action
+    {
+        return Action::make('describeWithAi')
+            ->label('Describe with AI')
+            ->icon(Heroicon::OutlinedSparkles)
+            ->color('info')
+            ->visible(fn (Media $record): bool => GadyaCmsPlugin::get()->hasAi()
+                && $record->isReady()
+                && app(AiSettings::class)->isConfigured())
+            ->action(function (Media $record, Prompter $prompter): void {
+                try {
+                    $contents = Storage::disk($record->disk)->get($record->thumbnail_path ?: $record->path);
+
+                    $description = $prompter->prompt(
+                        app(AltTextWriter::class),
+                        'Write the alt text for this photograph.',
+                        [Image::fromBase64(base64_encode((string) $contents), $record->mime_type ?: 'image/webp')],
+                    );
+                } catch (Throwable $exception) {
+                    Notification::make()->danger()->title('Could not describe it')->body(mb_substr($exception->getMessage(), 0, 300))->send();
+
+                    return;
+                }
+
+                $record->update(['alt_text' => $description['decorative'] ? '' : (string) $description['alt']]);
+
+                Notification::make()
+                    ->success()
+                    ->title($description['decorative'] ? 'Left blank on purpose' : 'Described')
+                    ->body($description['decorative']
+                        ? 'It reads as decoration, so its description is empty - which is the right answer for a divider or a texture.'
+                        : $description['alt'])
                     ->send();
             });
     }

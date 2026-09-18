@@ -38,6 +38,21 @@ class SiteImage
     }
 
     /**
+     * Where a cropped photo should stay centred, as a CSS declaration:
+     *
+     *     <img style="@siteFocus($page['hero_image'])" ...>
+     *
+     * A photo nobody has framed answers with the middle, which is what a
+     * browser would have done anyway.
+     */
+    public function focus(string $reference): string
+    {
+        $item = $this->library()->get($reference);
+
+        return 'object-position: '.($item?->focalPosition() ?? '50% 50%').';';
+    }
+
+    /**
      * A `srcset` attribute value: every variant plus the original, each
      * with its width, so the browser picks the one its layout needs.
      * A photo with no variants answers with the original alone, which is

@@ -57,69 +57,20 @@ class Navigation extends Page
     public function mount(SiteContentRepository $repository, NavigationTree $tree): void
     {
         $document = $repository->draft();
+        $state = [];
 
-        $this->form->fill([
-            'nav' => $tree->fromDocument($document['nav'] ?? [], $tree->locationsParentSlug($document)),
-        ]);
+        foreach (array_keys(NavigationTree::menus()) as $key) {
+            data_set($state, static::statePath($key), $tree->forMenu($document, $key));
+        }
+
+        $this->form->fill($state);
     }
 
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Form::make([
-                    Section::make('Menu items')
-                        ->description('Drag to reorder. A menu item can hold sub items, which appear as a drop-down on the site. Anything you hide in Pages drops out of the menu on its own.')
-                        ->schema([
-                            Repeater::make('nav')
-                                ->hiddenLabel()
-                                ->schema([
-                                    TextInput::make('label')
-                                        ->required()
-                                        ->maxLength(60),
-                                    $this->pageSelect()
-                                        ->helperText('Leave empty for a heading that only opens its sub items.')
-                                        ->nullable(),
-                                    Select::make('side')
-                                        ->label('Side of the header')
-                                        ->options([
-                                            NavigationTree::SIDE_START => 'Left of the logo',
-                                            NavigationTree::SIDE_END => 'Right of the logo',
-                                        ])
-                                        /*
-                                         * Not required: an item that arrives without
-                                         * a side is placed on the left when it is
-                                         * saved, rather than refusing the save over
-                                         * something the client never chose.
-                                         */
-                                        ->default(NavigationTree::SIDE_START),
-                                    Toggle::make('highlight')
-                                        ->label('Show as a button')
-                                        ->helperText('Draws the eye, for the one thing you most want clicked.'),
-                                    Repeater::make('children')
-                                        ->label('Sub items')
-                                        ->schema([
-                                            TextInput::make('label')
-                                                ->required()
-                                                ->maxLength(60),
-                                            $this->pageSelect()->required(),
-                                        ])
-                                        ->columns(2)
-                                        ->reorderable()
-                                        ->collapsed()
-                                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                                        ->addActionLabel('Add a sub item')
-                                        ->columnSpanFull(),
-                                ])
-                                ->columns(2)
-                                ->reorderable()
-                                ->collapsed()
-                                ->cloneable()
-                                ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
-                                ->addActionLabel('Add a menu item')
-                                ->columnSpanFull(),
-                        ]),
-                ])
+                Form::make($this->menuSections())
                     ->livewireSubmitHandler('save')
                     ->footer([
                         Actions::make([
@@ -130,15 +81,109 @@ class Navigation extends Page
             ->statePath('data');
     }
 
+    /**
+     * One section per menu the site has. With the single menu most sites
+     * have, this is the screen it always was.
+     *
+     * @return list<Section>
+     */
+    private function menuSections(): array
+    {
+        $sections = [];
+        $first = true;
+
+        foreach (NavigationTree::menus() as $key => $label) {
+            $sections[] = Section::make($label)
+                ->description($first
+                    ? 'Drag to reorder. A menu item can hold sub items, which appear as a drop-down on the site. Anything you hide in Pages drops out of the menu on its own.'
+                    : 'The same idea, for wherever your templates put this menu.')
+                ->collapsible(! $first)
+                ->collapsed(! $first)
+                ->schema([$this->menuRepeater($key)]);
+
+            $first = false;
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Where a menu sits in the form. The main one keeps the name it has
+     * always had, so an application that fills this form in a test of its
+     * own is not broken by the arrival of a second menu.
+     */
+    public static function statePath(string $key): string
+    {
+        return $key === NavigationTree::PRIMARY ? 'nav' : "menus.{$key}";
+    }
+
+    private function menuRepeater(string $key): Repeater
+    {
+        return Repeater::make(static::statePath($key))
+            ->hiddenLabel()
+            ->schema([
+                TextInput::make('label')
+                    ->required()
+                    ->maxLength(60),
+                $this->pageSelect()
+                    ->helperText('Leave empty for a heading that only opens its sub items.')
+                    ->nullable(),
+                Select::make('side')
+                    ->label('Side of the header')
+                    ->options([
+                        NavigationTree::SIDE_START => 'Left of the logo',
+                        NavigationTree::SIDE_END => 'Right of the logo',
+                    ])
+                    /*
+                                         * Not required: an item that arrives without
+                                         * a side is placed on the left when it is
+                                         * saved, rather than refusing the save over
+                                         * something the client never chose.
+                                         */
+                    ->default(NavigationTree::SIDE_START),
+                Toggle::make('highlight')
+                    ->label('Show as a button')
+                    ->helperText('Draws the eye, for the one thing you most want clicked.'),
+                Repeater::make('children')
+                    ->label('Sub items')
+                    ->schema([
+                        TextInput::make('label')
+                            ->required()
+                            ->maxLength(60),
+                        $this->pageSelect()->required(),
+                    ])
+                    ->columns(2)
+                    ->reorderable()
+                    ->collapsed()
+                    ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+                    ->addActionLabel('Add a sub item')
+                    ->columnSpanFull(),
+            ])
+            ->columns(2)
+            ->reorderable()
+            ->collapsed()
+            ->cloneable()
+            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null)
+            ->addActionLabel('Add a menu item')
+            ->columnSpanFull();
+    }
+
     public function save(SiteContentRepository $repository): void
     {
         $data = $this->form->getState();
         $document = $repository->draft();
 
-        $repository->saveDraft([
-            ...$document,
-            'nav' => $this->clean($data['nav'] ?? [], $document),
-        ]);
+        foreach (array_keys(NavigationTree::menus()) as $key) {
+            $items = $this->clean((array) data_get($data, static::statePath($key), []), $document);
+
+            if ($key === NavigationTree::PRIMARY) {
+                $document['nav'] = $items;
+            } else {
+                $document['menus'][$key] = $items;
+            }
+        }
+
+        $repository->saveDraft($document);
 
         Notification::make()->success()->title('Saved to your draft')->send();
     }

@@ -171,6 +171,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     private function registerBladeDirectives(): void
     {
         Blade::directive('siteImage', fn (string $expression): string => "<?php echo e(app(\Gadya\Cms\Content\SiteImage::class)->url({$expression})); ?>");
+        Blade::directive('siteFocus', fn (string $expression): string => "<?php echo e(app(\\Gadya\\Cms\\Content\\SiteImage::class)->focus({$expression})); ?>");
         Blade::directive('siteSrcset', fn (string $expression): string => "<?php echo e(app(\\Gadya\\Cms\\Content\\SiteImage::class)->srcset({$expression})); ?>");
         Blade::directive('siteThumbnail', fn (string $expression): string => "<?php echo e(app(\Gadya\Cms\Content\SiteImage::class)->thumbnailUrl({$expression})); ?>");
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");

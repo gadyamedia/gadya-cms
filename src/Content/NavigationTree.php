@@ -14,9 +14,41 @@ namespace Gadya\Cms\Content;
  */
 class NavigationTree
 {
+    public const PRIMARY = 'primary';
+
     public const SIDE_START = 'start';
 
     public const SIDE_END = 'end';
+
+    /**
+     * The menus a site has, by key. A site that never asked for more than
+     * one has the one, which is the `nav` it always had.
+     *
+     * @return array<string, string>
+     */
+    public static function menus(): array
+    {
+        $menus = (array) config('gadya-cms.navigation.menus', []);
+        $menus = array_filter($menus, 'is_string');
+
+        return $menus === [] ? [self::PRIMARY => 'Main menu'] : $menus;
+    }
+
+    /**
+     * Where a menu lives in the document: the main one is `nav`, as it
+     * always was, and the rest sit under `menus`.
+     *
+     * @param  array<string, mixed>  $document
+     * @return list<array<string, mixed>>
+     */
+    public function forMenu(array $document, string $key = self::PRIMARY): array
+    {
+        $items = $key === self::PRIMARY
+            ? ($document['nav'] ?? [])
+            : ($document['menus'][$key] ?? []);
+
+        return $this->fromDocument(is_array($items) ? $items : [], $this->locationsParentSlug($document));
+    }
 
     /**
      * @param  array<array-key, mixed>  $nav

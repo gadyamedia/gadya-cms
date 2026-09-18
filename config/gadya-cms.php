@@ -123,6 +123,16 @@ return [
      */
     'navigation' => [
         /*
+         * The menus this site has. The first is the header menu and lives
+         * in the document as `nav`, where it always did; any others are
+         * kept under `menus` and read with
+         * NavigationTree::forMenu($document, 'footer').
+         */
+        'menus' => [
+            'primary' => 'Main menu',
+        ],
+
+        /*
          * The page type whose entries in the `locations` map are nested
          * under it in the menu. Null for a site with no such page.
          */

@@ -14,10 +14,13 @@ class Prompter
 {
     public function __construct(private readonly AiSettings $settings) {}
 
-    public function prompt(Agent $agent, string $prompt): AgentResponse
+    /**
+     * @param  list<mixed>  $attachments  Files the model should look at, for an agent that can see.
+     */
+    public function prompt(Agent $agent, string $prompt, array $attachments = []): AgentResponse
     {
         $provider = $this->settings->register();
 
-        return $agent->prompt($prompt, provider: $provider, model: $this->settings->model());
+        return $agent->prompt($prompt, $attachments, provider: $provider, model: $this->settings->model());
     }
 }
