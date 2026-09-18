@@ -17,7 +17,9 @@ use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Revision;
 use Gadya\Cms\Notifications\AnalyticsDigest;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Services\SchedulePublish;
 use Gadya\Cms\Support\ImageCapabilities;
+use Gadya\Cms\Support\Maintenance;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
@@ -154,6 +156,16 @@ class Dashboard extends Page
 
         if ($missing !== []) {
             $notices[] = 'Photo optimisation is off: '.implode(', ', $missing).' not installed on the server. Uploads still work, they are just larger than they need to be.';
+        }
+
+        $schedule = app(SchedulePublish::class);
+
+        if ($schedule->isPending()) {
+            $notices[] = 'Everything in your draft goes live on '.$schedule->at()?->format('l j F, g:ia').'. Publish again to change or cancel that.';
+        }
+
+        if (app(Maintenance::class)->isOn()) {
+            $notices[] = 'The site is closed to visitors: they see your coming-soon notice instead of the site. You can still see it as normal.';
         }
 
         if (app(AnalyticsReport::class)->for(1)->headline()['views'] === 0) {

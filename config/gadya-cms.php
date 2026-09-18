@@ -42,6 +42,32 @@ return [
     ],
 
     /*
+     * Who changed what, and when. Kept for as long as anyone is likely to
+     * ask, then pruned by `gadya-cms:prune-activity`.
+     */
+    'activity' => [
+        'enabled' => true,
+        'keep_days' => 180,
+    ],
+
+    /*
+     * Addresses that do not work, found either because a visitor asked for
+     * one or because `gadya-cms:check-links` found the site linking to it.
+     */
+    'broken_links' => [
+        'record' => true,
+        'keep_days' => 180,
+    ],
+
+    /*
+     * Paths the coming-soon notice never covers, on top of the panel, the
+     * editor and the assets they need.
+     */
+    'maintenance' => [
+        'allow_prefixes' => [],
+    ],
+
+    /*
      * How long a deleted page or article stays in the trash before
      * `gadya-cms:prune-trash` empties it for good.
      */

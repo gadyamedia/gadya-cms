@@ -12,11 +12,15 @@ use Gadya\Cms\Filament\Pages\AiSettings;
 use Gadya\Cms\Filament\Pages\ArticleGenerator;
 use Gadya\Cms\Filament\Pages\Blocks;
 use Gadya\Cms\Filament\Pages\Dashboard;
+use Gadya\Cms\Filament\Pages\Emails;
 use Gadya\Cms\Filament\Pages\Globals;
 use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\SearchSettings;
 use Gadya\Cms\Filament\Pages\SiteDetails;
+use Gadya\Cms\Filament\Pages\SiteStatus;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
+use Gadya\Cms\Filament\Resources\Activity\ActivityResource;
+use Gadya\Cms\Filament\Resources\BrokenLinks\BrokenLinkResource;
 use Gadya\Cms\Filament\Resources\Comments\CommentResource;
 use Gadya\Cms\Filament\Resources\Events\EventResource;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
@@ -320,6 +324,8 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasBlog() ? CommentResource::class : null,
                 $this->hasEvents() ? EventResource::class : null,
                 $this->hasRedirects() ? RedirectResource::class : null,
+                $this->hasRedirects() ? BrokenLinkResource::class : null,
+                config('gadya-cms.activity.enabled', true) ? ActivityResource::class : null,
                 $this->hasForms() ? SubmissionResource::class : null,
                 $this->hasNewsletter() ? SubscriberResource::class : null,
             ]))
@@ -332,6 +338,8 @@ class GadyaCmsPlugin implements Plugin
                 Navigation::class,
                 $this->hasAi() ? AiSettings::class : null,
                 $this->hasSearch() ? SearchSettings::class : null,
+                SiteStatus::class,
+                $this->hasForms() ? Emails::class : null,
                 $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
             ]));
 

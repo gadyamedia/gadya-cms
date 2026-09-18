@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Services;
 
+use Gadya\Cms\Activity\Activity;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Revision;
@@ -52,6 +53,8 @@ class PublishSiteContent
             ]);
 
             $this->pruneOldRevisions->handle();
+
+            app(Activity::class)->record('site.published', $label);
 
             DB::afterCommit(fn () => $this->repository->flushPublishedCache());
 

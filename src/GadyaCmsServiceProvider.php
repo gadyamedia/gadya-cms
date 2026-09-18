@@ -7,6 +7,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\AgentReadyCommand;
+use Gadya\Cms\Console\CheckLinksCommand;
 use Gadya\Cms\Console\CheckPageSpeedCommand;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
@@ -19,8 +20,10 @@ use Gadya\Cms\Console\InstallCommand;
 use Gadya\Cms\Console\MakeEditorCommand;
 use Gadya\Cms\Console\MakeMediaVariantsCommand;
 use Gadya\Cms\Console\MakePageTemplateCommand;
+use Gadya\Cms\Console\PruneActivityCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Console\PruneTrashCommand;
+use Gadya\Cms\Console\PublishDueCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
@@ -28,21 +31,31 @@ use Gadya\Cms\Content\SlugPagePaths;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
+use Gadya\Cms\Http\Middleware\ComingSoon;
 use Gadya\Cms\Http\Middleware\HandleRedirects;
 use Gadya\Cms\Http\Middleware\NegotiateMarkdown;
 use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
+use Gadya\Cms\Http\Middleware\RecordMissingUrls;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
+use Gadya\Cms\Models\Event as EventModel;
+use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\Page;
+use Gadya\Cms\Models\Post;
 use Gadya\Cms\Models\Redirect;
 use Gadya\Cms\Models\Setting;
+use Gadya\Cms\Models\Subscriber;
+use Gadya\Cms\Models\Term;
 use Gadya\Cms\Observers\FlushRedirectMap;
 use Gadya\Cms\Observers\InvalidatePublishedDocument;
+use Gadya\Cms\Observers\RecordActivity;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Broadcast;
@@ -86,6 +99,9 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 CheckPageSpeedCommand::class,
                 AgentReadyCommand::class,
                 PruneTrashCommand::class,
+                PruneActivityCommand::class,
+                PublishDueCommand::class,
+                CheckLinksCommand::class,
             ]);
     }
 
@@ -139,6 +155,15 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         Page::observe(InvalidatePublishedDocument::class);
         Redirect::observe(FlushRedirectMap::class);
+
+        /*
+         * Every change a person makes to something they can see, noted.
+         */
+        if (config('gadya-cms.activity.enabled', true)) {
+            foreach ([Page::class, Post::class, Media::class, EventModel::class, Term::class, Redirect::class, Subscriber::class] as $model) {
+                $model::observe(RecordActivity::class);
+            }
+        }
         Setting::observe(InvalidatePublishedDocument::class);
 
         Livewire::component('gadya-cms.media-picker', MediaPicker::class);
@@ -158,6 +183,14 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          * first.
          */
         $this->app->make(Kernel::class)->pushMiddleware(HandleRedirects::class);
+        /*
+         * Read and written by global middleware, outside the web group, so
+         * it is never encrypted and must be excused from the decryption
+         * that would otherwise reject it.
+         */
+        EncryptCookies::except(Maintenance::COOKIE);
+        $this->app->make(Kernel::class)->pushMiddleware(ComingSoon::class);
+        $this->app->make(Kernel::class)->pushMiddleware(RecordMissingUrls::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);

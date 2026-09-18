@@ -6,6 +6,7 @@ use Gadya\Cms\Analytics\VisitorFingerprint;
 use Gadya\Cms\Analytics\VisitorGeo;
 use Gadya\Cms\Models\AnalyticsEvent;
 use Gadya\Cms\Models\FormSubmission;
+use Gadya\Cms\Notifications\FormAutoReply;
 use Gadya\Cms\Notifications\FormSubmitted;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Http\Request;
@@ -42,6 +43,17 @@ class StoreFormSubmission
                 'metadata' => ['form' => $form->name],
                 'created_at' => now(),
             ]), report: false);
+        }
+
+        /*
+         * The reply to whoever wrote in, if the client has written one and
+         * the form collected an address to send it to.
+         */
+        $reply = app(AutoReplies::class)->for($form->name);
+        $replyTo = $kept['email'] ?? null;
+
+        if ($reply !== null && is_string($replyTo) && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+            rescue(fn () => Notification::route('mail', $replyTo)->notify(new FormAutoReply($submission, $reply)), report: true);
         }
 
         if ($form->notify !== []) {
