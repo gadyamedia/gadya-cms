@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Filament\Resources\Posts;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ViewField;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
@@ -24,6 +26,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Blog\ArticleRequest;
+use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Posts\Pages\CreatePost;
 use Gadya\Cms\Filament\Resources\Posts\Pages\EditPost;
@@ -31,6 +34,8 @@ use Gadya\Cms\Filament\Resources\Posts\Pages\ListPosts;
 use Gadya\Cms\Filament\Schemas\MediaSelect;
 use Gadya\Cms\Filament\Schemas\SeoSection;
 use Gadya\Cms\Models\Post;
+use Gadya\Cms\Models\Term;
+use Gadya\Cms\Support\SiteContext;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -196,8 +201,15 @@ class PostResource extends Resource
                                 ->helperText(fn (?string $state): string => strlen((string) $state).' of 140–160 characters'),
                         ])->collapsible(),
 
-                    Section::make('Aim')
-                        ->icon(Heroicon::OutlinedFlag)
+                    Section::make('Filed under')
+                        ->icon(Heroicon::OutlinedTag)
+                        ->description('Categories are shelves, tags are labels. Each gets a page of its own.')
+                        ->schema([
+                            static::termSelect('category_ids', 'Categories', Term::CATEGORY),
+                            static::termSelect('tag_ids', 'Tags', Term::TAG),
+                        ])->collapsible(),
+
+                    Section::make('Aim')->icon(Heroicon::OutlinedFlag)
                         ->schema([
                             TextInput::make('target_keyword')->label('Search phrase')->maxLength(120),
                             TextInput::make('target_location')->label('Place')->maxLength(120),
@@ -225,6 +237,11 @@ class PostResource extends Resource
                         'Scheduled' => 'info',
                         default => 'gray',
                     }),
+                TextColumn::make('categories.name')
+                    ->label('Filed under')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
                 TextColumn::make('source')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => $state === Post::SOURCE_AI ? 'AI draft' : 'Written')
@@ -238,12 +255,89 @@ class PostResource extends Resource
                     Post::STATUS_DRAFT => 'Draft',
                     Post::STATUS_PUBLISHED => 'Published',
                 ]),
+                SelectFilter::make('terms')
+                    ->label('Filed under')
+                    ->relationship('terms', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions([
                 EditAction::make(),
+                static::duplicateAction(),
                 DeleteAction::make(),
             ])
             ->defaultSort('updated_at', 'desc');
+    }
+
+    /**
+     * A copy to work from, as a draft, with its own address - the fastest
+     * way to write the next article in a series.
+     */
+    protected static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon(Heroicon::OutlinedDocumentDuplicate)
+            ->requiresConfirmation()
+            ->modalDescription('A copy is made as a draft, with (copy) on the end of its title. Nothing is published.')
+            ->action(function (Post $record, BlogRepository $blog, $livewire): void {
+                $copy = $record->replicate(['published_at']);
+                $copy->title = $record->title.' (copy)';
+                $copy->slug = $blog->uniqueSlug($record->slug.'-copy');
+                $copy->status = Post::STATUS_DRAFT;
+                $copy->published_at = null;
+                $copy->author_id = auth()->id();
+                $copy->save();
+
+                $copy->terms()->sync($record->terms()->pluck('gadyacms_terms.id')->all());
+
+                Notification::make()->success()->title('Copied')->body('Open the copy and change what you need.')->send();
+
+                $livewire->redirect(static::getUrl('edit', ['record' => $copy]));
+            });
+    }
+
+    /**
+     * The terms of one kind, with a way to add one without leaving the
+     * article - the moment a writer needs a new category is while writing.
+     */
+    protected static function termSelect(string $name, string $label, string $taxonomy): Select
+    {
+        return Select::make($name)
+            ->label($label)
+            ->multiple()
+            ->preload()
+            ->options(fn (): array => Term::query()
+                ->where('site_id', app(SiteContext::class)->id())
+                ->where('taxonomy', $taxonomy)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->pluck('name', 'id')
+                ->all())
+            ->createOptionForm([
+                TextInput::make('name')->required()->maxLength(80),
+                Textarea::make('description')->rows(2)->maxLength(500),
+            ])
+            ->createOptionUsing(fn (array $data): int => (int) Term::query()->create([
+                'taxonomy' => $taxonomy,
+                'name' => $data['name'],
+                'description' => $data['description'] ?? null,
+            ])->getKey())
+            ->dehydrated(false);
+    }
+
+    /**
+     * The terms as the form holds them, ready to sync.
+     *
+     * @param  array<string, mixed>  $data
+     * @return list<int>
+     */
+    public static function termIdsFrom(array $data): array
+    {
+        return array_values(array_unique(array_map('intval', [
+            ...(array) ($data['category_ids'] ?? []),
+            ...(array) ($data['tag_ids'] ?? []),
+        ])));
     }
 
     public static function stateLabel(Post $post): string

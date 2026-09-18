@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Post extends Model
@@ -57,6 +58,24 @@ class Post extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /** @return BelongsToMany<Term, $this> */
+    public function terms(): BelongsToMany
+    {
+        return $this->belongsToMany(Term::class, 'gadyacms_post_term');
+    }
+
+    /** @return BelongsToMany<Term, $this> */
+    public function categories(): BelongsToMany
+    {
+        return $this->terms()->where('taxonomy', Term::CATEGORY);
+    }
+
+    /** @return BelongsToMany<Term, $this> */
+    public function tags(): BelongsToMany
+    {
+        return $this->terms()->where('taxonomy', Term::TAG);
     }
 
     /** @return BelongsTo<Model, $this> */

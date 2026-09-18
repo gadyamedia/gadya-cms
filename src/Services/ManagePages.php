@@ -4,6 +4,8 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Models\Page;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class ManagePages
@@ -35,6 +37,60 @@ class ManagePages
         ];
 
         $this->repository->saveDraft($document);
+    }
+
+    /**
+     * A copy of a page under a new address. Everything comes across - the
+     * fields, the sections, the search snippet - but the copy is hidden, so
+     * a half-edited duplicate is never on the site by accident.
+     */
+    public function duplicate(string $slug, string $newSlug, ?string $title = null): Page
+    {
+        $this->assertUsableSlug($newSlug);
+
+        $document = $this->repository->draft();
+        $source = $document['pages'][$slug] ?? null;
+
+        if (! is_array($source)) {
+            throw new RuntimeException("There is no page [{$slug}].");
+        }
+
+        $document['pages'][$newSlug] = [
+            ...$source,
+            'title' => $title ?? $source['title'].' (copy)',
+            'status' => PageRegistry::STATUS_ARCHIVED,
+            'publish_at' => null,
+            'unpublish_at' => null,
+        ];
+
+        $this->repository->saveDraft($document);
+
+        return Page::query()->where('slug', $newSlug)->firstOrFail();
+    }
+
+    /**
+     * The given address, or the first numbered variation of it that nobody
+     * holds - including a page in the trash, which still owns its address.
+     */
+    public function availableSlug(string $slug): string
+    {
+        $slug = Str::slug($slug);
+        $candidate = $slug;
+        $suffix = 2;
+
+        while ($this->slugTaken($candidate)) {
+            $candidate = "{$slug}-{$suffix}";
+            $suffix++;
+        }
+
+        return $candidate;
+    }
+
+    private function slugTaken(string $slug): bool
+    {
+        return $this->registry->isReserved($slug)
+            || Page::withTrashed()->where('slug', $slug)->exists()
+            || isset($this->repository->draft()['pages'][$slug]);
     }
 
     public function archive(string $slug): void
@@ -126,6 +182,10 @@ class ManagePages
 
         if (isset($this->repository->draft()['pages'][$slug])) {
             throw new RuntimeException("A page already uses the address [{$slug}].");
+        }
+
+        if (Page::onlyTrashed()->where('slug', $slug)->exists()) {
+            throw new RuntimeException("A page in the trash still uses the address [{$slug}]. Restore it, or delete it for good.");
         }
     }
 

@@ -107,8 +107,28 @@ class EditPost extends EditRecord
             });
     }
 
+    /**
+     * Categories and tags are two views of one relationship, so the form
+     * holds them apart and they are synced together; binding either select
+     * straight to the relationship would let saving one detach the other.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $record = $this->getRecord();
+
+        $data['category_ids'] = $record->categories()->pluck('gadyacms_terms.id')->all();
+        $data['tag_ids'] = $record->tags()->pluck('gadyacms_terms.id')->all();
+
+        return $data;
+    }
+
     protected function afterSave(): void
     {
+        $this->getRecord()->terms()->sync(PostResource::termIdsFrom($this->data));
+
         app(ContentAudit::class)->record($this->getRecord()->fresh());
     }
 }

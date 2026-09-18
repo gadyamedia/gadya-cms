@@ -115,7 +115,15 @@ class SiteImporter
 
         DB::transaction(function () use ($data, $replace, $siteId, &$counts): void {
             if ($replace) {
-                foreach ([Page::class, Setting::class, Post::class, Redirect::class, Media::class] as $model) {
+                /*
+                 * Force, not soft: a trashed page still owns its address,
+                 * and an import that replaces everything must be able to
+                 * write to it.
+                 */
+                Page::withTrashed()->where('site_id', $siteId)->forceDelete();
+                Post::withTrashed()->where('site_id', $siteId)->forceDelete();
+
+                foreach ([Setting::class, Redirect::class, Media::class] as $model) {
                     $model::query()->where('site_id', $siteId)->delete();
                 }
 
@@ -128,7 +136,16 @@ class SiteImporter
             }
 
             foreach ((array) ($data['pages'] ?? []) as $row) {
-                Page::query()->updateOrCreate(['site_id' => $siteId, 'slug' => $row['slug']], $row);
+                /*
+                 * A page in the trash under this address comes back: the
+                 * export says the site has that page, and `deleted_at` is
+                 * not fillable, so the restore is explicit.
+                 */
+                $page = Page::withTrashed()->updateOrCreate(['site_id' => $siteId, 'slug' => $row['slug']], $row);
+
+                if ($page->trashed()) {
+                    $page->restore();
+                }
                 $counts['pages']++;
             }
 

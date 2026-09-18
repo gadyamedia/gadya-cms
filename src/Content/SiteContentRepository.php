@@ -181,7 +181,16 @@ class SiteContentRepository
                 continue;
             }
 
-            $row = Page::query()->firstOrNew(['site_id' => $siteId, 'slug' => (string) $slug]);
+            /*
+             * A slug a trashed page still holds is restored and overwritten
+             * rather than colliding: the row is unique per slug, and the
+             * client asking for that address again means she wants it back.
+             */
+            $row = Page::withTrashed()->firstOrNew(['site_id' => $siteId, 'slug' => (string) $slug]);
+
+            if ($row->trashed()) {
+                $row->restore();
+            }
 
             $row->fill([
                 'title' => (string) ($page['title'] ?? $slug),

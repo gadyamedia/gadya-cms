@@ -7,6 +7,8 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -22,9 +24,12 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\PageRegistry;
+use Gadya\Cms\Content\PageTypes;
+use Gadya\Cms\Content\SiteBlocks;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Editor\EditingLock;
@@ -38,8 +43,11 @@ use Gadya\Cms\Filament\Schemas\SeoSection;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Services\ManagePages;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique;
 use RuntimeException;
 use UnitEnum;
 
@@ -85,10 +93,17 @@ class PageResource extends Resource
                         ->rule(fn (): Closure => static::notReservedRule())
                         ->disabled(fn (?Page $record): bool => $record !== null)
                         ->dehydrated(fn (?Page $record): bool => $record === null)
-                        ->unique(ignoreRecord: true),
+                        /*
+                         * A trashed page still holds its address, but taking
+                         * it again is how someone recreates a page they
+                         * deleted; the row is restored and overwritten.
+                         */
+                        ->unique(ignoreRecord: true, modifyRuleUsing: fn (Unique $rule): Unique => $rule->whereNull('deleted_at')),
                     Select::make('type')
                         ->options(fn (?Page $record): array => static::typeOptions($record))
-                        ->required(),
+                        ->required()
+                        ->live()
+                        ->native(false),
                     Select::make('status')
                         ->options([
                             Page::STATUS_PUBLISHED => 'Visible',
@@ -98,7 +113,7 @@ class PageResource extends Resource
                 ])
                 ->columns(2),
             Section::make('Content')
-                ->schema(static::contentFields())
+                ->schema(fn (Get $get): array => static::contentFields($get('type')))
                 ->columns(2),
             Section::make('When it is visible')
                 ->description('Leave both blank and the page is visible whenever it is not hidden.')
@@ -117,15 +132,18 @@ class PageResource extends Resource
                 ->collapsed(fn (?Page $record): bool => blank($record?->draft['publish_at'] ?? null) && blank($record?->draft['unpublish_at'] ?? null)),
             SeoSection::make('draft.seo.'),
             Section::make('Sections')
+                ->key('sections')
                 ->description('The blocks that make up the body of the page, in the order they appear.')
+                ->headerActions([static::insertBlockAction()])
                 ->schema([
                     Repeater::make('draft.sections')
                         ->hiddenLabel()
                         ->default([])
+                        ->extraItemActions([static::saveAsBlockAction()])
                         ->schema([
                             TextInput::make('title')->maxLength(120),
                             Select::make('type')
-                                ->options(fn (): array => static::sectionTypeOptions())
+                                ->options(fn (Get $get): array => static::sectionTypeOptions($get('../../type')))
                                 ->required()
                                 ->live(),
                             TextInput::make('subtitle')->maxLength(160)->columnSpanFull(),
@@ -185,13 +203,24 @@ class PageResource extends Resource
                     Page::STATUS_PUBLISHED => 'Visible',
                     Page::STATUS_ARCHIVED => 'Hidden',
                 ]),
+                SelectFilter::make('type')->options(fn (): array => static::typeOptions()),
+                TrashedFilter::make()->label('Trash'),
             ])
             ->recordActions([
                 EditAction::make(),
+                static::duplicateAction(),
                 static::renameAction(),
                 static::editLiveAction(),
                 static::previewLinkAction(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->modalDescription('The page goes to the trash and off the site. You can put it back from the Trash filter for '.(int) config('gadya-cms.trash.keep_days', 30).' days.')
+                    ->before(fn (Page $record) => $record->forceFill(['deleted_by' => auth()->id()])->saveQuietly()),
+                RestoreAction::make()->using(function (Page $record): bool {
+                    $record->restoreToDraft();
+
+                    return true;
+                }),
+                ForceDeleteAction::make()->label('Delete for good'),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order');
@@ -257,11 +286,11 @@ class PageResource extends Resource
      *
      * @return list<Component>
      */
-    protected static function contentFields(): array
+    protected static function contentFields(?string $type = null): array
     {
         $fields = [];
 
-        foreach ((array) config('gadya-cms.pages.content_fields', []) as $name => $field) {
+        foreach (app(PageTypes::class)->fieldsFor($type) as $name => $field) {
             if (! is_array($field) || ! is_string($name)) {
                 continue;
             }
@@ -280,8 +309,103 @@ class PageResource extends Resource
     }
 
     /**
-     * A link to the draft of this page for someone without an account,
-     * good for a few days.
+     * Keep this section to use on another page. A copy is saved, not a
+     * link: a client who later changes it here almost never means to
+     * change it everywhere it was used.
+     */
+    protected static function saveAsBlockAction(): Action
+    {
+        return Action::make('saveAsBlock')
+            ->label('Save as a block')
+            ->icon(Heroicon::OutlinedBookmarkSquare)
+            ->schema([
+                TextInput::make('label')
+                    ->label('Call it')
+                    ->required()
+                    ->maxLength(80)
+                    ->helperText('What you will look for when you want it again.'),
+            ])
+            ->action(function (array $arguments, array $data, Repeater $component, SiteBlocks $blocks): void {
+                $section = $component->getItemState($arguments['item']);
+
+                if (! is_array($section) || $section === []) {
+                    Notification::make()->warning()->title('Nothing to save yet')->body('Fill the section in first.')->send();
+
+                    return;
+                }
+
+                $blocks->save($data['label'], $section);
+
+                Notification::make()->success()->title('Saved as a block')->body('Insert it on any page from Add a saved block.')->send();
+            });
+    }
+
+    /**
+     * Drop a copy of a saved block at the end of this page's sections.
+     */
+    protected static function insertBlockAction(): Action
+    {
+        return Action::make('insertBlock')
+            ->label('Add a saved block')
+            ->icon(Heroicon::OutlinedSquares2x2)
+            ->visible(fn (): bool => app(SiteBlocks::class)->all() !== [])
+            ->schema([
+                Select::make('block')
+                    ->label('Block')
+                    ->options(fn (SiteBlocks $blocks): array => $blocks->options())
+                    ->required()
+                    ->native(false),
+            ])
+            ->action(function (array $data, Set $set, Get $get, SiteBlocks $blocks): void {
+                $sections = (array) ($get('draft.sections') ?? []);
+                $sections[] = $blocks->section($data['block']);
+
+                $set('draft.sections', array_values($sections));
+
+                Notification::make()->success()->title('Added to the bottom of the page')->body('Nothing is live until you publish.')->send();
+            });
+    }
+
+    /**
+     * The same page under a new address, as a starting point. Everything     * is copied but the address and the title, and the copy is hidden, so
+     * a half-finished duplicate is never live.
+     */
+    protected static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon(Heroicon::OutlinedDocumentDuplicate)
+            ->schema([
+                TextInput::make('slug')
+                    ->label('Address for the copy')
+                    ->required()
+                    ->maxLength(60)
+                    ->rule('regex:/^[a-z0-9]+(?:-[a-z0-9]+)*\z/')
+                    ->default(fn (Page $record): string => app(ManagePages::class)->availableSlug($record->slug.'-copy')),
+                TextInput::make('title')
+                    ->label('Title for the copy')
+                    ->required()
+                    ->maxLength(70)
+                    ->default(fn (Page $record): string => $record->title.' (copy)'),
+            ])
+            ->modalDescription('The copy is hidden until you make it visible, and nothing is live until you publish.')
+            ->action(function (array $data, Page $record, ManagePages $managePages, $livewire): void {
+                try {
+                    $copy = $managePages->duplicate($record->slug, $data['slug'], $data['title']);
+                } catch (RuntimeException $exception) {
+                    Notification::make()->danger()->title($exception->getMessage())->send();
+
+                    return;
+                }
+
+                Notification::make()->success()->title('Copied')->body('The copy is hidden; make it visible when it is ready.')->send();
+
+                $livewire->redirect(static::getUrl('edit', ['record' => $copy]));
+            });
+    }
+
+    /**
+     * A link to the draft of this page for someone without an account,     * good for a few days.
      */
     protected static function previewLinkAction(): Action
     {
@@ -351,9 +475,10 @@ class PageResource extends Resource
      */
     protected static function typeOptions(?Page $record = null): array
     {
-        $types = app(PageRegistry::class)->creatableTypes();
+        $pageTypes = app(PageTypes::class);
+        $types = $pageTypes->creatable();
 
-        $inUse = Page::query()->distinct()->pluck('type')->filter(fn ($type): bool => is_string($type))->all();
+        $inUse = Page::withTrashed()->distinct()->pluck('type')->filter(fn ($type): bool => is_string($type))->all();
 
         foreach ([...$inUse, $record?->type] as $type) {
             if (is_string($type) && $type !== '' && ! in_array($type, $types, true)) {
@@ -363,17 +488,27 @@ class PageResource extends Resource
 
         sort($types);
 
-        return array_combine($types, array_map(Str::headline(...), $types));
+        return array_combine($types, array_map($pageTypes->label(...), $types));
     }
 
     /**
      * @return array<string, string>
      */
-    protected static function sectionTypeOptions(): array
+    protected static function sectionTypeOptions(?string $pageType = null): array
     {
-        $types = app(PageRegistry::class)->sectionTypes();
+        $types = app(PageTypes::class)->sectionTypesFor($pageType);
 
         return array_combine($types, array_map(Str::headline(...), $types));
+    }
+
+    /**
+     * Trashed pages are part of this resource - the Trash filter is how
+     * they are found - so the soft-delete scope is lifted here and applied
+     * by the filter instead.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function canAccess(): bool

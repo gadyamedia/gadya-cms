@@ -25,6 +25,8 @@ class CreatePost extends CreateRecord
 
     protected function afterCreate(): void
     {
+        $this->getRecord()->terms()->sync(PostResource::termIdsFrom($this->data));
+
         app(ContentAudit::class)->record($this->getRecord());
     }
 

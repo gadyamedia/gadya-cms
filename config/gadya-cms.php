@@ -42,6 +42,14 @@ return [
     ],
 
     /*
+     * How long a deleted page or article stays in the trash before
+     * `gadya-cms:prune-trash` empties it for good.
+     */
+    'trash' => [
+        'keep_days' => 30,
+    ],
+
+    /*
      * How many published revisions are retained before the oldest are pruned.
      */
     'revisions' => [
@@ -153,6 +161,25 @@ return [
             'description' => ['label' => 'Description', 'type' => 'textarea', 'rows' => 4],
             'hero_image' => ['label' => 'Main photo', 'type' => 'image'],
         ],
+
+        /*
+         * What each kind of page is called, which fields it carries and
+         * which section kinds it may use. A type that is not listed here
+         * falls back to `content_fields` and `section_types` below, so a
+         * site with pages of one shape never has to fill this in.
+         *
+         *     'location' => [
+         *         'label' => 'Party place',
+         *         'creatable' => true,
+         *         'fields' => [
+         *             'heading' => ['label' => 'Heading', 'type' => 'text'],
+         *             'address' => ['label' => 'Address', 'type' => 'text', 'max' => 255],
+         *             'hero_image' => ['label' => 'Main photo', 'type' => 'image'],
+         *         ],
+         *         'section_types' => ['cards', 'gallery'],
+         *     ],
+         */
+        'types' => [],
 
         'section_types' => ['cards', 'text-grid', 'gallery', 'menu', 'application'],
         'creatable_types' => ['content', 'legal'],
@@ -273,6 +300,13 @@ return [
         /* The layout the shipped templates extend; it must yield `content`. */
         'layout' => 'layouts.app',
         'per_page' => 12,
+
+        /* Where category and tag archives sit under the blog prefix. */
+        'category_prefix' => 'category',
+        'tag_prefix' => 'tag',
+
+        /* How many articles to suggest at the foot of an article. */
+        'related' => 3,
     ],
 
     /*

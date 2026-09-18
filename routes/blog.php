@@ -12,6 +12,19 @@ Route::middleware('web')
     ->name('gadya-cms.blog.')
     ->group(function (): void {
         Route::get('/', [BlogController::class, 'index'])->name('index');
+
+        /*
+         * Category and tag archives, before the article route so a term
+         * prefix is never mistaken for an article's address.
+         */
+        Route::get('/'.trim((string) config('gadya-cms.blog.category_prefix', 'category'), '/').'/{slug}', [BlogController::class, 'category'])
+            ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+            ->name('category');
+
+        Route::get('/'.trim((string) config('gadya-cms.blog.tag_prefix', 'tag'), '/').'/{slug}', [BlogController::class, 'tag'])
+            ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+            ->name('tag');
+
         Route::get('/{slug}', [BlogController::class, 'show'])
             ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
             ->name('show');

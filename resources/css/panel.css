@@ -699,3 +699,11 @@
     color: var(--gadya-cms-primary);
     text-decoration: underline;
 }
+
+/* --------------------------------------------------------- article terms */
+
+.gadya-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}

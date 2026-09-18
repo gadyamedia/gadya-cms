@@ -10,6 +10,7 @@ use Filament\View\PanelsRenderHook;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Filament\Pages\AiSettings;
 use Gadya\Cms\Filament\Pages\ArticleGenerator;
+use Gadya\Cms\Filament\Pages\Blocks;
 use Gadya\Cms\Filament\Pages\Dashboard;
 use Gadya\Cms\Filament\Pages\Globals;
 use Gadya\Cms\Filament\Pages\Navigation;
@@ -22,6 +23,7 @@ use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Filament\Resources\Redirects\RedirectResource;
 use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
 use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
+use Gadya\Cms\Filament\Resources\Terms\TermResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Blade;
@@ -236,6 +238,7 @@ class GadyaCmsPlugin implements Plugin
                 RevisionResource::class,
                 $this->hasTeam() ? UserResource::class : null,
                 $this->hasBlog() ? PostResource::class : null,
+                $this->hasBlog() ? TermResource::class : null,
                 $this->hasRedirects() ? RedirectResource::class : null,
                 $this->hasForms() ? SubmissionResource::class : null,
             ]))
@@ -243,6 +246,7 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasAnalytics() ? Dashboard::class : null,
                 ThemeSettings::class,
                 Globals::class,
+                Blocks::class,
                 SiteDetails::class,
                 Navigation::class,
                 $this->hasAi() ? AiSettings::class : null,

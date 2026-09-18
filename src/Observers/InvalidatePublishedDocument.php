@@ -24,6 +24,21 @@ class InvalidatePublishedDocument
         $this->flush();
     }
 
+    /**
+     * A page fished back out of the trash is live again the moment it is
+     * restored, if it had ever been published - so the cached document has
+     * to be rebuilt here as surely as it was when the page went in.
+     */
+    public function restored(Model $model): void
+    {
+        $this->flush();
+    }
+
+    public function forceDeleted(Model $model): void
+    {
+        $this->flush();
+    }
+
     public function updated(Model $model): void
     {
         if ($model->wasChanged('published')) {
