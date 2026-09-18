@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.1
+
+Identical to 0.4.0 in every line of code; it adds the two screenshots the
+README links to, and exists because 0.4.0's tag was moved after it had
+been published. A published version's contents never change, so the old
+tag stays where it was and this is the one to use.
+
 ## 0.4.0
 
 The release that answers "but WordPress does…".
