@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><title>{{ $page['title'] }}</title></head>
+<head>@cmsSeo($page)</head>
 <body>
 <header>{{ $site['announcement'] ?? '' }}</header>
 <main>@yield('content')</main>

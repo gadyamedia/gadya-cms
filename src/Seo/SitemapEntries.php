@@ -5,6 +5,7 @@ namespace Gadya\Cms\Seo;
 use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Events\EventCalendar;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Illuminate\Support\Carbon;
 
@@ -18,6 +19,7 @@ class SitemapEntries
         private readonly SiteContentRepository $repository,
         private readonly PageRegistry $registry,
         private readonly BlogRepository $blog,
+        private readonly EventCalendar $events,
     ) {}
 
     /**
@@ -57,6 +59,26 @@ class SitemapEntries
                 $entries[] = [
                     'loc' => url($post->publicPath()),
                     'lastmod' => ($post->updated_at ?? $post->published_at)?->toAtomString(),
+                    'priority' => '0.5',
+                ];
+            }
+        }
+
+        if (GadyaCmsPlugin::get()->hasEvents() && config('gadya-cms.events.routes', true)) {
+            $events = $this->events->upcoming(200);
+
+            if ($events->isNotEmpty()) {
+                $entries[] = [
+                    'loc' => url('/'.trim((string) config('gadya-cms.events.prefix', 'events'), '/')),
+                    'lastmod' => $events->first()->updated_at?->toAtomString(),
+                    'priority' => '0.6',
+                ];
+            }
+
+            foreach ($events as $event) {
+                $entries[] = [
+                    'loc' => url($event->publicPath()),
+                    'lastmod' => $event->updated_at?->toAtomString(),
                     'priority' => '0.5',
                 ];
             }

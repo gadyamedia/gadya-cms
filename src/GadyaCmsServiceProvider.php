@@ -113,6 +113,18 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         $this->loadRoutesFrom(__DIR__.'/../routes/seo.php');
 
+        if (config('gadya-cms.site_search.routes', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/search.php');
+        }
+
+        if (config('gadya-cms.events.routes', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/events.php');
+        }
+
+        if (config('gadya-cms.newsletter.enabled', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/newsletter.php');
+        }
+
         $this->publishes([
             __DIR__.'/../resources/js' => resource_path('js/vendor/gadya-cms'),
             __DIR__.'/../resources/css' => resource_path('css/vendor/gadya-cms'),
@@ -164,6 +176,21 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");
         Blade::directive('editableGlobal', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->globalAttributes({$expression}); ?>");
         Blade::directive('editableFor', fn (string $expression): string => "<?php app(\Gadya\Cms\Editor\EditContext::class)->for({$expression}); ?>");
+        /*
+         * Both take an optional array of overrides, so `@cmsSearchForm` and
+         * `@cmsSearchForm(['label' => 'Find a party place'])` both work.
+         */
+        Blade::directive('cmsSearchForm', function (string $expression): string {
+            $expression = trim($expression) === '' ? '[]' : $expression;
+
+            return "<?php echo view('gadya-cms::search.form', array_merge(['label' => 'Search this site', 'placeholder' => 'What are you looking for?'], (array) ({$expression})))->render(); ?>";
+        });
+
+        Blade::directive('cmsNewsletterForm', function (string $expression): string {
+            $expression = trim($expression) === '' ? '[]' : $expression;
+
+            return "<?php echo view('gadya-cms::forms.newsletter', array_merge(['label' => (string) config('gadya-cms.newsletter.label', 'Get our news by email'), 'button' => (string) config('gadya-cms.newsletter.button', 'Sign up'), 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')], (array) ({$expression})))->render(); ?>";
+        });
         Blade::directive('cmsForm', fn (string $expression): string => "<?php echo view('gadya-cms::forms.fields', ['form' => {$expression}, 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')])->render(); ?>");
         Blade::directive('cmsFormStatus', fn (string $expression): string => "<?php echo view('gadya-cms::forms.status', ['form' => {$expression}])->render(); ?>");
         Blade::directive('cmsSeo', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Seo\\SeoHead::class)->render({$expression})->render(); ?>");

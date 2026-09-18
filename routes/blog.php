@@ -1,6 +1,7 @@
 <?php
 
 use Gadya\Cms\Http\Controllers\BlogController;
+use Gadya\Cms\Http\Controllers\CommentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,16 @@ Route::middleware('web')
         Route::get('/'.trim((string) config('gadya-cms.blog.tag_prefix', 'tag'), '/').'/{slug}', [BlogController::class, 'tag'])
             ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
             ->name('tag');
+
+        /*
+         * Replies from readers. Throttled per address and checked for a
+         * honeypot, because a comment box is the most spammed thing on a
+         * website.
+         */
+        Route::post('/{slug}/comments', [CommentController::class, 'store'])
+            ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+            ->middleware('throttle:gadya-cms-forms')
+            ->name('comments.store');
 
         Route::get('/{slug}', [BlogController::class, 'show'])
             ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')

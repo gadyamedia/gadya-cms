@@ -262,7 +262,7 @@ return [
          * The only event names the public site may record. A page cannot
          * invent a metric, and nothing arbitrary reaches the database.
          */
-        'events' => ['phone_click', 'cta_click', 'booking_start', 'lead_form_submit', 'directions_click'],
+        'events' => ['phone_click', 'cta_click', 'booking_start', 'lead_form_submit', 'directions_click', 'site_search'],
 
         /*
          * A choropleth for the countries visitors come from. Point this at
@@ -307,6 +307,19 @@ return [
 
         /* How many articles to suggest at the foot of an article. */
         'related' => 3,
+
+        /*
+         * Replies from readers. Off by default: most sites do not want
+         * them, and a comment box nobody reads is worse than none. With
+         * `moderate` on, nothing appears until someone approves it.
+         */
+        'comments' => [
+            'enabled' => false,
+            'moderate' => true,
+            'notify' => [],
+            'pending_message' => 'Thank you. Your comment will appear once it has been read.',
+            'posted_message' => 'Thank you.',
+        ],
     ],
 
     /*
@@ -338,6 +351,43 @@ return [
                 'analytics_event' => 'lead_form_submit',
             ],
         ],
+    ],
+
+    /*
+     * Things happening on a date: an open day, a camp, a class. The list
+     * sorts itself, and `events.ics` is a calendar a phone can subscribe
+     * to.
+     */
+    'events' => [
+        'routes' => true,
+        'prefix' => 'events',
+        'title' => 'What’s on',
+        'heading' => null,
+        'description' => '',
+        'past' => 6,
+    ],
+
+    /*
+     * The site's own search box, over the pages and the articles. What
+     * people search for here - especially what they search for and do not
+     * find - is counted like anything else a visitor does.
+     */
+    'site_search' => [
+        'routes' => true,
+        'path' => 'search',
+        'limit' => 20,
+    ],
+
+    /*
+     * The mailing list. The list lives in this database rather than in a
+     * mailing service, and is exported in the columns those services read.
+     */
+    'newsletter' => [
+        'enabled' => true,
+        'label' => 'Get our news by email',
+        'button' => 'Sign up',
+        'success' => 'Thank you. We will be in touch.',
+        'unsubscribed' => 'You have been taken off the list.',
     ],
 
     /*

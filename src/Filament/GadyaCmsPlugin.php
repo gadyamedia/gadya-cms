@@ -17,12 +17,15 @@ use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\SearchSettings;
 use Gadya\Cms\Filament\Pages\SiteDetails;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
+use Gadya\Cms\Filament\Resources\Comments\CommentResource;
+use Gadya\Cms\Filament\Resources\Events\EventResource;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
 use Gadya\Cms\Filament\Resources\Pages\PageResource;
 use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Filament\Resources\Redirects\RedirectResource;
 use Gadya\Cms\Filament\Resources\Revisions\RevisionResource;
 use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
+use Gadya\Cms\Filament\Resources\Subscribers\SubscriberResource;
 use Gadya\Cms\Filament\Resources\Terms\TermResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
 use Illuminate\Contracts\View\View;
@@ -45,6 +48,10 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasForms = true;
 
     protected bool $hasSearch = true;
+
+    protected bool $hasNewsletter = true;
+
+    protected bool $hasEvents = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -169,6 +176,32 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasSearch;
     }
 
+    /** Open days, camps and classes, with a calendar file for them. */
+    public function events(bool $condition = true): static
+    {
+        $this->hasEvents = $condition;
+
+        return $this;
+    }
+
+    public function hasEvents(): bool
+    {
+        return $this->hasEvents;
+    }
+
+    /** The mailing list, its sign-up box and its export. */
+    public function newsletter(bool $condition = true): static
+    {
+        $this->hasNewsletter = $condition;
+
+        return $this;
+    }
+
+    public function hasNewsletter(): bool
+    {
+        return $this->hasNewsletter;
+    }
+
     /** The inbox of what visitors sent through the site's forms. */
     public function forms(bool $condition = true): static
     {
@@ -239,8 +272,11 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasTeam() ? UserResource::class : null,
                 $this->hasBlog() ? PostResource::class : null,
                 $this->hasBlog() ? TermResource::class : null,
+                $this->hasBlog() ? CommentResource::class : null,
+                $this->hasEvents() ? EventResource::class : null,
                 $this->hasRedirects() ? RedirectResource::class : null,
                 $this->hasForms() ? SubmissionResource::class : null,
+                $this->hasNewsletter() ? SubscriberResource::class : null,
             ]))
             ->pages(array_filter([
                 $this->hasAnalytics() ? Dashboard::class : null,

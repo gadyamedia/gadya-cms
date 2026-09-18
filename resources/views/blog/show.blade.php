@@ -57,6 +57,10 @@
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
         @endif
 
+        @if (config('gadya-cms.blog.comments.enabled', false))
+            @include('gadya-cms::blog.comments', ['post' => $post])
+        @endif
+
         @if (($related ?? collect())->isNotEmpty())
             <section class="cms-article__related" aria-labelledby="cms-article-related">
                 <h2 id="cms-article-related">Read next</h2>
