@@ -23,6 +23,8 @@ Images already shipped with the site (`public/images/site`) are indexed as *lega
 
 **Settings → Team** lists everyone who may work on the site. An invitation is an email with a single-use, expiring link to choose a password; no password is ever sent. It carries a password-reset token and rides the panel's own reset flow, so the panel needs `->passwordReset()`.
 
+When an email is the wrong way in - a colleague in the room, an inbox that eats automatic mail - **Add with a password** creates the account with a password made up for you, sends nothing, and shows the sign-in details (address, email, password, and how to change it) with a Copy button. **Set a new password** on a person's row does the same for someone who is locked out. The password is shown once.
+
 Two rules hold whatever the request says: nobody can remove themselves, and the last administrator can be neither removed nor demoted. The list shows who has signed in and when, so a stale invitation is obvious.
 
 Roles are the application's own strings; the panel needs only the labels and which role is the administrator (`gadya-cms.users`).

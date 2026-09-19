@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.3
+
+### Added
+
+- **Add with a password** on the Team screen: create someone without sending an email, with a password made up for you (or your own), then copy their sign-in details - address, email, password and how to change it - to pass on however you like.
+- **Set a new password** on each person's row, handing over the new details the same way.
+
 ## 0.4.2
 
 ### Fixed

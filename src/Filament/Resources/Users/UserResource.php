@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -19,6 +20,7 @@ use Gadya\Cms\Filament\Resources\Users\Pages\ListUsers;
 use Gadya\Cms\Services\InvitePanelUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use UnitEnum;
 
@@ -94,10 +96,11 @@ class UserResource extends Resource
             ->filters([
                 SelectFilter::make('role')->options(fn (): array => static::roleOptions()),
             ])
-            ->headerActions([static::inviteAction()])
+            ->headerActions([static::createWithPasswordAction(), static::inviteAction()])
             ->recordActions([
                 static::editAction(),
                 static::resendAction(),
+                static::setPasswordAction(),
                 static::removeAction(),
             ])
             ->defaultSort('name');
@@ -153,6 +156,81 @@ class UserResource extends Resource
                     ->body("{$data['email']} can now set a password and sign in.")
                     ->send();
             });
+    }
+
+    /**
+     * Add someone without an email: the administrator chooses the password
+     * and is handed the sign-in details to pass on however suits.
+     */
+    protected static function createWithPasswordAction(): Action
+    {
+        return Action::make('createWithPassword')
+            ->label('Add with a password')
+            ->icon(Heroicon::OutlinedKey)
+            ->color('gray')
+            ->modalHeading('Add someone with a password')
+            ->modalDescription('No email is sent. You will be given their sign-in details to copy and pass on yourself.')
+            ->modalSubmitActionLabel('Add them')
+            ->schema([
+                TextInput::make('name')->required()->maxLength(255),
+                TextInput::make('email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255)
+                    ->rule(Rule::unique((new (static::getModel()))->getTable(), 'email')),
+                Select::make('role')
+                    ->options(fn (): array => static::roleOptions())
+                    ->default((string) config('gadya-cms.users.default_role', 'editor'))
+                    ->live()
+                    ->helperText(fn (?string $state): ?string => static::describeRole($state))
+                    ->required(),
+                static::passwordInput(),
+            ])
+            ->action(function (array $data, InvitePanelUser $users, $livewire): void {
+                $users->createWithPassword($data['name'], $data['email'], $data['role'], $data['password']);
+
+                $livewire->replaceMountedAction('credentials', [
+                    'text' => InvitePanelUser::signInInstructions($data['name'], $data['email'], $data['password']),
+                ]);
+            });
+    }
+
+    /**
+     * A new password for someone who has lost theirs or never had one,
+     * set here rather than by email, with the details to pass on.
+     */
+    protected static function setPasswordAction(): Action
+    {
+        return Action::make('setPassword')
+            ->label('Set a new password')
+            ->icon(Heroicon::OutlinedKey)
+            ->modalDescription('Their old password stops working straight away. You will be given the new sign-in details to pass on.')
+            ->modalSubmitActionLabel('Set it')
+            ->schema([static::passwordInput()])
+            ->action(function (array $data, Model $record, InvitePanelUser $users, $livewire): void {
+                $users->setPassword($record, $data['password']);
+
+                $livewire->replaceMountedAction('credentials', [
+                    'text' => InvitePanelUser::signInInstructions((string) $record->name, (string) $record->email, $data['password']),
+                ]);
+            });
+    }
+
+    protected static function passwordInput(): TextInput
+    {
+        return TextInput::make('password')
+            ->label('Password')
+            ->required()
+            ->minLength(10)
+            ->maxLength(100)
+            ->default(fn (): string => Str::password(14, symbols: false))
+            ->helperText('One is made up for you. Change it if you like - at least 10 characters.')
+            ->suffixAction(
+                Action::make('newPassword')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->tooltip('Make up another')
+                    ->action(fn (Set $set) => $set('password', Str::password(14, symbols: false))),
+            );
     }
 
     protected static function resendAction(): Action
