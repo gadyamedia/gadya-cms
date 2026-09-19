@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.8
+
+### Added
+
+- With [gadya/connect](https://github.com/gadyamedia/gadya-connect) installed, the panel gains **Gadya Support** (link the site to the Gadya Media portal) and **Get help** (ask the Gadya team for help from inside the admin), with a Get help button in the top bar. Without it, nothing changes.
+
 ## 0.4.7
 
 ### Added

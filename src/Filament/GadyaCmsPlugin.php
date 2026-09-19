@@ -34,6 +34,9 @@ use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
 use Gadya\Cms\Filament\Resources\Subscribers\SubscriberResource;
 use Gadya\Cms\Filament\Resources\Terms\TermResource;
 use Gadya\Cms\Filament\Resources\Users\UserResource;
+use Gadya\Connect\Filament\GadyaConnectPlugin;
+use Gadya\Connect\Filament\Pages\GadyaSupport;
+use Gadya\Connect\Filament\Pages\GetHelp;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Blade;
 
@@ -234,6 +237,20 @@ class GadyaCmsPlugin implements Plugin
         return $this->showsPoweredBy;
     }
 
+    /**
+     * Gadya Support and Get help, from gadya/connect, when it is installed:
+     * the site's link to the Gadya Media portal and the way to ask for help.
+     *
+     * @return list<class-string>
+     */
+    public static function connectPages(): array
+    {
+        return array_values(array_filter(
+            [GadyaSupport::class, GetHelp::class],
+            fn (string $page): bool => class_exists($page),
+        ));
+    }
+
     /** The installed gadya/cms release, e.g. "0.4.6", or null when Composer cannot say. */
     public static function packageVersion(): ?string
     {
@@ -334,6 +351,10 @@ class GadyaCmsPlugin implements Plugin
             $panel->unsavedChangesAlerts();
         }
 
+        if (class_exists(GadyaConnectPlugin::class)) {
+            GadyaConnectPlugin::addHelpButton($panel);
+        }
+
         if ($this->showsPoweredBy()) {
             $panel->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('gadya-cms::filament.powered-by', ['version' => static::packageVersion()]));
         }
@@ -371,6 +392,7 @@ class GadyaCmsPlugin implements Plugin
                 SiteStatus::class,
                 $this->hasForms() ? Emails::class : null,
                 $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
+                ...static::connectPages(),
             ]));
 
         if (! $this->hasBrand()) {

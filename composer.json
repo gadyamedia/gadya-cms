@@ -17,6 +17,9 @@
         "spatie/laravel-image-optimizer": "^1.8",
         "spatie/laravel-package-tools": "^1.90"
     },
+    "suggest": {
+        "gadya/connect": "Links the site to the Gadya Media portal: check-ins, Get help, and one-click sign-in for the Gadya team."
+    },
     "autoload": {
         "psr-4": {
             "Gadya\\Cms\\": "src/",
