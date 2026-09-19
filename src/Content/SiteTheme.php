@@ -105,8 +105,18 @@ class SiteTheme
      */
     public function defaults(): array
     {
-        /** @var array{colors: array<string, string>, fonts: array<string, string>} $defaults */
-        $defaults = $this->repository->defaults()['theme'] ?? ['colors' => [], 'fonts' => []];
+        $theme = $this->repository->defaults()['theme'] ?? [];
+
+        /*
+         * A site from before Look & feel existed may have a flat theme, or
+         * none at all; it simply has nothing to offer here.
+         *
+         * @var array{colors: array<string, string>, fonts: array<string, string>} $defaults
+         */
+        $defaults = [
+            'colors' => is_array($theme['colors'] ?? null) ? $theme['colors'] : [],
+            'fonts' => is_array($theme['fonts'] ?? null) ? $theme['fonts'] : [],
+        ];
 
         return $defaults;
     }

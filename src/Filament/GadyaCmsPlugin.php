@@ -8,6 +8,7 @@ use Filament\Panel;
 use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Gadya\Cms\Content\PanelBrand;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Filament\Pages\AiSettings;
 use Gadya\Cms\Filament\Pages\ArticleGenerator;
@@ -454,13 +455,9 @@ class GadyaCmsPlugin implements Plugin
      */
     public static function brandLogo(): ?string
     {
-        $logo = config('gadya-cms.brand.logo');
+        $logo = app(PanelBrand::class)->logo();
 
-        if (! is_string($logo) || $logo === '') {
-            return null;
-        }
-
-        return app(SiteImage::class)->url($logo);
+        return $logo === null ? null : app(SiteImage::class)->url($logo);
     }
 
     /**
@@ -468,16 +465,6 @@ class GadyaCmsPlugin implements Plugin
      */
     public static function brandTokens(): array
     {
-        return [
-            'primary' => (string) config('gadya-cms.brand.primary', '#9f12c7'),
-            'secondary' => (string) config('gadya-cms.brand.secondary', '#f54fa3'),
-            'background' => (string) config('gadya-cms.brand.background', '#fffdf3'),
-            'ink' => (string) config('gadya-cms.brand.ink', '#000000'),
-            'accent' => (string) config('gadya-cms.brand.accent', '#f0e56c'),
-            'displayFont' => (string) config('gadya-cms.brand.fonts.display', 'Georgia'),
-            'logoHeight' => (string) config('gadya-cms.brand.logo_height', '2.75rem'),
-            'logoHeightAuth' => (string) config('gadya-cms.brand.logo_height_auth', '5rem'),
-            'fontStylesheet' => config('gadya-cms.brand.fonts.stylesheet'),
-        ];
+        return app(PanelBrand::class)->tokens();
     }
 }

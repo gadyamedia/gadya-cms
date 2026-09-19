@@ -523,6 +523,14 @@ return [
         'name' => env('GADYA_CMS_BRAND', config('app.name')),
 
         /*
+         * The panel and its sign-in screen follow the site: the colours and
+         * type the client chose under Look & feel, and the logo she picked
+         * there. Set this to false to paint the panel from the values below
+         * instead, and the logo picker disappears from her screen.
+         */
+        'follow_site' => true,
+
+        /*
          * A filename in the photo library, or a path under public/. Null
          * falls back to the brand name as text.
          */

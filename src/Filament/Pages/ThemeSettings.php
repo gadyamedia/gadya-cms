@@ -14,10 +14,12 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
+use Gadya\Cms\Content\PanelBrand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteTheme;
 use Gadya\Cms\Filament\Actions\PublishChangesAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Filament\Schemas\MediaSelect;
 use Gadya\Cms\Services\UpdateTheme;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -60,6 +62,7 @@ class ThemeSettings extends Page
         $this->form->fill([
             'colors' => array_merge($defaults['colors'], $document['theme']['colors'] ?? []),
             'fonts' => array_merge($defaults['fonts'], $document['theme']['fonts'] ?? []),
+            'logo' => $document['logo'] ?? null,
         ]);
     }
 
@@ -71,7 +74,9 @@ class ThemeSettings extends Page
             ->components([
                 Form::make([
                     Section::make('Colours')
-                        ->description('Used across buttons, headings and backgrounds on the public site.')
+                        ->description(app(PanelBrand::class)->followsSite()
+                            ? 'Used across buttons, headings and backgrounds on the public site - and on this panel and its sign-in screen.'
+                            : 'Used across buttons, headings and backgrounds on the public site.')
                         ->schema(array_map(
                             fn (string $key): ColorPicker => ColorPicker::make("colors.{$key}")
                                 ->label(Str::headline(str_replace('-', ' ', $key)))
@@ -80,6 +85,10 @@ class ThemeSettings extends Page
                             $theme->allowedColorKeys(),
                         ))
                         ->columns(3),
+                    Section::make('Logo')
+                        ->description('Shown on the sign-in screen and at the top of this panel.')
+                        ->schema([MediaSelect::make('logo', 'Logo')])
+                        ->visible(fn (): bool => app(PanelBrand::class)->followsSite()),
                     Section::make('Type')
                         ->schema([
                             Select::make('fonts.display')
@@ -113,7 +122,7 @@ class ThemeSettings extends Page
         $data = $this->form->getState();
 
         try {
-            $action->handle($data['colors'], $data['fonts']);
+            $action->handle($data['colors'], $data['fonts'], $data['logo'] ?? null);
         } catch (RuntimeException $exception) {
             Notification::make()->danger()->title($exception->getMessage())->send();
 

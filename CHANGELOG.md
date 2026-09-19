@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.7.0
+
+### Added
+
+- **The panel and its sign-in screen follow the site.** The colours and type from **Look & feel** now paint the panel, and that screen has a **logo** picker whose choice appears on the sign-in screen and at the top of the panel - no config file to edit per site. It follows the published site, so an unpublished draft changes nothing. A site that wants a different-looking panel sets `brand.follow_site` to `false` and keeps filling in `brand.*` by hand.
+
 ## 0.6.1
 
 ### Added

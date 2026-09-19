@@ -17,7 +17,7 @@ class UpdateTheme
      * @param  array<string, string>  $colors
      * @param  array<string, string>  $fonts
      */
-    public function handle(array $colors, array $fonts): void
+    public function handle(array $colors, array $fonts, ?string $logo = null): void
     {
         $allowedColorKeys = $this->theme->allowedColorKeys();
 
@@ -51,6 +51,12 @@ class UpdateTheme
                 'sans' => $fonts['sans'],
             ],
         ];
+
+        if ($logo !== null && $logo !== '') {
+            $document['logo'] = $logo;
+        } else {
+            unset($document['logo']);
+        }
 
         $this->repository->saveDraft($document);
     }

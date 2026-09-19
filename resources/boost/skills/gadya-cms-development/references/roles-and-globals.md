@@ -50,3 +50,21 @@ They are edited together under **Appearance → Everywhere**, and on the page:
 ```
 
 Add each path to `editable_fields` for the on-page editor to accept it. Every screen that saves a draft now carries **Publish changes**.
+
+# The panel wears the site's clothes
+
+The panel and its sign-in screen follow the site itself, so the client signs in to something that looks like her own website:
+
+- the colours and type she chose under **Appearance → Look & feel**;
+- the **logo** she picked on that same screen, from her photo library.
+
+They change when she presses **Publish changes**, not before - the panel shows the live look, never an unpublished draft.
+
+A site that wants the panel to look different from the site sets `brand.follow_site` to `false` and fills in `brand.primary`, `brand.logo` and the rest by hand; the logo picker then disappears from her screen.
+
+```php
+'brand' => [
+    'follow_site' => true,   // the panel follows Look & feel
+    'logo' => 'logo.webp',   // only read when follow_site is false, or nothing is picked
+],
+```
