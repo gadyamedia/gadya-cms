@@ -93,6 +93,31 @@ class InstallCommand extends Command
     }
 
     /**
+     * Whether anyone can already administer the site. A site that works
+     * roles out for itself is asked in PHP rather than in SQL, because
+     * there may be no column to ask about.
+     */
+    private function hasAdministrator(string $model, string $adminRole): bool
+    {
+        if ($this->usersHaveARoleColumn($model)) {
+            return $model::query()->where('role', $adminRole)->exists();
+        }
+
+        return $model::query()->cursor()->contains(fn ($user): bool => $user->role === $adminRole);
+    }
+
+    private function usersHaveARoleColumn(string $model): bool
+    {
+        $user = new $model;
+
+        return rescue(
+            fn (): bool => Schema::connection($user->getConnectionName())->hasColumn($user->getTable(), 'role'),
+            false,
+            report: false,
+        );
+    }
+
+    /**
      * The GitHub workflow that updates the Gadya packages and puts the
      * result in git, so the Gadya Media portal can run the update for this
      * site without anyone opening a terminal. Never overwritten: a site
@@ -128,8 +153,20 @@ class InstallCommand extends Command
         $model = (string) config('auth.providers.users.model');
         $adminRole = (string) config('gadya-cms.users.admin_role', 'admin');
 
-        if ($model::query()->where('role', $adminRole)->exists()) {
+        if ($this->hasAdministrator($model, $adminRole)) {
             $this->components->twoColumnDetail('Administrator', 'already exists');
+
+            return;
+        }
+
+        /*
+         * A site may work out a person's role for itself - from a flag, or
+         * from another package's roles - rather than storing it in a
+         * column. There is nobody to write a role to, so it makes its own
+         * first account.
+         */
+        if (! $this->usersHaveARoleColumn($model)) {
+            $this->components->twoColumnDetail('Administrator', 'this site decides roles for itself; make the first account the way it does');
 
             return;
         }

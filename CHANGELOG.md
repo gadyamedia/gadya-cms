@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.7.2
+
+### Fixed
+
+- `gadya-cms:install` and `gadya-cms:editor` no longer fail with a database error on a site that works out a person's role for itself - from an `is_admin` flag, say - and exposes `role` as an accessor rather than a column. They say the site makes its own accounts and carry on.
+
 ## 0.7.1
 
 ### Added

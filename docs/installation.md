@@ -5,7 +5,7 @@
 - PHP 8.3 or 8.4
 - Laravel 13
 - Filament 5
-- A user model with a `role` column (any string values; the package only needs to know which one is the administrator)
+- A user model with a `role` column (any string values; the package only needs to know which one is the administrator). A site that works the role out for itself - from an `is_admin` flag, or from another package's roles - can expose `role` as an accessor instead, and then makes its own first account: `gadya-cms:install` and `gadya-cms:editor` will not try to write one.
 
 ## Install
 

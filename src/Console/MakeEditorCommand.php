@@ -4,6 +4,7 @@ namespace Gadya\Cms\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 use function Laravel\Prompts\password;
@@ -14,6 +15,15 @@ class MakeEditorCommand extends Command
     protected $signature = 'gadya-cms:editor {--name=} {--email=} {--password=} {--role=admin}';
 
     protected $description = 'Create a user who can sign in to the CMS and edit the site';
+
+    private function usersHaveARoleColumn(object $user): bool
+    {
+        return rescue(
+            fn (): bool => Schema::connection($user->getConnectionName())->hasColumn($user->getTable(), 'role'),
+            false,
+            report: false,
+        );
+    }
 
     public function handle(): int
     {
@@ -46,7 +56,16 @@ class MakeEditorCommand extends Command
             'password' => Hash::make($plainPassword),
         ]);
 
-        $user->forceFill(['role' => (string) $this->option('role')])->save();
+        /*
+         * A site that works roles out for itself - from a flag, or from
+         * another package's roles - has no column to write to, and says so
+         * rather than failing with a database error.
+         */
+        if ($this->usersHaveARoleColumn($user)) {
+            $user->forceFill(['role' => (string) $this->option('role')])->save();
+        } else {
+            $this->components->warn("This site decides roles for itself, so {$email} was created without one. Give them their role the way the site does.");
+        }
 
         $this->info("Created CMS user {$email}.");
 
