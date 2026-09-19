@@ -73,4 +73,29 @@ class ImageVariantsTest extends TestCase
         $this->assertSame(['480' => 'site-media/variants/older-480.webp'], $media->fresh()->variants);
         Storage::disk('public')->assertExists('site-media/variants/older-480.webp');
     }
+
+    public function test_a_legacy_photo_gets_variants_and_keeps_its_original_where_it_is(): void
+    {
+        config(['gadya-cms.media.variants' => [480]]);
+        $manager = new ImageManager(app(ImageCapabilities::class)->driver());
+        $original = public_path('images/site/Old Logo.PNG');
+        @mkdir(dirname($original), 0755, true);
+        file_put_contents($original, (string) $manager->create(1000, 600)->fill('#00aaff')->toPng());
+        $media = Media::factory()->legacy()->create(['filename' => 'Old Logo.PNG', 'path' => 'images/site/Old Logo.PNG', 'disk' => 'public', 'variants' => null, 'width' => 1000]);
+
+        try {
+            $this->artisan('gadya-cms:media-variants')->expectsOutputToContain('1 photos')->assertSuccessful();
+        } finally {
+            @unlink($original);
+        }
+
+        $this->assertSame(['480' => 'site-media/variants/legacy-old-logo-480.webp'], $media->fresh()->variants);
+        Storage::disk('public')->assertExists('site-media/variants/legacy-old-logo-480.webp');
+
+        $images = app(SiteImage::class);
+        $this->assertStringEndsWith('/site-media/variants/legacy-old-logo-480.webp', $images->url('Old Logo.PNG', 400));
+        $this->assertStringEndsWith('images/site/Old Logo.PNG', $images->url('Old Logo.PNG'), 'The original stays where it was shipped.');
+        $this->assertStringEndsWith('images/site/Old Logo.PNG 1000w', $images->srcset('Old Logo.PNG'));
+        $this->assertStringContainsString('legacy-old-logo-480.webp 480w', $images->srcset('Old Logo.PNG'));
+    }
 }

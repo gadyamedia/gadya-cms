@@ -15,6 +15,9 @@ class BuiltBy
     /** The badge's own colour, for a site whose ink is not a hex colour. */
     public const GADYA_NAVY = '#29376a';
 
+    /** The logo's width over its height (768 × 191), so it reserves its space before it loads. */
+    private const LOGO_RATIO = 768 / 191;
+
     /**
      * @param  array{color?: string, filter?: string, logo_height?: int, align?: string}  $options
      */
@@ -35,11 +38,14 @@ class BuiltBy
         $wanted = (string) ($options['color'] ?? config('gadya-cms.built_by.color') ?? GadyaCmsPlugin::brandTokens()['ink']);
         $color = rescue(fn (): string => ColorFilter::normalise($wanted), self::GADYA_NAVY, report: false);
         $align = (string) ($options['align'] ?? config('gadya-cms.built_by.align', 'end'));
+        $logoHeight = min(max((int) ($options['logo_height'] ?? config('gadya-cms.built_by.logo_height', 28)), 12), 80);
+        $filter = (string) ($options['filter'] ?? config('gadya-cms.built_by.filter') ?? ColorFilter::for($color));
 
         return view('gadya-cms::brand.built-by', [
             'color' => $color,
-            'filter' => (string) ($options['filter'] ?? config('gadya-cms.built_by.filter') ?? ColorFilter::for($color)),
-            'logoHeight' => (int) ($options['logo_height'] ?? config('gadya-cms.built_by.logo_height', 28)),
+            'filter' => str_replace(['{', '}', '<', '>', ';', '"'], '', $filter),
+            'logoHeight' => $logoHeight,
+            'logoWidth' => (int) round($logoHeight * self::LOGO_RATIO),
             'justify' => match ($align) {
                 'start' => 'flex-start',
                 'center' => 'center',

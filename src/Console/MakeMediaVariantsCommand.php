@@ -12,8 +12,10 @@ use Throwable;
 
 /**
  * Writes the responsive variants for photos uploaded before variants
- * existed, or after the configured widths changed. Legacy photos are
- * left alone: they are served from wherever they were shipped.
+ * existed, or after the configured widths changed. Legacy photos - the
+ * ones shipped in public/ before the library - keep their original where
+ * it is and get WebP variants beside the library's, so a site that
+ * started life with hand-placed images stops sending phones the originals.
  */
 class MakeMediaVariantsCommand extends Command
 {
@@ -28,7 +30,7 @@ class MakeMediaVariantsCommand extends Command
         $directory = (string) config('gadya-cms.media.directory', 'site-media');
         $done = 0;
 
-        $query = Media::query()->ready()->where('is_legacy', false);
+        $query = Media::query()->ready();
 
         if (! $this->option('force')) {
             $query->where(fn ($q) => $q->whereNull('variants')->orWhere('variants', '[]')->orWhere('variants', '{}'));
@@ -36,17 +38,18 @@ class MakeMediaVariantsCommand extends Command
 
         foreach ($query->cursor() as $item) {
             $disk = Storage::disk($item->disk);
+            $original = $item->is_legacy ? public_path($item->path) : null;
 
-            if (! $disk->exists($item->path)) {
+            if ($item->is_legacy ? ! is_file((string) $original) : ! $disk->exists($item->path)) {
                 $this->components->warn("{$item->original_name}: file missing, skipped.");
 
                 continue;
             }
 
             try {
-                $contents = (string) $disk->get($item->path);
+                $contents = $item->is_legacy ? (string) file_get_contents((string) $original) : (string) $disk->get($item->path);
                 $image = $manager->read($contents);
-                $base = Str::of($item->filename)->beforeLast('.')->toString();
+                $base = $item->is_legacy ? 'legacy-'.Str::of($item->filename)->beforeLast('.')->slug() : Str::of($item->filename)->beforeLast('.')->toString();
                 $variants = [];
 
                 foreach ($widths as $width) {

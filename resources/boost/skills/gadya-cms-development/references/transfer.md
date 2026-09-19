@@ -27,6 +27,6 @@ Every upload is written at the widths in `media.variants` (default 480, 960, 160
 `@siteImage($ref, $width)` answers with the smallest variant at least that wide; `@siteSrcset` lists every variant and the original with its width. Legacy photos (shipped with the site) answer with the original alone, which is still valid.
 
 ```bash
-php artisan gadya-cms:media-variants          # for photos uploaded before variants existed
+php artisan gadya-cms:media-variants          # for photos uploaded before variants existed, and legacy public/ photos
 php artisan gadya-cms:media-variants --force  # after changing the widths
 ```

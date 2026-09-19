@@ -22,8 +22,12 @@ class SiteImage
     {
         $item = $this->library()->get($reference);
 
-        if ($item === null || $item->is_legacy) {
-            return asset(config('gadya-cms.media.legacy_directory', 'images/site').'/'.$reference);
+        if ($item === null) {
+            return $this->legacyUrl($reference);
+        }
+
+        if ($item->is_legacy && ($width === null || $this->variantsOf($item) === [])) {
+            return $this->legacyUrl($reference);
         }
 
         if ($width !== null) {
@@ -34,7 +38,12 @@ class SiteImage
             }
         }
 
-        return Storage::disk($item->disk)->url($item->path);
+        return $item->is_legacy ? $this->legacyUrl($reference) : Storage::disk($item->disk)->url($item->path);
+    }
+
+    private function legacyUrl(string $reference): string
+    {
+        return asset(config('gadya-cms.media.legacy_directory', 'images/site').'/'.$reference);
     }
 
     /**
@@ -62,7 +71,7 @@ class SiteImage
     {
         $item = $this->library()->get($reference);
 
-        if ($item === null || $item->is_legacy) {
+        if ($item === null || ($item->is_legacy && $this->variantsOf($item) === [])) {
             return $this->url($reference);
         }
 
@@ -72,7 +81,8 @@ class SiteImage
             $candidates[] = Storage::disk($item->disk)->url($path).' '.$width.'w';
         }
 
-        $candidates[] = Storage::disk($item->disk)->url($item->path).($item->width ? ' '.$item->width.'w' : '');
+        $original = $item->is_legacy ? $this->legacyUrl($reference) : Storage::disk($item->disk)->url($item->path);
+        $candidates[] = $original.($item->width ? ' '.$item->width.'w' : '');
 
         return implode(', ', $candidates);
     }

@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.3
+
+### Changed
+
+- **`@gadyaBuiltBy` is rendered by the server.** The badge no longer loads a script from gadya.media or the Arvo font from Google Fonts, which Lighthouse counted as render-blocking. It looks the same. The text uses Arvo when the site already loads it, and Georgia otherwise. The logo now loads lazily and reserves its space. Nothing to change on the site.
+- **`gadya-cms:media-variants` covers legacy photos.** Photos shipped in `public/images/site` before the library existed now get WebP variants on the media disk. The originals stay where they are. `@siteImage($name, $width)` and `@siteSrcset($name)` serve those variants, so phones stop downloading full-size PNGs. After updating, run `php artisan gadya-cms:media-variants` once on the server.
+
 ## 0.5.2
 
 ### Changed

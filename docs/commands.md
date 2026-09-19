@@ -9,7 +9,7 @@
 | `gadya-cms:make:page-template` | Scaffold a Blade template wired to the live editor (`--layout=`, `--force`) |
 | `gadya-cms:export` | The whole site as a zip or JSON (`--path=`, `--with-media`, `--array` for the old PHP array) |
 | `gadya-cms:import` | Bring an export into this install (`--replace`) |
-| `gadya-cms:media-variants` | Generate responsive variants for older photos (`--force`) |
+| `gadya-cms:media-variants` | Generate responsive WebP variants for older and legacy photos (`--force`) |
 | `gadya-cms:import-legacy-media` | Index images already shipped with the site |
 | `gadya-cms:import-legacy-content` | Import from a pre-Filament `site_contents` table |
 | `gadya-cms:publish-due` | Publish the draft if a publish was scheduled for now or earlier |

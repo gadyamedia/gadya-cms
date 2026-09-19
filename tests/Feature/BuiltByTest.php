@@ -15,19 +15,24 @@ class BuiltByTest extends TestCase
 
         $html = Blade::render('@gadyaBuiltBy');
 
-        $this->assertStringContainsString('src="https://gadya.media/brand/built-by.v1.js?v=4"', $html);
-        $this->assertStringContainsString('<gadya-built-by color="#29376a"', $html);
-        $this->assertStringContainsString('filter="brightness(0) saturate(100%) invert(', $html);
+        $this->assertStringContainsString('href="https://gadya.media"', $html);
+        $this->assertStringContainsString('color:#29376a;', $html);
+        $this->assertStringContainsString('filter:brightness(0) saturate(100%) invert(', $html);
         $this->assertStringContainsString('justify-content:flex-end', $html);
+        $this->assertStringContainsString('loading="lazy"', $html);
+        $this->assertStringNotContainsString('<script', $html, 'No script from gadya.media on the client\'s page.');
+        $this->assertStringNotContainsString('fonts.googleapis.com', $html, 'No web-font request either.');
     }
 
     public function test_a_site_can_name_its_own_colour_and_placement_or_turn_it_off(): void
     {
         $html = Blade::render("@gadyaBuiltBy(['color' => '#fff', 'align' => 'center', 'logo_height' => 20])");
 
-        $this->assertStringContainsString('color="#ffffff"', $html);
+        $this->assertStringContainsString('color:#ffffff;', $html);
         $this->assertStringContainsString('justify-content:center', $html);
-        $this->assertStringContainsString('logo-height="20"', $html);
+        $this->assertStringContainsString('height:20px;', $html);
+        $this->assertStringContainsString('width="80" height="20"', $html);
+        $this->assertStringNotContainsString(';background', Blade::render("@gadyaBuiltBy(['filter' => 'none;background:url(x)'])"), 'A filter cannot break out of its declaration.');
 
         config(['gadya-cms.built_by.enabled' => false]);
 
@@ -38,7 +43,7 @@ class BuiltByTest extends TestCase
     {
         config(['gadya-cms.brand.ink' => 'rebeccapurple']);
 
-        $this->assertStringContainsString('color="#29376a"', Blade::render('@gadyaBuiltBy'));
+        $this->assertStringContainsString('color:#29376a;', Blade::render('@gadyaBuiltBy'));
     }
 
     public function test_the_filter_turns_black_into_the_colour_asked_for(): void
