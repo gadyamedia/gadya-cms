@@ -32,6 +32,7 @@ class SeoController extends Controller
     public function robots(): Response
     {
         $disallow = (array) config('gadya-cms.seo.robots_disallow', ['/admin', '/cms']);
+        $signals = $this->contentSignals();
         $lines = [];
 
         foreach ((array) config('gadya-cms.seo.ai_crawlers.block', []) as $agent) {
@@ -48,6 +49,11 @@ class SeoController extends Controller
             }
 
             $lines[] = 'Allow: /';
+
+            if ($signals !== null) {
+                $lines[] = $signals;
+            }
+
             $lines[] = '';
         }
 
@@ -55,6 +61,10 @@ class SeoController extends Controller
 
         foreach ($disallow as $path) {
             $lines[] = 'Disallow: '.$path;
+        }
+
+        if ($signals !== null) {
+            $lines[] = $signals;
         }
 
         if (config('gadya-cms.seo.sitemap', true)) {
@@ -69,5 +79,24 @@ class SeoController extends Controller
         return response(implode("\n", $lines)."\n")
             ->header('Content-Type', 'text/plain; charset=utf-8')
             ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    /**
+     * `Content-Signal: search=yes, ai-input=yes, ai-train=no`, or null when
+     * the site declares none.
+     */
+    private function contentSignals(): ?string
+    {
+        $signals = array_filter(
+            (array) config('gadya-cms.seo.content_signals', []),
+            fn ($value, $key): bool => is_string($key) && in_array($value, ['yes', 'no'], true),
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        if ($signals === []) {
+            return null;
+        }
+
+        return 'Content-Signal: '.implode(', ', array_map(fn (string $key, string $value): string => $key.'='.$value, array_keys($signals), $signals));
     }
 }

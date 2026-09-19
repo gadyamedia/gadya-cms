@@ -38,6 +38,8 @@ Drafts and scheduled articles are always `noindex`.
 
 A static `public/robots.txt` or `public/sitemap.xml` wins over these routes; delete the static file to let the package answer.
 
+Every group in `robots.txt` carries a `Content-Signal` line (`seo.content_signals`), and the home page sends `Link` headers pointing at `llms.txt` and the sitemap (`seo.link_headers`). If the live site answers `/robots.txt` with 404 while it works locally with `php artisan serve`, the web server is intercepting it; see *Get found* in [search-and-readiness.md](search-and-readiness.md).
+
 ## Redirects
 
 **Settings → Redirects** is a table of old addresses and where they go now, with a count of how often each is used. Paths are normalised (leading slash, no trailing slash, lower case) so any spelling of the old address matches. Only page requests are forwarded; a form posted to an old address is a bug to fix, not something to forward silently. The panel and editor paths can never be redirected away from.

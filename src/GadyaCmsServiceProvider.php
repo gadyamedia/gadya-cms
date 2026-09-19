@@ -31,6 +31,7 @@ use Gadya\Cms\Content\SlugPagePaths;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
+use Gadya\Cms\Http\Middleware\AdvertiseDiscovery;
 use Gadya\Cms\Http\Middleware\ComingSoon;
 use Gadya\Cms\Http\Middleware\HandleRedirects;
 use Gadya\Cms\Http\Middleware\NegotiateMarkdown;
@@ -191,6 +192,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          */
         EncryptCookies::except(Maintenance::COOKIE);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', ComingSoon::class);
+        $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', AdvertiseDiscovery::class);
         $this->app->make(Kernel::class)->pushMiddleware(RecordMissingUrls::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);

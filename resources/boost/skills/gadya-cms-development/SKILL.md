@@ -122,7 +122,7 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/commands.md` - every Artisan command, config publishing, deploy steps
 - `references/roles-and-globals.md` - abilities per role, the Everywhere screen
 - `references/transfer.md` - moving a site, responsive photos
-- `references/search-and-readiness.md` - Search Console, PageSpeed, the AI-readiness checks
+- `references/search-and-readiness.md` - Search Console, PageSpeed, the AI-readiness checks, the Get found page (live checks, DNS per domain, Forge robots.txt 404)
 - `references/demo.md` - the demo site and the template generator
 - `references/events-and-search.md` - the diary, the search box, the mailing list
 - `references/operations.md` - trash, activity, scheduled publish, coming soon, broken links, replies

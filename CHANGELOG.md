@@ -2,6 +2,18 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.4
+
+### Added
+
+- **Settings → Get found**: live checks that `robots.txt`, `sitemap.xml` and `llms.txt` actually answer (and the Forge nginx fix when `robots.txt` comes back 404), the sitemap address with step-by-step Search Console and Bing instructions, and the DNS records every domain in `seo.domains` needs, each looked up live and marked in place, missing or pointing elsewhere.
+- `Content-Signal` lines in `robots.txt` (`seo.content_signals`, default `search=yes, ai-input=yes, ai-train=no`) and a matching readiness check.
+- `Link` headers on the home page pointing agents at `llms.txt` and the sitemap (`seo.link_headers`).
+
+### Changed
+
+- **The dashboard, redesigned.** Rows no longer touch the card edges; headline figures sit in one strip under a live-visitor pill and a segmented date range; the chart has gridlines, a "busiest day" figure and an empty state; pages, sources and countries show proportional share bars; countries get full names; devices a split bar; readiness checks stack instead of cramming into two columns; notices merge into one; "Someone" is now "A team member".
+
 ## 0.4.3
 
 ### Added

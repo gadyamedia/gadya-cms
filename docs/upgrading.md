@@ -1,5 +1,9 @@
 # Upgrading
 
+## 0.4.3 → 0.4.4
+
+Run `filament:assets`. If you publish `config/gadya-cms.php`, add to its `seo` array: `content_signals`, `link_headers` and `domains` (list every domain the business owns, the site's first). Without them robots.txt carries no Content-Signal lines and **Get found** checks only APP_URL's host.
+
 ## 0.2 → 0.3
 
 Run the migrations (photo variants, search snapshots, page scores) and `filament:assets`.

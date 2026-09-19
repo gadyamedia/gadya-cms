@@ -460,6 +460,26 @@ return [
         ],
 
         /*
+         * Content Signals (contentsignals.org), written into robots.txt:
+         * may machines use the site for a search index, to answer a
+         * question in the moment, or to train a model. Empty to leave out.
+         */
+        'content_signals' => ['search' => 'yes', 'ai-input' => 'yes', 'ai-train' => 'no'],
+
+        /*
+         * Link headers on the home page pointing agents at the sitemap and
+         * llms.txt (RFC 8288), so they need not guess the addresses.
+         */
+        'link_headers' => true,
+
+        /*
+         * Every domain the business owns, for the DNS checklist on the Get
+         * found page. The first is the one the site lives on; the rest
+         * should redirect to it. Empty means APP_URL's host alone.
+         */
+        'domains' => [],
+
+        /*
          * The organisation behind the site, for the JSON-LD on every page.
          * The name and logo come from the brand; these are the rest.
          */

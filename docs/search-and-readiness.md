@@ -61,3 +61,38 @@ Scores (performance, accessibility, best practices, SEO), LCP, CLS and the five 
 ```
 
 Markdown for pages is answered by middleware from the site document (heading, description, sections); articles convert their HTML. A request whose `Accept` header puts `text/html` first still gets the page.
+
+## Get found
+
+**Settings → Get found** is the checklist for everything outside the code that decides whether Google and AI assistants find the site:
+
+- **Can they reach it?** `robots.txt`, `sitemap.xml` and `llms.txt` fetched live from `APP_URL`, the way a crawler would, cached ten minutes (**Check again** clears it). A `/robots.txt` that answers 404 is almost always the web server: Laravel Forge's default nginx config has `location = /robots.txt { access_log off; log_not_found off; }`, which looks for a static file and, finding none, hands the request to Laravel *keeping the 404*. Crawlers ignore a robots file served as 404. Delete that line (Forge: the site → Edit Files → Edit Nginx Configuration). Laravel Herd does the same locally.
+- **The sitemap address** with a copy button, and the steps to add it to Google Search Console (Domain property, TXT verification, Sitemaps → Submit) and Bing Webmaster Tools (import from Google).
+- **DNS for every domain** in `seo.domains`, looked up live over DNS-over-HTTPS (Cloudflare, then Google; four-second timeout, cached ten minutes). The first domain is the site; the others should point at the same server and redirect. Each record says what it is for and whether it is *in place*, *missing*, *pointing elsewhere* or *optional*:
+
+| Domain | Record | Value |
+| --- | --- | --- |
+| main | `A @` | the server's IP (read from the main domain) |
+| main | `CNAME www` | the domain |
+| main | `TXT @` | `google-site-verification=…` from Search Console |
+| main, when `mail.from.address` is on it | `TXT @` | `v=spf1 include:… ~all` (Postmark, Mailgun, SES and Resend known) |
+| main, likewise | `TXT _dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@domain` |
+| main | `CAA @` | optional: `0 issue "letsencrypt.org"` |
+| others | `A @`, `CNAME www` | the same server, then a redirect on it |
+| others | `TXT @` | optional: `v=spf1 -all` when no mail is sent from it |
+
+The page names the DNS host from the nameservers (GoDaddy, Cloudflare, Route 53, Namecheap…) and warns when a domain sits on a for-sale parking service such as Afternic or Sedo. Local addresses (`.test`, IPs) are never looked up.
+
+```php
+'seo' => [
+    'domains' => ['springfieldparties.com', 'springfield-parties.co.uk'],
+
+    // robots.txt: Content-Signal for every group (contentsignals.org). [] to leave out.
+    'content_signals' => ['search' => 'yes', 'ai-input' => 'yes', 'ai-train' => 'no'],
+
+    // Link: <…/llms.txt>; rel="describedby", <…/sitemap.xml>; rel="sitemap" on the home page.
+    'link_headers' => true,
+],
+```
+
+Checkers such as isitagentready.com also look for agent DNS records (DNS-AID `_agents` SVCB), MCP server cards, OAuth metadata and payment protocols. Those describe a site that runs its own agent or API; a business site rightly has none, and the page says so rather than inviting empty records.

@@ -41,6 +41,7 @@ Use it when the person is an editor, writer or site owner asking how to change s
 | Find out who changed something | **Settings → Activity** |
 | Fix a link that goes nowhere | **Settings → Broken links** |
 | Connect Google Search Console / PageSpeed | **Settings → Search & speed** |
+| Add the sitemap to Google, see which DNS records each domain needs | **Settings → Get found** |
 | Show a draft to someone without an account | **Share a preview** on a page or article - a link that expires |
 
 Which of these a person sees depends on their role: a *contributor* writes articles and manages photos; an *editor* does everything but settings and the team; an *administrator* does everything.
