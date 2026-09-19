@@ -531,6 +531,17 @@ return [
         'follow_site' => true,
 
         /*
+         * Which of the site's own colours each panel colour follows, for a
+         * palette that names them its own way:
+         *
+         *     'follows' => ['primary' => 'fun-purple', 'accent' => 'fun-yellow'],
+         *
+         * Anything left out follows a site colour of the same name, and
+         * falls back to the value below when there is none.
+         */
+        'follows' => [],
+
+        /*
          * A filename in the photo library, or a path under public/. Null
          * falls back to the brand name as text.
          */

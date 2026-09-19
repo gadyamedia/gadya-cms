@@ -65,6 +65,9 @@ A site that wants the panel to look different from the site sets `brand.follow_s
 ```php
 'brand' => [
     'follow_site' => true,   // the panel follows Look & feel
+    'follows' => ['primary' => 'fun-purple', 'accent' => 'fun-yellow'],
     'logo' => 'logo.webp',   // only read when follow_site is false, or nothing is picked
 ],
 ```
+
+`follows` maps each panel colour to one of the site's own, for a palette that names its colours its own way. Anything left out follows a site colour of the same name (`primary`, `secondary`, `background`, `ink`, `accent`) and falls back to the configured value when the palette has none.

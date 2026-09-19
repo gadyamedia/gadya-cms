@@ -54,6 +54,22 @@ class PanelBrandTest extends TestCase
         $this->assertStringContainsString('signage.webp', (string) GadyaCmsPlugin::brandLogo());
     }
 
+    public function test_a_palette_with_its_own_names_says_which_colour_the_panel_follows(): void
+    {
+        config([
+            'site.theme.colors' => ['fun-purple' => '#9f12c7', 'fun-yellow' => '#f0e56c'],
+            'gadya-cms.brand.follows' => ['primary' => 'fun-purple', 'accent' => 'fun-yellow'],
+            'gadya-cms.brand.secondary' => '#abcdef',
+        ]);
+        $this->publishDocument();
+
+        $tokens = app(PanelBrand::class)->tokens();
+
+        $this->assertSame('#9f12c7', $tokens['primary']);
+        $this->assertSame('#f0e56c', $tokens['accent']);
+        $this->assertSame('#abcdef', $tokens['secondary'], 'A colour the palette has no name for keeps the configured one.');
+    }
+
     public function test_a_site_that_wants_its_own_panel_keeps_the_configured_brand(): void
     {
         config([

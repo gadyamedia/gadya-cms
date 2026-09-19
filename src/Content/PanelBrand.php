@@ -13,7 +13,11 @@ namespace Gadya\Cms\Content;
  */
 class PanelBrand
 {
-    /** Panel colour => the site colour it follows, when the site has one. */
+    /**
+     * Panel colour => the site colour it follows by default, for a palette
+     * that names its colours plainly. A site whose palette has its own
+     * names says so in `brand.follows`.
+     */
     private const FOLLOWS = [
         'primary' => 'primary',
         'secondary' => 'secondary',
@@ -74,9 +78,10 @@ class PanelBrand
     private function siteColors(): array
     {
         $colors = rescue(fn (): array => $this->theme->colors(), [], report: false);
+        $follows = array_merge(self::FOLLOWS, array_filter((array) config('gadya-cms.brand.follows', [])));
         $followed = [];
 
-        foreach (self::FOLLOWS as $token => $siteColor) {
+        foreach ($follows as $token => $siteColor) {
             if (isset($colors[$siteColor]) && is_string($colors[$siteColor])) {
                 $followed[$token] = $colors[$siteColor];
             }
