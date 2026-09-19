@@ -36,6 +36,19 @@ Drafts and scheduled articles are always `noindex`.
 ],
 ```
 
+`sitemap_extra` suits a handful of fixed routes. For addresses that come from the site's own records (rentals, services, job postings), add a callback in a service provider's `boot()`. It runs each time the sitemap is built:
+
+```php
+use Gadya\Cms\Seo\SitemapEntries;
+
+SitemapEntries::add(fn () => Rental::query()->get()->map(fn (Rental $rental) => [
+    'loc' => route('rentals.show', $rental, absolute: false),
+    'lastmod' => $rental->updated_at?->toAtomString(),
+]));
+```
+
+Each item is a path, or an array with `loc` and optionally `lastmod` and `priority`.
+
 A static `public/robots.txt` or `public/sitemap.xml` wins over these routes; delete the static file to let the package answer.
 
 Every group in `robots.txt` carries a `Content-Signal` line (`seo.content_signals`), and the home page sends `Link` headers pointing at `llms.txt` and the sitemap (`seo.link_headers`). If the live site answers `/robots.txt` with 404 while it works locally with `php artisan serve`, the web server is intercepting it; see *Get found* in [search-and-readiness.md](search-and-readiness.md).

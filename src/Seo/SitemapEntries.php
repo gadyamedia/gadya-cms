@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Seo;
 
+use Closure;
 use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
@@ -12,9 +13,33 @@ use Illuminate\Support\Carbon;
 /**
  * Every public address worth telling a search engine about: the visible
  * pages, the live articles, and anything the application adds.
+ *
+ * A site with its own records (rentals, services, job postings) adds
+ * their addresses from a service provider's boot():
+ *
+ *     SitemapEntries::add(fn () => Rental::query()->pluck('slug')->map(fn ($slug) => "/rentals/{$slug}"));
+ *
+ * The callback returns paths, or arrays with `loc` and optionally
+ * `lastmod` and `priority`, and runs each time the sitemap is built.
  */
 class SitemapEntries
 {
+    /** @var list<Closure(): iterable<string|array{loc: string, lastmod?: string|null, priority?: string}>> */
+    private static array $extenders = [];
+
+    /**
+     * @param  Closure(): iterable<string|array{loc: string, lastmod?: string|null, priority?: string}>  $entries
+     */
+    public static function add(Closure $entries): void
+    {
+        self::$extenders[] = $entries;
+    }
+
+    public static function flushExtenders(): void
+    {
+        self::$extenders = [];
+    }
+
     public function __construct(
         private readonly SiteContentRepository $repository,
         private readonly PageRegistry $registry,
@@ -86,6 +111,18 @@ class SitemapEntries
 
         foreach ((array) config('gadya-cms.seo.sitemap_extra', []) as $path) {
             $entries[] = ['loc' => url((string) $path), 'lastmod' => Carbon::now()->toAtomString(), 'priority' => '0.5'];
+        }
+
+        foreach (self::$extenders as $extender) {
+            foreach ($extender() as $entry) {
+                $entry = is_array($entry) ? $entry : ['loc' => (string) $entry];
+
+                $entries[] = [
+                    'loc' => url((string) $entry['loc']),
+                    'lastmod' => $entry['lastmod'] ?? null,
+                    'priority' => (string) ($entry['priority'] ?? '0.5'),
+                ];
+            }
         }
 
         return $entries;

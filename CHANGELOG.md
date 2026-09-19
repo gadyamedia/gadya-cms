@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.4
+
+### Added
+
+- `SitemapEntries::add(fn () => ...)` lets a site put its own records (rentals, services, job postings) in `/sitemap.xml`. `seo.sitemap_extra` only takes fixed paths. See *Sitemap and robots* in `docs/seo.md`.
+
 ## 0.5.3
 
 ### Changed

@@ -7,6 +7,7 @@ use Gadya\Cms\Filament\Resources\Pages\Pages\EditPage;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Post;
 use Gadya\Cms\Seo\SeoHead;
+use Gadya\Cms\Seo\SitemapEntries;
 use Gadya\Cms\Tests\TestCase;
 use Livewire\Livewire;
 
@@ -85,6 +86,22 @@ class SeoTest extends TestCase
             ->assertDontSee('/pricing', false)
             ->assertDontSee('/old-offer', false)
             ->assertDontSee('draft-one', false);
+    }
+
+    public function test_a_site_can_add_its_own_records_to_the_sitemap(): void
+    {
+        SitemapEntries::add(fn (): array => ['/rentals/bouncy-castle', ['loc' => '/rentals/foam-party', 'lastmod' => '2026-09-01T00:00:00+00:00', 'priority' => '0.8']]);
+
+        try {
+            $this->get('/sitemap.xml')
+                ->assertOk()
+                ->assertSee('<loc>'.url('/rentals/bouncy-castle').'</loc>', false)
+                ->assertSee('<loc>'.url('/rentals/foam-party').'</loc>', false)
+                ->assertSee('2026-09-01T00:00:00+00:00', false)
+                ->assertSee('0.8', false);
+        } finally {
+            SitemapEntries::flushExtenders();
+        }
     }
 
     public function test_the_robots_file_points_at_the_sitemap_and_keeps_bots_out_of_the_panel(): void
