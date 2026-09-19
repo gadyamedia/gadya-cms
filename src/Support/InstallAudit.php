@@ -187,10 +187,32 @@ class InstallAudit
             ->map(fn ($event): string => (string) $event->command)
             ->implode("\n");
 
+        /*
+         * The analytics and Search Console jobs only matter while those
+         * features are on; a site that switched one off need not run them.
+         */
+        $plugin = $this->plugin();
+        $countsVisits = ($plugin?->hasAnalytics() ?? true) && (bool) config('gadya-cms.analytics.enabled', true);
+        $readsSearch = $plugin?->hasSearch() ?? true;
+        $needed = [
+            'gadya-cms:prune-analytics' => $countsVisits,
+            'gadya-cms:analytics-digest' => $countsVisits,
+            'gadya-cms:search-console' => $readsSearch,
+            'gadya-cms:pagespeed' => $readsSearch,
+        ];
+
         $checks = [];
 
         foreach (self::SCHEDULE as $command => $line) {
-            $checks[] = $this->check('Schedule', $command.' is scheduled', str_contains($scheduled, $command), 'Add to routes/console.php: '.$line);
+            $isNeeded = $needed[$command] ?? true;
+
+            $checks[] = $this->check(
+                'Schedule',
+                $command.' is scheduled',
+                str_contains($scheduled, $command),
+                ($isNeeded ? 'Add to routes/console.php: ' : 'Its feature is switched off, so it has nothing to do. If you switch it on, add to routes/console.php: ').$line,
+                optional: ! $isNeeded,
+            );
         }
 
         return $checks;
@@ -207,7 +229,19 @@ class InstallAudit
             ->implode("\n");
 
         return [
-            $this->check('Templates', '@cmsSeo in the public layout\'s <head>', str_contains($views, '@cmsSeo'), 'Replace hand-written <title>/description tags in the layout\'s <head> with @cmsSeo($page).'),
+            /*
+             * A site that switched off the package's sitemap, robots.txt and
+             * llms.txt runs its own search setup, head tags included.
+             */
+            $this->check(
+                'Templates',
+                '@cmsSeo in the public layout\'s <head>',
+                str_contains($views, '@cmsSeo'),
+                $this->keepsItsOwnSeo()
+                    ? 'The site writes its own head tags. Keep them if that is on purpose, and fill <title> and the description from $page[\'seo\'] so the client can edit them; otherwise use @cmsSeo($page).'
+                    : 'Replace hand-written <title>/description tags in the layout\'s <head> with @cmsSeo($page).',
+                optional: $this->keepsItsOwnSeo(),
+            ),
             $this->check('Templates', '@cmsToolbar before </body>', str_contains($views, '@cmsToolbar'), 'Add @cmsToolbar just before </body> in the public layout.'),
             $this->check('Templates', '@gadyaBuiltBy at the end of the footer', str_contains($views, '@gadyaBuiltBy'), str_contains($views, '<gadya-built-by') ? 'Replace the hand-pasted <gadya-built-by> script and tag with @gadyaBuiltBy; it matches the site\'s ink by itself.' : 'Add @gadyaBuiltBy as the last thing in the footer (bottom right).'),
             $this->check('Templates', '@cmsSearchForm somewhere on the site', str_contains($views, '@cmsSearchForm'), 'Add @cmsSearchForm to the header or footer.', optional: true),
@@ -296,6 +330,11 @@ class InstallAudit
     /**
      * @return array{group: string, label: string, status: string, fix: string}
      */
+    private function keepsItsOwnSeo(): bool
+    {
+        return ! config('gadya-cms.seo.sitemap', true) && ! config('gadya-cms.seo.robots', true) && ! config('gadya-cms.seo.llms', true);
+    }
+
     private function check(string $group, string $label, bool $passed, string $fix, bool $optional = false): array
     {
         return [

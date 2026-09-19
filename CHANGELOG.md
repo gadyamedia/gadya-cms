@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.6
+
+### Changed
+
+- `gadya-cms:audit` no longer demands the analytics and Search Console jobs from a site that has those features switched off, and treats `@cmsSeo` as a choice on a site that also switched off the package's sitemap, robots.txt and llms.txt - such a site writes its own head tags on purpose. Both are still listed, as decisions rather than to-dos.
+
 ## 0.5.5
 
 ### Changed

@@ -39,6 +39,19 @@ class InstallAuditTest extends TestCase
         $this->assertSame(InstallAudit::OK, $checks['Every package migration has run']['status']);
     }
 
+    public function test_jobs_and_head_tags_for_features_the_site_runs_itself_are_offered_not_demanded(): void
+    {
+        config(['gadya-cms.analytics.enabled' => false, 'gadya-cms.seo.sitemap' => false, 'gadya-cms.seo.robots' => false, 'gadya-cms.seo.llms' => false]);
+
+        $checks = collect(app(InstallAudit::class)->checks())->keyBy('label');
+
+        $this->assertSame(InstallAudit::OPTIONAL, $checks['gadya-cms:prune-analytics is scheduled']['status']);
+        $this->assertSame(InstallAudit::OPTIONAL, $checks['gadya-cms:analytics-digest is scheduled']['status']);
+        $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:search-console is scheduled']['status'], 'Search is still on.');
+        $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:prune-trash is scheduled']['status']);
+        $this->assertSame(InstallAudit::OPTIONAL, $checks["@cmsSeo in the public layout's <head>"]['status']);
+    }
+
     public function test_comments_are_offered_not_demanded(): void
     {
         $check = collect(app(InstallAudit::class)->checks())->firstWhere('label', 'Comments on articles (blog.comments.enabled)');
