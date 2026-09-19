@@ -46,6 +46,20 @@ class VisitorGeo
             .mb_chr(0x1F1E6 + ord($country[1]) - ord('A'));
     }
 
+    /** For display: "United States" from "US", or the code itself without the intl extension. */
+    public static function countryName(string $country): string
+    {
+        $country = strtoupper($country);
+
+        if (! class_exists(\Locale::class)) {
+            return $country;
+        }
+
+        $name = \Locale::getDisplayRegion('-'.$country, 'en');
+
+        return $name === '' || $name === $country ? $country : $name;
+    }
+
     private static function label(Request $request, string $header): ?string
     {
         $value = trim((string) $request->headers->get($header));
