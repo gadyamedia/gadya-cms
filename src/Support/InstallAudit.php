@@ -183,9 +183,7 @@ class InstallAudit
      */
     private function scheduleChecks(): array
     {
-        $scheduled = collect(rescue(fn (): array => app(Schedule::class)->events(), [], report: false))
-            ->map(fn ($event): string => (string) $event->command)
-            ->implode("\n");
+        $scheduled = $this->scheduledCommands();
 
         /*
          * The analytics and Search Console jobs only matter while those
@@ -216,6 +214,38 @@ class InstallAudit
         }
 
         return $checks;
+    }
+
+    /**
+     * Everything the scheduler is set to run, as one string to search.
+     *
+     * Laravel only loads `routes/console.php` for console commands, so in a
+     * web request - the audit screen in the panel - the schedule is empty.
+     * There the files that define it are read instead, so the panel and the
+     * command agree about what is scheduled.
+     */
+    private function scheduledCommands(): string
+    {
+        $events = collect(rescue(fn (): array => app(Schedule::class)->events(), [], report: false))
+            ->map(fn ($event): string => (string) $event->command)
+            ->implode("\n");
+
+        if ($this->runningInConsole()) {
+            return $events;
+        }
+
+        $defined = collect([base_path('routes/console.php'), base_path('bootstrap/app.php')])
+            ->filter(fn (string $path): bool => $this->files->exists($path))
+            ->map(fn (string $path): string => $this->files->get($path))
+            ->implode("\n");
+
+        return $events."\n".$defined;
+    }
+
+    /** Overridden in tests, which always run in the console. */
+    protected function runningInConsole(): bool
+    {
+        return app()->runningInConsole();
     }
 
     /**

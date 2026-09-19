@@ -5,6 +5,7 @@ namespace Gadya\Cms\Tests\Feature;
 use Gadya\Cms\Support\InstallAudit;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Filesystem\Filesystem;
 
 class InstallAuditTest extends TestCase
 {
@@ -50,6 +51,42 @@ class InstallAuditTest extends TestCase
         $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:search-console is scheduled']['status'], 'Search is still on.');
         $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:prune-trash is scheduled']['status']);
         $this->assertSame(InstallAudit::OPTIONAL, $checks["@cmsSeo in the public layout's <head>"]['status']);
+    }
+
+    public function test_it_reads_the_schedule_from_its_file_when_the_scheduler_is_not_loaded(): void
+    {
+        /*
+         * A web request - the audit screen in the panel - never loads
+         * routes/console.php, so the schedule it can see is empty.
+         */
+        $path = base_path('routes/console.php');
+        @mkdir(dirname($path), 0777, true);
+        file_put_contents($path, "<?php\n\nSchedule::command('gadya-cms:prune-trash')->daily();\n");
+
+        try {
+            $checks = collect($this->auditFromAWebRequest())->keyBy('label');
+
+            $this->assertSame(InstallAudit::OK, $checks['gadya-cms:prune-trash is scheduled']['status']);
+            $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:publish-due is scheduled']['status']);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * @return list<array{group: string, label: string, status: string, fix: string}>
+     */
+    private function auditFromAWebRequest(): array
+    {
+        $audit = new class(app(Filesystem::class)) extends InstallAudit
+        {
+            protected function runningInConsole(): bool
+            {
+                return false;
+            }
+        };
+
+        return $audit->checks();
     }
 
     public function test_comments_are_offered_not_demanded(): void

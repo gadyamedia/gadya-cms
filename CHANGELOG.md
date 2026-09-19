@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.7
+
+### Fixed
+
+- The audit screen in the panel said the scheduled jobs were missing on a site where they are scheduled. Laravel only loads `routes/console.php` for console commands, so in a web request the audit saw an empty schedule; it now reads the files that define it. `gadya-cms:audit` on the command line was always right.
+
 ## 0.5.6
 
 ### Changed
