@@ -1,5 +1,39 @@
 # Upgrading
 
+## With an AI agent
+
+The package ships a `gadya-cms-upgrade` Boost skill. On any site, ask your agent:
+
+> Upgrade gadya/cms to the latest version and turn on everything, using the gadya-cms-upgrade skill.
+
+On a site installed before the skill existed, the agent does not have it yet. Ask instead:
+
+> Run `composer update gadya/cms -W` and `php artisan boost:update --discover`, then follow the gadya-cms-upgrade skill.
+
+The skill:
+
+1. Audits the site with `gadya-cms:audit`.
+2. Updates the package, reads the changelog and the notes below, and refreshes the skills.
+3. Works down the audit until nothing is left to do: copying config keys with the site's own values, running migrations, switching features on, scheduling jobs, and adding the Blade directives.
+4. Runs the tests and commits on a branch without pushing.
+5. Lists what only a person can do: deploy, server cron, DNS, Search Console, API keys, and menu links.
+
+It never touches content in the database.
+
+### Doing it by hand
+
+```bash
+composer update gadya/cms -W      # or composer require gadya/cms:^0.N -W for a new minor
+php artisan migrate
+php artisan filament:assets
+php artisan boost:update --discover
+php artisan gadya-cms:audit       # then fix each "!" it lists
+```
+
+## 0.4.4 → 0.4.5
+
+Nothing to change. `gadya-cms:audit` and the `gadya-cms-upgrade` skill are new; run `php artisan boost:update --discover` to install the skill.
+
 ## 0.4.3 → 0.4.4
 
 Run `filament:assets`. If you publish `config/gadya-cms.php`, add to its `seo` array: `content_signals`, `link_headers` and `domains` (list every domain the business owns, the site's first). Without them robots.txt carries no Content-Signal lines and **Get found** checks only APP_URL's host.

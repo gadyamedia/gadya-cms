@@ -7,6 +7,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\AgentReadyCommand;
+use Gadya\Cms\Console\AuditCommand;
 use Gadya\Cms\Console\CheckLinksCommand;
 use Gadya\Cms\Console\CheckPageSpeedCommand;
 use Gadya\Cms\Console\DoctorCommand;
@@ -103,6 +104,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 PruneActivityCommand::class,
                 PublishDueCommand::class,
                 CheckLinksCommand::class,
+                AuditCommand::class,
             ]);
     }
 

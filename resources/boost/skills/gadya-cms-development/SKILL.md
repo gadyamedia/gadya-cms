@@ -9,6 +9,10 @@ description: Build and extend a site on Gadya CMS - the site document, editable 
 
 Use it when adding or changing public templates or controllers, adding editable content, wiring forms, working on articles or the AI writer, configuring SEO, or changing `config/gadya-cms.php` in an application that uses `gadya/cms`. Full documentation lives in `vendor/gadya/cms/docs/`; read the relevant file there before implementing.
 
+## Upgrading
+
+To upgrade the package or switch on features a site has not taken up, use the `gadya-cms-upgrade` skill and `php artisan gadya-cms:audit`.
+
 ## Mental model
 
 - **The site document** is one nested array: top-level keys (`announcement`, `phone`, `nav`, `theme`, `locations`, ...) plus `pages.{slug}` arrays. Pages are rows in `gadyacms_pages`; everything else is a row per key in `gadyacms_settings`. Each carries `draft` and `published` JSON.

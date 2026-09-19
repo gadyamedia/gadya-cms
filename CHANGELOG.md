@@ -2,6 +2,21 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.5
+
+### Added
+
+- **`gadya-cms:audit`** lists what an application has not yet taken up from the installed version, each with its fix:
+  - config keys a release added
+  - migrations not run
+  - plugin switches and feature flags that are off
+  - scheduled jobs missing from `routes/console.php`
+  - `@cmsSeo`, `@cmsToolbar`, search and newsletter forms missing from the templates
+  - a stale panel stylesheet, missing gates, static `robots.txt` or `sitemap.xml` files, and out-of-date Boost skills
+
+  `--json` is for agents. The command fails while anything is left to do.
+- **The `gadya-cms-upgrade` Boost skill.** Ask an agent to *"upgrade gadya/cms to the latest version and turn on everything"*. It audits the site, updates the package, applies the upgrade notes, switches on and wires up every feature, runs the tests, commits on a branch, and lists what only a person can do. It never touches content.
+
 ## 0.4.4
 
 ### Added

@@ -72,7 +72,11 @@ That is the whole idea. [Installation](docs/installation.md) has the rest of the
 
 ## Laravel Boost
 
-The package ships a Boost guideline and a `gadya-cms-development` skill. In an application with `laravel/boost`, run `php artisan boost:update --discover` after installing and your agent learns how to work with the CMS.
+The package ships a Boost guideline and three skills. In an application with `laravel/boost`, run `php artisan boost:update --discover` after installing:
+
+- `gadya-cms-development` teaches your agent to build with the CMS.
+- `gadya-cms-content` teaches it to help someone edit and publish.
+- `gadya-cms-upgrade` audits a site with `gadya-cms:audit`, upgrades it to the latest release, and switches on every feature it has not taken up yet. Ask: *"Upgrade gadya/cms to the latest version and turn on everything, using the gadya-cms-upgrade skill."* See [Upgrading](docs/upgrading.md).
 
 ## Try it
 
