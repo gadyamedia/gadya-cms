@@ -6,6 +6,7 @@ use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Jobs\ProcessMediaUpload;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Support\ImageCapabilities;
+use Gadya\Cms\Support\Images;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
@@ -25,8 +26,7 @@ class ImageVariantsTest extends TestCase
     public function test_an_upload_gets_a_variant_for_every_width_narrower_than_itself(): void
     {
         config(['gadya-cms.media.variants' => [480, 960, 1600]]);
-        $manager = new ImageManager(app(ImageCapabilities::class)->driver());
-        Storage::disk('local')->put('staging/wide.png', (string) $manager->create(1200, 800)->fill('#ff00aa')->toPng());
+        Storage::disk('local')->put('staging/wide.png', $this->photo(1200, 800));
         $media = Media::factory()->processing()->create(['filename' => 'wide.webp']);
 
         (new ProcessMediaUpload($media, 'local', 'staging/wide.png'))->handle(app(ImageCapabilities::class));
@@ -64,8 +64,7 @@ class ImageVariantsTest extends TestCase
     public function test_the_backfill_command_writes_variants_for_older_uploads(): void
     {
         config(['gadya-cms.media.variants' => [480]]);
-        $manager = new ImageManager(app(ImageCapabilities::class)->driver());
-        Storage::disk('public')->put('site-media/older.webp', (string) $manager->create(1000, 600)->fill('#00aaff')->toWebp());
+        Storage::disk('public')->put('site-media/older.webp', $this->photo(1000, 600));
         $media = Media::factory()->create(['filename' => 'older.webp', 'path' => 'site-media/older.webp', 'variants' => null]);
 
         $this->artisan('gadya-cms:media-variants')->expectsOutputToContain('1 photos')->assertSuccessful();
@@ -77,10 +76,9 @@ class ImageVariantsTest extends TestCase
     public function test_a_legacy_photo_gets_variants_and_keeps_its_original_where_it_is(): void
     {
         config(['gadya-cms.media.variants' => [480]]);
-        $manager = new ImageManager(app(ImageCapabilities::class)->driver());
         $original = public_path('images/site/Old Logo.PNG');
         @mkdir(dirname($original), 0755, true);
-        file_put_contents($original, (string) $manager->create(1000, 600)->fill('#00aaff')->toPng());
+        file_put_contents($original, $this->photo(1000, 600));
         $media = Media::factory()->legacy()->create(['filename' => 'Old Logo.PNG', 'path' => 'images/site/Old Logo.PNG', 'disk' => 'public', 'variants' => null, 'width' => 1000]);
 
         try {
@@ -97,5 +95,16 @@ class ImageVariantsTest extends TestCase
         $this->assertStringEndsWith('images/site/Old Logo.PNG', $images->url('Old Logo.PNG'), 'The original stays where it was shipped.');
         $this->assertStringEndsWith('images/site/Old Logo.PNG 1000w', $images->srcset('Old Logo.PNG'));
         $this->assertStringContainsString('legacy-old-logo-480.webp 480w', $images->srcset('Old Logo.PNG'));
+    }
+
+    /**
+     * A plain photo of the given size, as WebP, under Intervention 3 or 4.
+     */
+    private function photo(int $width, int $height): string
+    {
+        $manager = new ImageManager(app(ImageCapabilities::class)->driver());
+        $image = method_exists($manager, 'createImage') ? $manager->createImage($width, $height) : $manager->create($width, $height);
+
+        return app(Images::class)->webp($image->fill('#00aaff'), 82);
     }
 }

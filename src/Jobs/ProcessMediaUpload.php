@@ -4,13 +4,13 @@ namespace Gadya\Cms\Jobs;
 
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Support\ImageCapabilities;
+use Gadya\Cms\Support\Images;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use RuntimeException;
 use Spatie\LaravelImageOptimizer\Facades\ImageOptimizer;
 use Throwable;
@@ -63,8 +63,8 @@ class ProcessMediaUpload implements ShouldQueue
         try {
             $sourceContents = $sourceDisk->get($this->sourcePath);
 
-            $manager = new ImageManager($capabilities->driver(), strip: true);
-            $image = $manager->read($sourceContents);
+            $images = app(Images::class);
+            $image = $images->read($sourceContents);
             $image->scaleDown(width: $maxEdge, height: $maxEdge);
 
             $base = Str::of($this->mediaItem->filename)->beforeLast('.')->toString();
@@ -72,12 +72,12 @@ class ProcessMediaUpload implements ShouldQueue
             $webpPath = "{$directory}/{$base}.webp";
             $thumbnailPath = "{$directory}/thumbnails/{$base}.webp";
 
-            $this->putOrFail($disk, $webpPath, (string) $image->toWebp((int) config('gadya-cms.media.quality', 82)));
+            $this->putOrFail($disk, $webpPath, $images->webp($image, (int) config('gadya-cms.media.quality', 82)));
             $writtenPaths[] = $webpPath;
 
-            $thumbnail = $manager->read($sourceContents)
+            $thumbnail = $images->read($sourceContents)
                 ->scaleDown(width: $thumbnailEdge, height: $thumbnailEdge);
-            $this->putOrFail($disk, $thumbnailPath, (string) $thumbnail->toWebp((int) config('gadya-cms.media.thumbnail_quality', 78)));
+            $this->putOrFail($disk, $thumbnailPath, $images->webp($thumbnail, (int) config('gadya-cms.media.thumbnail_quality', 78)));
             $writtenPaths[] = $thumbnailPath;
 
             /*
@@ -94,8 +94,8 @@ class ProcessMediaUpload implements ShouldQueue
                 }
 
                 $variantPath = "{$directory}/variants/{$base}-{$width}.webp";
-                $variant = $manager->read($sourceContents)->scaleDown(width: $width);
-                $this->putOrFail($disk, $variantPath, (string) $variant->toWebp((int) config('gadya-cms.media.quality', 82)));
+                $variant = $images->read($sourceContents)->scaleDown(width: $width);
+                $this->putOrFail($disk, $variantPath, $images->webp($variant, (int) config('gadya-cms.media.quality', 82)));
                 $writtenPaths[] = $variantPath;
                 $variants[(string) $width] = $variantPath;
             }

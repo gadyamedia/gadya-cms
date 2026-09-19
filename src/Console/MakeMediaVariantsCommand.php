@@ -3,11 +3,10 @@
 namespace Gadya\Cms\Console;
 
 use Gadya\Cms\Models\Media;
-use Gadya\Cms\Support\ImageCapabilities;
+use Gadya\Cms\Support\Images;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Throwable;
 
 /**
@@ -23,9 +22,8 @@ class MakeMediaVariantsCommand extends Command
 
     protected $description = 'Generate responsive variants for photos that have none';
 
-    public function handle(ImageCapabilities $capabilities): int
+    public function handle(Images $images): int
     {
-        $manager = new ImageManager($capabilities->driver(), strip: true);
         $widths = array_map('intval', (array) config('gadya-cms.media.variants', []));
         $directory = (string) config('gadya-cms.media.directory', 'site-media');
         $done = 0;
@@ -48,7 +46,7 @@ class MakeMediaVariantsCommand extends Command
 
             try {
                 $contents = $item->is_legacy ? (string) file_get_contents((string) $original) : (string) $disk->get($item->path);
-                $image = $manager->read($contents);
+                $image = $images->read($contents);
                 $base = $item->is_legacy ? 'legacy-'.Str::of($item->filename)->beforeLast('.')->slug() : Str::of($item->filename)->beforeLast('.')->toString();
                 $variants = [];
 
@@ -58,7 +56,7 @@ class MakeMediaVariantsCommand extends Command
                     }
 
                     $path = "{$directory}/variants/{$base}-{$width}.webp";
-                    $disk->put($path, (string) $manager->read($contents)->scaleDown(width: $width)->toWebp((int) config('gadya-cms.media.quality', 82)));
+                    $disk->put($path, $images->webp($images->read($contents)->scaleDown(width: $width), (int) config('gadya-cms.media.quality', 82)));
                     $variants[(string) $width] = $path;
                 }
 

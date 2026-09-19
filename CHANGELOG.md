@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.5
+
+### Changed
+
+- Works with Intervention Image 4 as well as 3. Laravel 13's `Image` facade needs version 4, so a site that already uses it can now install the package. Photos are read and written through `Gadya\Cms\Support\Images`, which works with either version.
+
 ## 0.5.4
 
 ### Added
