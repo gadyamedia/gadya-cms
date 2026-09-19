@@ -30,6 +30,24 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.4 → 0.5
+
+Gadya CMS now requires gadya/connect.
+
+1. Update and migrate. The migration adds one table, `gadya_connect_connections`:
+
+   ```bash
+   composer require gadya/cms:^0.5 -W
+   php artisan migrate
+   php artisan filament:assets
+   ```
+
+2. Pair the site. In the Gadya portal choose **Sites → Connect a site**, then on the live server run `php artisan gadya:connect <code>`, or paste the code under **Settings → Gadya Support**.
+3. The scheduler must be running (`php artisan schedule:run` every minute). The check-in rides on it.
+4. On Laravel Forge, keep `/gadya-connect` reachable. Nothing to do unless a custom nginx rule blocks it.
+
+A site that stays unpaired behaves as before, apart from the Get help page and its top-bar button.
+
 ## 0.4.6 → 0.4.7
 
 Replace any hand-pasted `<gadya-built-by>` script and tag in the footer with `@gadyaBuiltBy`. If you publish the config and want to change the badge, add the `built_by` array.

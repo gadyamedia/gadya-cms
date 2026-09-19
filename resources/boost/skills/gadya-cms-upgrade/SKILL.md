@@ -144,6 +144,7 @@ Then tell the person, in this order:
 4. **After deploying,** things only a person can do:
    - Make sure the deploy script runs `php artisan migrate --force` and `php artisan filament:assets`.
    - Make sure the cron runs `schedule:run` every minute.
+   - **Pair the site with the Gadya portal** if the audit says it is not connected. Use the portal MCP's `connect-site-tool`, or ask the person for a code from **Sites → Connect a site**. Then run `php artisan gadya:connect <code>` on the live server after deploying.
    - Laravel Forge: delete the `location = /robots.txt` line in the site's nginx config if Settings → Get found says robots.txt answers 404.
    - DNS and Search Console: follow **Settings → Get found** for each domain. It lists the exact records, and the sitemap address to submit.
    - Keys: AI under **Settings → AI**; Google under **Settings → Search & speed**.

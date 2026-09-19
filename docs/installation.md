@@ -23,6 +23,18 @@ The install command does everything between `composer require` and a working sit
 5. Publishes the panel's stylesheet with `filament:assets`.
 6. Offers to create the first administrator (skipped with `--no-admin`, or given `--admin-name`, `--admin-email` and `--admin-password` for a script).
 
+## Gadya Media portal
+
+[gadya/connect](https://github.com/gadyamedia/gadya-connect) comes with the package. It adds two pages:
+- **Get help**, for anyone who can sign in;
+- **Gadya Support**, to pair the site.
+
+Once paired with a code from the portal (**Sites → Connect a site**), the site checks in every five minutes, and the Gadya team can sign in with one click, which the client can switch off. Pair it from the command line with:
+
+```bash
+php artisan gadya:connect GDY-XXXX-XXXX
+```
+
 ## Register the plugin
 
 ```php

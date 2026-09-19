@@ -5,6 +5,7 @@ namespace Gadya\Cms\Support;
 use Filament\Facades\Filament;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Seo\AgentReadiness;
+use Gadya\Connect\Models\Connection;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Gate;
@@ -225,6 +226,7 @@ class InstallAudit
             $this->check('Install', 'Gates manage-content and manage-users are defined', Gate::has('manage-content') && Gate::has('manage-users'), 'Define both gates in a service provider (see docs/installation.md).'),
             $this->check('Install', 'No static public/robots.txt hides the generated one', ! $this->files->exists(public_path('robots.txt')), 'Delete public/robots.txt; the package writes a better one.'),
             $this->check('Install', 'No static public/sitemap.xml hides the generated one', ! $this->files->exists(public_path('sitemap.xml')), 'Delete public/sitemap.xml; the package keeps one current.'),
+            $this->check('Install', 'Connected to the Gadya Media portal', Connection::current() !== null, 'In the portal: Sites → Connect a site, then php artisan gadya:connect <code> on the live server.', optional: true),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
             $this->check('Install', 'AI readiness score is 80 or more (now '.$readiness.')', $readiness >= 80, 'php artisan gadya-cms:agent-ready lists what to fix; most are page descriptions to write in the panel.', optional: true),
         ];

@@ -2,6 +2,22 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.0
+
+### Added
+
+- **[gadya/connect](https://github.com/gadyamedia/gadya-connect) is included.** Every site gets:
+  - **Get help** for anyone who can sign in to the admin, with a button in the top bar;
+  - **Gadya Support**, to pair the site with the Gadya Media portal;
+  - once paired: check-ins every five minutes (versions, health, this audit, updates waiting) and one-click sign-in for the Gadya team, which the client can switch off.
+
+  Nothing is sent anywhere until the site is paired.
+- `gadya-cms:audit` says whether the site is connected to the portal.
+
+### Upgrading
+
+`composer require gadya/cms:^0.5 -W`, then `php artisan migrate`. See [upgrading](docs/upgrading.md).
+
 ## 0.4.9
 
 ### Fixed
