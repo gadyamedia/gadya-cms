@@ -2,7 +2,6 @@
 
 namespace Gadya\Cms\Support;
 
-use Composer\InstalledVersions;
 use Filament\Facades\Filament;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Seo\AgentReadiness;
@@ -50,7 +49,7 @@ class InstallAudit
 
     public static function version(): string
     {
-        return rescue(fn (): string => (string) InstalledVersions::getPrettyVersion('gadya/cms'), 'unknown', report: false);
+        return GadyaCmsPlugin::packageVersion() ?? 'unknown';
     }
 
     /**

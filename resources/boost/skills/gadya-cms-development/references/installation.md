@@ -78,6 +78,7 @@ GadyaCmsPlugin::make()
     ->analytics(false)    // no dashboard figures
     ->team(false)         // no invitations
     ->brand(false)        // stock Filament chrome
+    ->poweredBy(false)    // no "powered by Gadya CMS" line and version under each screen
     ->blog(false)         // no articles
     ->ai(false)           // nothing written by AI
     ->redirects(false)    // no redirects table

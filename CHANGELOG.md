@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.6
+
+### Added
+
+- A **"Site powered with ❤ by Gadya CMS by gadya.media"** line under every panel screen, the sign-in page included. It shows the installed version and links to gadya.media. Turn it off with `->poweredBy(false)`. `GadyaCmsPlugin::packageVersion()` returns the installed version.
+
 ## 0.4.5
 
 ### Added

@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Filament;
 
+use Composer\InstalledVersions;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Colors\Color;
@@ -61,6 +62,8 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasProfile = true;
 
     protected bool $warnsAboutUnsavedChanges = true;
+
+    protected bool $showsPoweredBy = true;
 
     protected ?string $contentNavigationGroup = 'Content';
 
@@ -218,6 +221,27 @@ class GadyaCmsPlugin implements Plugin
         return $this->warnsAboutUnsavedChanges;
     }
 
+    /** The "powered by Gadya CMS" line and version number under every screen. */
+    public function poweredBy(bool $condition = true): static
+    {
+        $this->showsPoweredBy = $condition;
+
+        return $this;
+    }
+
+    public function showsPoweredBy(): bool
+    {
+        return $this->showsPoweredBy;
+    }
+
+    /** The installed gadya/cms release, e.g. "0.4.6", or null when Composer cannot say. */
+    public static function packageVersion(): ?string
+    {
+        $version = rescue(fn (): ?string => InstalledVersions::getPrettyVersion('gadya/cms'), null, report: false);
+
+        return $version === null ? null : ltrim($version, 'v');
+    }
+
     /** Open days, camps and classes, with a calendar file for them. */
     public function events(bool $condition = true): static
     {
@@ -308,6 +332,10 @@ class GadyaCmsPlugin implements Plugin
 
         if ($this->warnsAboutUnsavedChanges()) {
             $panel->unsavedChangesAlerts();
+        }
+
+        if ($this->showsPoweredBy()) {
+            $panel->renderHook(PanelsRenderHook::FOOTER, fn (): View => view('gadya-cms::filament.powered-by', ['version' => static::packageVersion()]));
         }
 
         if ($this->hasProfile()) {
