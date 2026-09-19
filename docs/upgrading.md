@@ -1,5 +1,17 @@
 # Upgrading
 
+## From the Gadya Media portal
+
+`gadya-cms:install` publishes `.github/workflows/gadya-update.yml`. **Sites → Update** in the portal runs it on the site's repository, where it:
+
+1. updates the Gadya packages;
+2. runs `migrate`, `filament:assets` and the site's own test suite;
+3. commits the result to the default branch when it is a patch release and the tests passed, or opens a pull request when it is anything larger or the tests failed.
+
+Nothing is changed on the server: the next deploy takes the new version from git, as it always does. Run it by hand from the repository's Actions tab if you'd rather, and tick *Open a pull request even for a patch release* to look at every change first.
+
+A site that has no such workflow (installed before this version) gets it by running `php artisan gadya-cms:install` once, which leaves everything else alone.
+
 ## With an AI agent
 
 The package ships a `gadya-cms-upgrade` Boost skill. On any site, ask your agent:

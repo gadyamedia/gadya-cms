@@ -64,6 +64,8 @@ class InstallCommand extends Command
         $this->callSilently('filament:assets');
         $this->components->twoColumnDetail('Panel assets', 'published');
 
+        $this->publishUpdateWorkflow();
+
         $this->createAdministrator();
 
         if (Schema::hasTable('site_contents')) {
@@ -88,6 +90,28 @@ class InstallCommand extends Command
 
         $this->callSilently('vendor:publish', ['--tag' => 'gadya-cms-config']);
         $this->components->twoColumnDetail('Config', 'published to config/gadya-cms.php');
+    }
+
+    /**
+     * The GitHub workflow that updates the Gadya packages and puts the
+     * result in git, so the Gadya Media portal can run the update for this
+     * site without anyone opening a terminal. Never overwritten: a site
+     * may have tuned it.
+     */
+    private function publishUpdateWorkflow(): void
+    {
+        $target = base_path('.github/workflows/gadya-update.yml');
+
+        if (File::exists($target)) {
+            $this->components->twoColumnDetail('Update workflow', 'already present');
+
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($target));
+        File::copy(dirname(__DIR__, 2).'/resources/github/gadya-update.yml', $target);
+
+        $this->components->twoColumnDetail('Update workflow', 'published to .github/workflows/gadya-update.yml');
     }
 
     /**

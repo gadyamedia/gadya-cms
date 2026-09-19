@@ -1,0 +1,135 @@
+# Updates the Gadya packages and puts the result in git.
+#
+# Run from the Gadya Media portal (Sites → Update), or by hand under the
+# Actions tab. A patch release that passes the tests goes straight to the
+# default branch; anything larger, or a failing test run, waits in a pull
+# request for a person.
+name: Gadya update
+
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: Packages to update, space separated
+        default: gadya/cms gadya/connect
+      constraint:
+        description: Version constraint for the first package, e.g. ^0.6 (blank keeps composer.json as it is)
+        default: ''
+      always_pull_request:
+        description: Open a pull request even for a patch release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: gadya-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the PHP version this site needs
+        id: php
+        run: echo "version=$(jq -r '.require.php // "8.3"' composer.json | grep -oE '[0-9]+\.[0-9]+' | head -1)" >> "$GITHUB_OUTPUT"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php.outputs.version }}
+          coverage: none
+
+      - run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: The version before
+        id: before
+        run: echo "version=$(composer show gadya/cms --format=json | jq -r '.versions[0]' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      - name: Update
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.constraint }}" ]; then
+            first=$(echo "${{ inputs.packages }}" | awk '{print $1}')
+            composer require "${first}:${{ inputs.constraint }}" -W --no-interaction --no-progress
+          fi
+          composer update ${{ inputs.packages }} -W --no-interaction --no-progress
+
+      - name: The version after
+        id: after
+        run: echo "version=$(composer show gadya/cms --format=json | jq -r '.versions[0]' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      - name: Stop when nothing changed
+        id: changed
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Already up to date."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Migrate and publish the panel's assets
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          php artisan migrate --force --no-interaction || true
+          php artisan filament:assets --no-interaction || true
+
+      - name: Tests
+        id: tests
+        if: steps.changed.outputs.changed == 'true'
+        continue-on-error: true
+        run: php artisan test
+
+      - name: Decide where this goes
+        if: steps.changed.outputs.changed == 'true'
+        id: route
+        run: |
+          set -euo pipefail
+          before="${{ steps.before.outputs.version }}"
+          after="${{ steps.after.outputs.version }}"
+          # Same major and minor, and the tests passed: it can go straight in.
+          if [ "${{ steps.tests.outcome }}" = "success" ] \
+            && [ "${{ inputs.always_pull_request }}" != "true" ] \
+            && [ "$(echo "$before" | cut -d. -f1,2)" = "$(echo "$after" | cut -d. -f1,2)" ]; then
+            echo "merge=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "title=chore: gadya/cms ${before} → ${after}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "Gadya Media"
+          git config user.email "bot@gadya.media"
+          git add -A
+          git commit -m "${{ steps.route.outputs.title }}" -m "Updated from the Gadya Media portal. Tests: ${{ steps.tests.outcome }}."
+
+      - name: Straight to ${{ github.ref_name }}
+        if: steps.changed.outputs.changed == 'true' && steps.route.outputs.merge == 'true'
+        run: git push origin HEAD:${{ github.ref_name }}
+
+      - name: Or a pull request for a person to read
+        if: steps.changed.outputs.changed == 'true' && steps.route.outputs.merge != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch="chore/gadya-update-$(date +%Y%m%d%H%M%S)"
+          git push origin "HEAD:${branch}"
+          gh pr create --head "$branch" --base "${{ github.ref_name }}" \
+            --title "${{ steps.route.outputs.title }}" \
+            --body "$(printf 'Updated from the Gadya Media portal.\n\n- gadya/cms %s → %s\n- Tests: %s\n\nRead `vendor/gadya/cms/CHANGELOG.md` for what changed, and `docs/upgrading.md` for anything a release asks of you.' \
+              "${{ steps.before.outputs.version }}" "${{ steps.after.outputs.version }}" "${{ steps.tests.outcome }}")"
+
+      - name: Fail the run when the tests failed
+        if: steps.changed.outputs.changed == 'true' && steps.tests.outcome != 'success'
+        run: |
+          echo "The update is waiting in a pull request because the tests failed."
+          exit 1

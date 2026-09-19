@@ -6,6 +6,8 @@ All notable changes to `gadya/cms` are documented here.
 
 ### Added
 
+- **Updates can be run from the Gadya Media portal.** `gadya-cms:install` publishes `.github/workflows/gadya-update.yml`, which updates the Gadya packages, runs the site's tests, and puts the result in git: a patch release that passes goes straight to the default branch, anything larger or a failing run waits in a pull request. An existing workflow file is never overwritten.
+
 - `php artisan gadya-cms:password --email=… ` sets a new password for someone who cannot get into the panel, with `--generate` to make a strong one and print it once. Sessions opened with the old password are signed out.
 
 ## 0.5.7
