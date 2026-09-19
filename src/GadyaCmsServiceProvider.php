@@ -184,12 +184,13 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          */
         $this->app->make(Kernel::class)->pushMiddleware(HandleRedirects::class);
         /*
-         * Read and written by global middleware, outside the web group, so
-         * it is never encrypted and must be excused from the decryption
-         * that would otherwise reject it.
+         * In the web group, not global: it has to run after the session has
+         * started, or it cannot tell that the person asking is signed in and
+         * shuts the client out of her own panel. The cookie is written plain
+         * so a shared link keeps working, and excused from decryption.
          */
         EncryptCookies::except(Maintenance::COOKIE);
-        $this->app->make(Kernel::class)->pushMiddleware(ComingSoon::class);
+        $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', ComingSoon::class);
         $this->app->make(Kernel::class)->pushMiddleware(RecordMissingUrls::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);

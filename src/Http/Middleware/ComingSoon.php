@@ -3,6 +3,8 @@
 namespace Gadya\Cms\Http\Middleware;
 
 use Closure;
+use Filament\Facades\Filament;
+use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Support\Maintenance;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -37,6 +39,9 @@ class ComingSoon
         }
 
         return response()->view('gadya-cms::maintenance', [
+            ...GadyaCmsPlugin::brandTokens(),
+            'logo' => rescue(fn (): ?string => GadyaCmsPlugin::brandLogo(), null, report: false),
+            'site' => (string) config('gadya-cms.brand.name', config('app.name')),
             'heading' => $this->maintenance->heading(),
             'message' => $this->maintenance->message(),
             'until' => $this->maintenance->until(),
@@ -48,12 +53,36 @@ class ComingSoon
     {
         $path = trim($request->path(), '/');
 
-        foreach (array_merge(['admin', (string) config('gadya-cms.editor.prefix', 'cms'), 'livewire', 'storage', 'up', 'build', 'vendor'], (array) config('gadya-cms.maintenance.allow_prefixes', [])) as $prefix) {
+        /*
+         * Livewire 4 serves its updates from a hashed prefix
+         * (`livewire-eab0293a/update`), so it is matched on its start rather
+         * than as a whole segment - otherwise every click in the panel is
+         * answered with the notice.
+         */
+        if (str_starts_with($path, 'livewire')) {
+            return true;
+        }
+
+        $prefixes = array_merge(
+            [$this->panelPath(), (string) config('gadya-cms.editor.prefix', 'cms'), 'storage', 'up', 'build', 'vendor', 'filament', 'css', 'js', 'fonts'],
+            (array) config('gadya-cms.maintenance.allow_prefixes', []),
+        );
+
+        foreach (array_filter($prefixes) as $prefix) {
             if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function panelPath(): string
+    {
+        return trim((string) rescue(
+            fn (): string => Filament::getPanel((string) config('gadya-cms.panel', 'admin'))->getPath(),
+            'admin',
+            report: false,
+        ), '/');
     }
 }

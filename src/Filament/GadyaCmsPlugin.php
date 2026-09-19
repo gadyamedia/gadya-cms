@@ -400,7 +400,7 @@ class GadyaCmsPlugin implements Plugin
      * request, and reading it during registration would freeze it before
      * anything else had a chance to touch it.
      */
-    protected static function brandLogo(): ?string
+    public static function brandLogo(): ?string
     {
         $logo = config('gadya-cms.brand.logo');
 
@@ -414,7 +414,7 @@ class GadyaCmsPlugin implements Plugin
     /**
      * @return array<string, string|null>
      */
-    protected static function brandTokens(): array
+    public static function brandTokens(): array
     {
         return [
             'primary' => (string) config('gadya-cms.brand.primary', '#9f12c7'),

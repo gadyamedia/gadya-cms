@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.2
+
+### Fixed
+
+- **Coming-soon mode locked the client out of her own panel.** The check ran before the session started, so nobody ever looked signed in, and Livewire 4's hashed update path (`/livewire-xxxx/update`) was not recognised as the panel's - every click, including Publish, got the notice. It now runs in the web group and matches Livewire by its prefix.
+- The coming-soon notice wears the site's brand: its colours, display font and logo.
+
 ## 0.4.1
 
 Identical to 0.4.0 in every line of code; it adds the two screenshots the

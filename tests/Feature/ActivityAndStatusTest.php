@@ -7,6 +7,7 @@ use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Filament\Pages\SiteStatus;
 use Gadya\Cms\Filament\Resources\Activity\ActivityResource;
 use Gadya\Cms\Filament\Resources\Pages\Pages\ListPages;
+use Gadya\Cms\Http\Middleware\ComingSoon;
 use Gadya\Cms\Models\AuditLog;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Post;
@@ -14,6 +15,7 @@ use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Services\SchedulePublish;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Tests\TestCase;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 
@@ -164,8 +166,40 @@ class ActivityAndStatusTest extends TestCase
     {
         app(Maintenance::class)->save(['enabled' => true, 'heading' => 'Back soon', 'message' => 'Shortly.']);
 
+        Route::middleware('web')->get('/about', fn (): string => 'the real page');
+
         $this->get('/admin/login')->assertOk();
-        $this->get('/sitemap.xml')->assertStatus(503);
+        $this->get('/about')->assertStatus(503);
+    }
+
+    /**
+     * The regression that shut a client out of her own panel: the check ran
+     * before the session started, so nobody ever looked signed in, and
+     * Livewire 4's hashed update path was not recognised as the panel's.
+     */
+    public function test_the_panel_keeps_working_while_the_site_is_closed(): void
+    {
+        app(Maintenance::class)->save(['enabled' => true, 'heading' => 'Back soon', 'message' => 'Shortly.']);
+
+        $this->assertContains(ComingSoon::class, app('router')->getMiddlewareGroups()['web'], 'It must run after the session starts.');
+        $this->assertNotContains(ComingSoon::class, app(Kernel::class)->getGlobalMiddleware());
+
+        Route::middleware('web')->post('/livewire-eab0293a/update', fn (): string => 'livewire answered');
+
+        $this->post('/livewire-eab0293a/update')->assertOk()->assertSee('livewire answered');
+    }
+
+    public function test_the_notice_wears_the_sites_colours(): void
+    {
+        config(['gadya-cms.brand.primary' => '#9f12c7', 'gadya-cms.brand.name' => 'Fun On Us']);
+        app(Maintenance::class)->save(['enabled' => true, 'heading' => 'Back soon', 'message' => 'Shortly.']);
+
+        Route::middleware('web')->get('/about', fn (): string => 'the real page');
+
+        $this->get('/about')
+            ->assertStatus(503)
+            ->assertSee('--primary: #9f12c7', false)
+            ->assertSee('Back soon · Fun On Us', false);
     }
 
     public function test_a_password_lets_someone_in_without_an_account(): void
