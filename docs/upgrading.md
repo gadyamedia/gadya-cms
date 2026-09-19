@@ -30,6 +30,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.4.6 → 0.4.7
+
+Replace any hand-pasted `<gadya-built-by>` script and tag in the footer with `@gadyaBuiltBy`. If you publish the config and want to change the badge, add the `built_by` array.
+
 ## 0.4.4 → 0.4.5
 
 Nothing to change. `gadya-cms:audit` and the `gadya-cms-upgrade` skill are new; run `php artisan boost:update --discover` to install the skill.

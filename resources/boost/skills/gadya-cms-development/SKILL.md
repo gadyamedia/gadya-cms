@@ -76,7 +76,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - `@editableFor($path)` once, then `@editable($field, 'text'|'multiline'|'image')` on elements; `@editableGlobal('phone')` for top-level keys.
 - Array indexes go into paths (`sections.{$index}.title`); `PublicDocument` preserves keys for that reason - never `array_values()` a card list before rendering.
 - Images: store filenames, render with `@siteImage($ref, $width)`, `srcset="@siteSrcset($ref)"`, `style="@siteFocus($ref)"` when cropped; `@siteThumbnail($ref)` for lists.
-- Other directives: `@cmsSearchForm`, `@cmsNewsletterForm`, `@cmsForm('contact')`, `@cmsFormStatus('contact')`, `@cmsSeo($page)`, `@cmsToolbar`. All take an optional array of overrides.
+- Other directives: `@cmsSearchForm`, `@cmsNewsletterForm`, `@cmsForm('contact')`, `@cmsFormStatus('contact')`, `@cmsSeo($page)`, `@cmsToolbar`, `@gadyaBuiltBy` (the Gadya Media badge, last in the footer, in the site's ink). All take an optional array of overrides.
 - Globals (announcement, phone, footer): `@editableGlobal('footer.tagline', 'multiline')`, listed in `gadya-cms.globals`.
 - New page type: `php artisan gadya-cms:make:page-template pages/types/name` first, then adjust.
 - Layout: `@cmsSeo($page)` in head; editor assets only when `EditContext::isEnabled()`; `@cmsToolbar` before `</body>`; `data-analytics-endpoint="{{ route('gadya-cms.events.store') }}"` on body; `data-analytics="booking_start"` on things worth counting (names must be in `analytics.events`).

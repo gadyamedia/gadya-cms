@@ -62,8 +62,33 @@ import '../../vendor/gadya/cms/resources/js/analytics.js';
 | `@siteSrcset($ref)` | Every responsive variant of a photo, for `srcset` |
 | `@cmsToolbar` | The toolbar when editing; the preview bar when previewing |
 | `@cmsSeo($page)` | The head tags - see [SEO](seo.md) |
+| `@gadyaBuiltBy` | The "built by Gadya Media" badge, as the last thing in the footer - see below |
 
 The directives render nothing for a visitor. For an editor they add `data-cms-path` and `data-cms-type`, which the editor's JavaScript turns into an inline editor (`text`), a side panel (`multiline`) or the photo library (`image`).
+
+## The built-by badge
+
+`@gadyaBuiltBy` goes last in the site's footer and puts the Gadya Media badge in its bottom-right corner, loading the badge script for you. It is drawn in the site's own ink:
+
+- The colour is `brand.ink`, or `built_by.color` when that is set.
+- The logo is recoloured to that colour by a CSS filter the package works out for it, then caches.
+
+```blade
+@gadyaBuiltBy
+@gadyaBuiltBy(['color' => '#ffffff', 'align' => 'center', 'logo_height' => 24])
+```
+
+```php
+'built_by' => [
+    'enabled' => true,     // false renders nothing
+    'color' => null,       // null follows brand.ink
+    'filter' => null,      // null is worked out from the colour
+    'logo_height' => 28,
+    'align' => 'end',      // start, center or end
+],
+```
+
+`gadya-cms:audit` flags a footer without it, and a hand-pasted `<gadya-built-by>` tag to replace.
 
 ## The allow-list
 

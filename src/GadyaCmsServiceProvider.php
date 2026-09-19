@@ -232,6 +232,11 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         });
         Blade::directive('cmsForm', fn (string $expression): string => "<?php echo view('gadya-cms::forms.fields', ['form' => {$expression}, 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')])->render(); ?>");
         Blade::directive('cmsFormStatus', fn (string $expression): string => "<?php echo view('gadya-cms::forms.status', ['form' => {$expression}])->render(); ?>");
+        Blade::directive('gadyaBuiltBy', function (string $expression): string {
+            $expression = trim($expression) === '' ? '[]' : $expression;
+
+            return "<?php echo app(\\Gadya\\Cms\\Brand\\BuiltBy::class)->render({$expression}); ?>";
+        });
         Blade::directive('cmsSeo', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Seo\\SeoHead::class)->render({$expression})->render(); ?>");
         Blade::directive('cmsToolbar', fn (): string => "<?php if (app(\Gadya\Cms\Editor\EditContext::class)->isEnabled()) { echo view('gadya-cms::editor.toolbar')->render(); } elseif (app(\Gadya\Cms\Editor\EditContext::class)->isPreviewing()) { echo view('gadya-cms::editor.preview-bar')->render(); } ?>");
     }

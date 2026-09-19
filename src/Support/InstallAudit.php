@@ -206,6 +206,7 @@ class InstallAudit
         return [
             $this->check('Templates', '@cmsSeo in the public layout\'s <head>', str_contains($views, '@cmsSeo'), 'Replace hand-written <title>/description tags in the layout\'s <head> with @cmsSeo($page).'),
             $this->check('Templates', '@cmsToolbar before </body>', str_contains($views, '@cmsToolbar'), 'Add @cmsToolbar just before </body> in the public layout.'),
+            $this->check('Templates', '@gadyaBuiltBy at the end of the footer', str_contains($views, '@gadyaBuiltBy'), str_contains($views, '<gadya-built-by') ? 'Replace the hand-pasted <gadya-built-by> script and tag with @gadyaBuiltBy; it matches the site\'s ink by itself.' : 'Add @gadyaBuiltBy as the last thing in the footer (bottom right).'),
             $this->check('Templates', '@cmsSearchForm somewhere on the site', str_contains($views, '@cmsSearchForm'), 'Add @cmsSearchForm to the header or footer.', optional: true),
             $this->check('Templates', '@cmsNewsletterForm somewhere on the site', str_contains($views, '@cmsNewsletterForm'), 'Add @cmsNewsletterForm to the footer.', optional: true),
         ];

@@ -109,6 +109,7 @@ Add each missing line from the audit to `routes/console.php`. They are idempoten
 ### Templates
 
 - The public layout has `@cmsSeo($page)` in `<head>`, replacing any hand-written title, description, canonical or Open Graph tags. It also has `@cmsToolbar` just before `</body>`.
+- `@gadyaBuiltBy` is the last thing in the footer. Replace any hand-pasted `<gadya-built-by>` script and tag with it. If the footer's background is dark, set `built_by.color` to the footer's text colour.
 - Search and newsletter forms go where a visitor looks for them. Match the site's own markup and CSS rather than leaving them unstyled.
 - Hard-coded text in templates that the client should be able to change becomes `@editable(...)` against the document, with the path in `editable_fields`. Do this only where the template already reads the document for that element; do not invent new content.
 

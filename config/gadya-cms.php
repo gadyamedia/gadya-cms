@@ -494,6 +494,19 @@ return [
     ],
 
     /*
+     * The "built by Gadya Media" badge that @gadyaBuiltBy puts at the end of
+     * the site's footer. Its colour follows brand.ink unless one is named
+     * here; the logo is recoloured to match automatically.
+     */
+    'built_by' => [
+        'enabled' => true,
+        'color' => null,
+        'filter' => null,
+        'logo_height' => 28,
+        'align' => 'end',
+    ],
+
+    /*
      * Writing with AI. The service, model and key are chosen in the panel
      * and stored encrypted; this only says who may change them.
      */

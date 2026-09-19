@@ -17,5 +17,5 @@
 - A controller resolves the document through `SiteContentRepository::forRequest()` and `PublicDocument::from()`, calls `EditContext::boot()` first, and 404s a page when `PageRegistry::isHidden($page)` unless `EditContext::showsDraft()`.
 - Any new editable path must be added to `gadya-cms.editable_fields`; the live editor refuses everything else.
 - The published `config/gadya-cms.php` overrides package arrays wholesale (top-level merge), so copy every nested key of an array you override.
-- Put `@cmsSeo($page)` in `<head>` instead of hand-written title/description tags; `@cmsToolbar` before `</body>`.
+- Put `@cmsSeo($page)` in `<head>` instead of hand-written title/description tags; `@cmsToolbar` before `</body>`; `@gadyaBuiltBy` as the last thing in the footer (never paste the badge script by hand).
 - Content changes (pages, menu, photos) live in the database, not in git; test them with `$this->publishDocument([...])`-style helpers, never by editing `config/site.php` in production.

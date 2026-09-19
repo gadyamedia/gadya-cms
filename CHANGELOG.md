@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.7
+
+### Added
+
+- **`@gadyaBuiltBy`** puts the "built by Gadya Media" badge in the bottom-right corner of the footer, with no script to paste by hand. It is drawn in the site's ink (`brand.ink`, or `built_by.color`); the logo is recoloured to match by a CSS filter the package works out from the colour (`Gadya\Cms\Brand\ColorFilter`). `gadya-cms:audit` flags a footer without it.
+
 ## 0.4.6
 
 ### Added
