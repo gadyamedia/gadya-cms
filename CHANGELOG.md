@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.1
+
+### Fixed
+
+- `gadya-cms:audit` no longer asks a site to copy the package's example fonts into `fonts.display` and `fonts.sans`: the font choices are the site's own.
+
 ## 0.5.0
 
 ### Added

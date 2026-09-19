@@ -32,6 +32,7 @@ class InstallAudit
     private const FREE_FORM = [
         'editable_fields', 'pages.types', 'pages.paths', 'navigation.menus', 'users.roles', 'globals',
         'media.variants', 'forms.forms', 'seo.organization', 'analytics.events', 'maintenance',
+        'fonts.display', 'fonts.sans',
     ];
 
     /** The jobs the package expects the scheduler to run. */

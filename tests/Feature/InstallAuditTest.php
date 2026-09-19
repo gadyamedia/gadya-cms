@@ -13,6 +13,7 @@ class InstallAuditTest extends TestCase
         $config = config('gadya-cms');
         unset($config['seo']['content_signals'], $config['events']);
         $config['users']['roles'] = ['boss' => 'Boss'];
+        $config['fonts']['display'] = ['Archivo' => ['family' => 'Archivo', 'fallback' => 'sans-serif', 'bunny' => 'archivo', 'weights' => [400]]];
         config(['gadya-cms' => $config]);
 
         $missing = app(InstallAudit::class)->missingConfigKeys();
@@ -20,6 +21,7 @@ class InstallAuditTest extends TestCase
         $this->assertContains('seo.content_signals', $missing);
         $this->assertContains('events', $missing);
         $this->assertNotContains('users.roles.admin', $missing, 'Role names are the site\'s own, not missing keys.');
+        $this->assertNotContains('fonts.display.Lobster', $missing, 'A site offers its own fonts; the package\'s list is only an example.');
     }
 
     public function test_it_finds_unscheduled_jobs_and_features_switched_off(): void
