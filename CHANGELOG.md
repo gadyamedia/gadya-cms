@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.4.9
+
+### Fixed
+
+- Coming-soon mode no longer blocks `/gadya-connect/sso`, so the Gadya team can sign in to help while a site is closed.
+
 ## 0.4.8
 
 ### Added

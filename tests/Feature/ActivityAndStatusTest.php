@@ -152,6 +152,14 @@ class ActivityAndStatusTest extends TestCase
             ->assertDontSee('the real page');
     }
 
+    public function test_the_gadya_team_can_still_sign_in_while_the_site_is_closed(): void
+    {
+        Route::middleware('web')->get('/gadya-connect/sso', fn (): string => 'signing in');
+        app(Maintenance::class)->save(['enabled' => true, 'heading' => 'Back soon', 'message' => 'Shortly.']);
+
+        $this->get('/gadya-connect/sso')->assertOk()->assertSee('signing in');
+    }
+
     public function test_someone_who_may_work_on_the_site_still_sees_it(): void
     {
         Route::middleware('web')->get('/about', fn (): string => 'the real page');

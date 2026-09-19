@@ -64,7 +64,7 @@ class ComingSoon
         }
 
         $prefixes = array_merge(
-            [$this->panelPath(), (string) config('gadya-cms.editor.prefix', 'cms'), 'storage', 'up', 'build', 'vendor', 'filament', 'css', 'js', 'fonts'],
+            [$this->panelPath(), (string) config('gadya-cms.editor.prefix', 'cms'), 'storage', 'up', 'build', 'vendor', 'filament', 'css', 'js', 'fonts', 'gadya-connect'],
             (array) config('gadya-cms.maintenance.allow_prefixes', []),
         );
 
