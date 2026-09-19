@@ -34,7 +34,7 @@ class InstallAuditTest extends TestCase
         $this->assertSame(InstallAudit::OK, $checks['gadya-cms:publish-due is scheduled']['status']);
         $this->assertSame(InstallAudit::TODO, $checks['gadya-cms:prune-trash is scheduled']['status']);
         $this->assertStringContainsString("Schedule::command('gadya-cms:prune-trash')->daily();", $checks['gadya-cms:prune-trash is scheduled']['fix']);
-        $this->assertSame(InstallAudit::TODO, $checks["What's on pages and calendar files (events.routes)"]['status']);
+        $this->assertSame(InstallAudit::OPTIONAL, $checks["What's on pages and calendar files (events.routes)"]['status'], 'A feature switched off is a choice, offered rather than demanded.');
         $this->assertSame(InstallAudit::OK, $checks['Plugin ->blog() is on']['status']);
         $this->assertSame(InstallAudit::OK, $checks['Every package migration has run']['status']);
     }

@@ -71,7 +71,7 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit --json
 ```
 
-Each check has a `group`, `label`, `status` (`ok`, `todo`, `optional`) and a `fix`. Clear every `todo` and decide every `optional`, group by group.
+Each check has a `group`, `label`, `status` (`ok`, `todo`, `optional`) and a `fix`. Clear every `todo` and decide every `optional`, group by group. Features a site has switched off, and a static robots.txt or sitemap.xml, show as `optional`: turn them on when asked to "turn everything on", otherwise leave them and list them.
 
 ### Config
 

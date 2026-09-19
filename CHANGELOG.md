@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.5.2
+
+### Changed
+
+- `gadya-cms:audit` lists features a site has switched off (plugin switches, `*.routes`, the SEO files) and a static `public/robots.txt` or `public/sitemap.xml` as **optional** rather than to-do. A site that deliberately goes without them now audits clean.
+
 ## 0.5.1
 
 ### Fixed
