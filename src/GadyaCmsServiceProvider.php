@@ -25,6 +25,7 @@ use Gadya\Cms\Console\PruneActivityCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Console\PruneTrashCommand;
 use Gadya\Cms\Console\PublishDueCommand;
+use Gadya\Cms\Console\ResetPasswordCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
@@ -87,6 +88,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 InstallCommand::class,
                 MakeEditorCommand::class,
+                ResetPasswordCommand::class,
                 DoctorCommand::class,
                 ExportSiteContentCommand::class,
                 ImportLegacyContentCommand::class,

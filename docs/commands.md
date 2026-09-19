@@ -5,6 +5,7 @@
 | `gadya-cms:audit` | What this application has not yet taken up from the installed version: config keys, migrations, features, schedule, templates, assets, skills (`--json`). Fails while anything is left to do. |
 | `gadya-cms:install` | Publish config, migrate, seed, index photos, publish assets, create the first administrator. Safe to repeat. |
 | `gadya-cms:editor` | Create a user who can sign in (`--name`, `--email`, `--password`, `--role=admin`) |
+| `gadya-cms:password` | Set a new password for someone who signs in (`--email`, `--password`, `--generate`) |
 | `gadya-cms:doctor` | Report the image driver, WebP support, HEIC support and optimiser binaries |
 | `gadya-cms:make:page-template` | Scaffold a Blade template wired to the live editor (`--layout=`, `--force`) |
 | `gadya-cms:export` | The whole site as a zip or JSON (`--path=`, `--with-media`, `--array` for the old PHP array) |

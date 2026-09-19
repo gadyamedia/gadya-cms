@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.6.0
+
+### Added
+
+- `php artisan gadya-cms:password --email=… ` sets a new password for someone who cannot get into the panel, with `--generate` to make a strong one and print it once. Sessions opened with the old password are signed out.
+
 ## 0.5.7
 
 ### Fixed

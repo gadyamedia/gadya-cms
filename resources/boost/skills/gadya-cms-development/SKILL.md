@@ -109,7 +109,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 
 ## Commands
 
-`gadya-cms:install`, `gadya-cms:editor`, `gadya-cms:doctor`, `gadya-cms:export` / `gadya-cms:import`, `gadya-cms:make:page-template`, `gadya-cms:media-variants`, `gadya-cms:import-legacy-content`, `gadya-cms:import-legacy-media`, `gadya-cms:prune-analytics`, `gadya-cms:analytics-digest`, `gadya-cms:search-console`, `gadya-cms:pagespeed`, `gadya-cms:agent-ready`. Deploys: `migrate --force`, `filament:assets`, `optimize:clear`, a queue worker.
+`gadya-cms:install`, `gadya-cms:editor`, `gadya-cms:password`, `gadya-cms:doctor`, `gadya-cms:export` / `gadya-cms:import`, `gadya-cms:make:page-template`, `gadya-cms:media-variants`, `gadya-cms:import-legacy-content`, `gadya-cms:import-legacy-media`, `gadya-cms:prune-analytics`, `gadya-cms:analytics-digest`, `gadya-cms:search-console`, `gadya-cms:pagespeed`, `gadya-cms:agent-ready`. Deploys: `migrate --force`, `filament:assets`, `optimize:clear`, a queue worker.
 
 ## References
 
