@@ -97,6 +97,7 @@ A whole sample site on http://127.0.0.1:8000, admin at `/admin` (admin@example.c
 - [Articles and writing with AI](docs/articles-and-ai.md) - the writing screen, the public blog, setting up a provider, faking it in tests
 - [SEO](docs/seo.md) - head tags, sitemap, robots, redirects
 - [Forms](docs/forms.md) - configuration, the template, the inbox
+- [Email](docs/email.md) - sending through Gadya Media without setting up a mail service
 - [Analytics](docs/analytics.md) - what is counted and how, events, live updates, reports
 - [Photos and team](docs/media-and-team.md)
 - [Roles, abilities and Everywhere](docs/roles-and-globals.md)

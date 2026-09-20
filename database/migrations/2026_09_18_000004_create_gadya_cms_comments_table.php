@@ -13,7 +13,7 @@ return new class extends Migration
          * approves it, and no address is stored - only the same daily hash
          * the rest of the analytics uses, to spot a flood from one place.
          */
-        Schema::create('gadyacms_comments', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_comments', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->foreignId('post_id')->constrained('gadyacms_posts')->cascadeOnDelete();
@@ -33,5 +33,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('gadyacms_comments');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

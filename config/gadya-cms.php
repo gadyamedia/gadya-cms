@@ -390,6 +390,42 @@ return [
     ],
 
     /*
+     * The email the site sends. A client who has not set up a mail service
+     * of her own sends through Gadya Media: the message is handed to the
+     * portal over the link gadya/connect already keeps, and the portal
+     * sends it on. No mail credential ever lives on this server.
+     *
+     * `shared` is 'auto' - take over only on a paired site whose mailer is
+     * still Laravel's `log` - or true to insist, or false to never. Setting
+     * MAIL_MAILER in .env to a real service is all it takes to opt out.
+     */
+    'mail' => [
+        'shared' => env('GADYA_MAIL', 'auto'),
+
+        /* The domain Gadya Media sends the site's email from. */
+        'domain' => env('GADYA_MAIL_DOMAIN', 'on.gadya.media'),
+
+        /*
+         * The name before the @. Null uses the portal's name for the site,
+         * then the brand name. The portal has the last word: it sends from
+         * the address it holds for this site whatever is asked for here.
+         */
+        'mailbox' => env('GADYA_MAIL_MAILBOX'),
+
+        /*
+         * Where a reply goes, because nobody reads the shared address.
+         * Null uses seo.organization.email.
+         */
+        'reply_to' => env('GADYA_MAIL_REPLY_TO'),
+
+        /* The quiet line at the foot of a message Gadya Media sent. */
+        'footer' => env('GADYA_MAIL_FOOTER', true),
+
+        /* How much of an attachment the portal will carry in one message. */
+        'max_attachment_megabytes' => 10,
+    ],
+
+    /*
      * Things happening on a date: an open day, a camp, a class. The list
      * sorts itself, and `events.ics` is a calendar a phone can subscribe
      * to.

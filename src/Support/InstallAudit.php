@@ -4,6 +4,7 @@ namespace Gadya\Cms\Support;
 
 use Filament\Facades\Filament;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Seo\AgentReadiness;
 use Gadya\Connect\Models\Connection;
 use Illuminate\Console\Scheduling\Schedule;
@@ -293,6 +294,12 @@ class InstallAudit
             $this->check('Install', 'No static public/robots.txt hides the generated one', ! $this->files->exists(public_path('robots.txt')), 'Delete public/robots.txt to use the generated one (on Forge, also remove the nginx location = /robots.txt line), unless the site keeps its own on purpose.', optional: true),
             $this->check('Install', 'No static public/sitemap.xml hides the generated one', ! $this->files->exists(public_path('sitemap.xml')), 'Delete public/sitemap.xml to use the generated one, unless the site keeps its own on purpose.', optional: true),
             $this->check('Install', 'Connected to the Gadya Media portal', Connection::current() !== null, 'In the portal: Sites → Connect a site, then php artisan gadya:connect <code> on the live server.', optional: true),
+            $this->check(
+                'Install',
+                'The site can send email',
+                app(SharedSender::class)->enabled() || ! in_array((string) config('mail.default'), ['log', 'array', ''], true),
+                'Pair the site with the Gadya Media portal and it sends through Gadya (see docs/email.md), or set MAIL_MAILER and the rest of the mail details in .env for the client\'s own service.',
+            ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
             $this->check('Install', 'AI readiness score is 80 or more (now '.$readiness.')', $readiness >= 80, 'php artisan gadya-cms:agent-ready lists what to fix; most are page descriptions to write in the panel.', optional: true),
         ];

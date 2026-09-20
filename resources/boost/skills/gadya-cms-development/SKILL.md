@@ -121,6 +121,7 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/articles-and-ai.md` - the writing screen, the public blog, providers, faking agents in tests
 - `references/seo.md` - `@cmsSeo`, sitemap, robots, redirects
 - `references/forms.md` - configuration, the template, the inbox
+- `references/email.md` - sending through Gadya Media, the address, Reply-To, the footer
 - `references/analytics.md` - what is counted, events, live updates, reports, `AnalyticsReport`
 - `references/media-and-team.md` - the photo pipeline, folders, usage; invitations and the last-administrator rule
 - `references/commands.md` - every Artisan command, config publishing, deploy steps

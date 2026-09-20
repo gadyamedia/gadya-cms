@@ -41,6 +41,9 @@ use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
 use Gadya\Cms\Http\Middleware\RecordMissingUrls;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
+use Gadya\Cms\Mail\BrandsOutgoingMail;
+use Gadya\Cms\Mail\PortalTransport;
+use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Models\Event as EventModel;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\Page;
@@ -55,11 +58,14 @@ use Gadya\Cms\Observers\RecordActivity;
 use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Connect\Portal\PortalClient;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
@@ -121,6 +127,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(SiteContentRepository::class);
         $this->app->scoped(Options::class);
         $this->app->scoped(AiSettings::class);
+        $this->app->scoped(SharedSender::class);
     }
 
     public function packageBooted(): void
@@ -150,6 +157,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             __DIR__.'/../resources/js' => resource_path('js/vendor/gadya-cms'),
             __DIR__.'/../resources/css' => resource_path('css/vendor/gadya-cms'),
         ], 'gadya-cms-assets');
+
+        $this->configureMail();
 
         $this->registerBladeDirectives();
         $this->registerRateLimiters();
@@ -202,6 +211,40 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);
 
+    }
+
+    /**
+     * Sending through Gadya Media, for a site with no mail service of its
+     * own: the `gadya` mailer hands the message to the portal, which sends
+     * it. Wired when something first asks for the mailer rather than on
+     * every request, so a page that sends nothing never looks the pairing
+     * up; the listener decides for itself, and only runs when a message is
+     * actually on its way.
+     */
+    private function configureMail(): void
+    {
+        $this->app->afterResolving('mail.manager', function (MailManager $manager): void {
+            $manager->extend(
+                SharedSender::MAILER,
+                fn (array $config) => new PortalTransport($this->app->make(PortalClient::class), $this->app->make(SharedSender::class)),
+            );
+
+            config(['mail.mailers.'.SharedSender::MAILER => ['transport' => SharedSender::MAILER]]);
+
+            $sender = $this->app->make(SharedSender::class);
+
+            if (! $sender->enabled()) {
+                return;
+            }
+
+            config([
+                'mail.default' => SharedSender::MAILER,
+                'mail.from.address' => $sender->address(),
+                'mail.from.name' => $sender->name(),
+            ]);
+        });
+
+        Event::listen(MessageSending::class, BrandsOutgoingMail::class);
     }
 
     /**

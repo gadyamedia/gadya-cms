@@ -14,7 +14,7 @@ return new class extends Migration
          * the same problem to whoever has to fix them, so they live in one
          * list with a note of how each was found.
          */
-        Schema::create('gadyacms_broken_links', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_broken_links', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('signature', 64);
@@ -35,5 +35,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('gadyacms_broken_links');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

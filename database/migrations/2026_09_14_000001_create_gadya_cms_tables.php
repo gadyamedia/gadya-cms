@@ -4,11 +4,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * The tables the CMS keeps its content in.
+ *
+ * Every table is created only when it is missing. A migration that fails
+ * half way - a database without DDL transactions leaves the tables it
+ * already made behind - can then be run again and finish the job, instead
+ * of stopping on the first table that already exists.
+ */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('gadyacms_sites', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_sites', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('key')->unique();
@@ -22,7 +30,7 @@ return new class extends Migration
          * the parts Filament needs to list, sort and filter on live in real
          * columns rather than inside the JSON.
          */
-        Schema::create('gadyacms_pages', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_pages', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('slug');
@@ -42,7 +50,7 @@ return new class extends Migration
          * navigation, the slug redirect table and the global contact
          * details. One row per top-level document key.
          */
-        Schema::create('gadyacms_settings', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_settings', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('key');
@@ -52,7 +60,7 @@ return new class extends Migration
             $table->unique(['site_id', 'key']);
         });
 
-        Schema::create('gadyacms_media', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_media', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('filename')->unique();
@@ -71,7 +79,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('gadyacms_revisions', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_revisions', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->json('snapshot');
@@ -82,7 +90,7 @@ return new class extends Migration
             $table->index(['site_id', 'published_at']);
         });
 
-        Schema::create('gadyacms_audit_logs', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_audit_logs', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->nullable()->constrained('gadyacms_sites')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -104,5 +112,16 @@ return new class extends Migration
         Schema::dropIfExists('gadyacms_settings');
         Schema::dropIfExists('gadyacms_pages');
         Schema::dropIfExists('gadyacms_sites');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

@@ -13,7 +13,7 @@ return new class extends Migration
          * daily-rotating HMAC, which is enough to count people once a day
          * and useless for following anyone across days.
          */
-        Schema::create('gadyacms_page_views', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_page_views', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->nullable()->constrained('gadyacms_sites')->nullOnDelete();
             $table->string('path');
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->index(['path', 'viewed_at']);
         });
 
-        Schema::create('gadyacms_analytics_events', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_analytics_events', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->nullable()->constrained('gadyacms_sites')->nullOnDelete();
             $table->string('name')->index();
@@ -48,5 +48,16 @@ return new class extends Migration
     {
         Schema::dropIfExists('gadyacms_analytics_events');
         Schema::dropIfExists('gadyacms_page_views');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

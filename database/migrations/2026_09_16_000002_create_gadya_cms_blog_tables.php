@@ -14,7 +14,7 @@ return new class extends Migration
          * by one person at a time - none of which the draft/publish
          * document model is shaped for.
          */
-        Schema::create('gadyacms_posts', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_posts', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('title');
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->index(['site_id', 'status', 'published_at']);
         });
 
-        Schema::create('gadyacms_article_generations', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_article_generations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('status', 20)->default('queued');
@@ -66,5 +66,16 @@ return new class extends Migration
     {
         Schema::dropIfExists('gadyacms_article_generations');
         Schema::dropIfExists('gadyacms_posts');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

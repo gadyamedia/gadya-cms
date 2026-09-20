@@ -17,10 +17,15 @@ use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Forms\AutoReplies;
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Mail\SharedSender;
+use Gadya\Cms\Notifications\TestEmail;
+use Illuminate\Support\Facades\Notification as Notifier;
+use Throwable;
 use UnitEnum;
 
 /**
- * What the site says back to someone who fills in a form.
+ * Who sends the site's email, and what it says back to someone who fills
+ * in a form.
  *
  * @property-read Schema $form
  */
@@ -73,6 +78,7 @@ class Emails extends Page
 
         return $schema
             ->components([
+                $this->sendingSection(),
                 Form::make($sections)
                     ->livewireSubmitHandler('save')
                     ->footer([
@@ -82,6 +88,61 @@ class Emails extends Page
                     ]),
             ])
             ->statePath('data');
+    }
+
+    /**
+     * Where the site's email comes from, and a way to prove it arrives.
+     */
+    private function sendingSection(): Section
+    {
+        $sender = app(SharedSender::class);
+
+        return Section::make('How this site sends email')
+            ->description($sender->enabled()
+                ? 'Your email is sent by Gadya Media, from '.$sender->address().'. There is nothing to set up, and nothing to pay for. Replies go to '.($sender->replyTo() ?? 'whoever the message is about').'.'
+                : 'Your email is sent by this site\'s own mail service ('.config('mail.default').'), from '.(config('mail.from.address') ?: 'no address yet').'.')
+            ->schema([]);
+    }
+
+    /**
+     * @return list<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('sendTest')
+                ->label('Send me a test email')
+                ->icon(Heroicon::OutlinedPaperAirplane)
+                ->color('gray')
+                ->action(fn () => $this->sendTest()),
+        ];
+    }
+
+    public function sendTest(): void
+    {
+        $user = auth()->user();
+        $address = (string) ($user?->email ?? '');
+
+        if ($address === '') {
+            Notification::make()->danger()->title('Your account has no email address')->send();
+
+            return;
+        }
+
+        try {
+            Notifier::route('mail', $address)->notify(new TestEmail((string) ($user?->name ?: 'someone')));
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('The test email could not be sent')
+                ->body($exception->getMessage())
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()->success()->title('Sent to '.$address)->body('If it has not arrived in a few minutes, look in the junk folder.')->send();
     }
 
     public function save(AutoReplies $replies): void
@@ -98,6 +159,6 @@ class Emails extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return FormDefinition::labels() !== [];
+        return FormDefinition::labels() !== [] || app(SharedSender::class)->enabled();
     }
 }

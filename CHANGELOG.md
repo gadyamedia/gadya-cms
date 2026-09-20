@@ -2,6 +2,20 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.8.0
+
+### Added
+
+- **Email without setting anything up.** A site paired with the Gadya Media portal and with no mail service of its own now sends through Gadya: the message goes to the portal over the signed link `gadya/connect` already keeps, and the portal sends it on. No SMTP details to collect, no mail credential on the client's server, and sending can be capped or cut off per site from the portal. Messages come from `{site}@on.gadya.media` with a Reply-To the business actually reads, and carry one quiet line at the foot saying gadya.media sent them.
+
+  A site with `MAIL_MAILER` set to a real service is never touched. `GADYA_MAIL=false` opts out for good, `GADYA_MAIL=true` insists, and `GADYA_MAIL_MAILBOX`, `GADYA_MAIL_DOMAIN`, `GADYA_MAIL_REPLY_TO` and `GADYA_MAIL_FOOTER` cover the rest. **Settings → Automatic replies** says who sends the site's email and offers **Send me a test email**; `gadya-cms:audit` checks the site can send at all. Copy the new `mail` block into `config/gadya-cms.php`. See [Email](docs/email.md).
+
+## 0.7.3
+
+### Fixed
+
+- The migrations can be run again after one fails half way. A database without DDL transactions - MySQL - keeps the tables a failed migration already made and does not record it as run, so the next deploy repeated it and stopped on `table already exists` (or its unique index). Every table is now created only when it is missing, and a table that is already there is left exactly as it is.
+
 ## 0.7.2
 
 ### Fixed

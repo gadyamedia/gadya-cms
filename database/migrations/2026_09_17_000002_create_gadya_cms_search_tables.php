@@ -12,7 +12,7 @@ return new class extends Migration
          * What Google Search Console says about the site, fetched on a
          * schedule and kept here so the dashboard never waits on Google.
          */
-        Schema::create('gadyacms_search_snapshots', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_search_snapshots', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('kind', 10);
@@ -31,7 +31,7 @@ return new class extends Migration
          * Lighthouse scores from the PageSpeed Insights API, one row per
          * check, so a page's history can be read back.
          */
-        Schema::create('gadyacms_page_scores', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_page_scores', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('path');
@@ -52,5 +52,16 @@ return new class extends Migration
     {
         Schema::dropIfExists('gadyacms_page_scores');
         Schema::dropIfExists('gadyacms_search_snapshots');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };

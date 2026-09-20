@@ -14,7 +14,7 @@ return new class extends Migration
          * are: a category is the shelf an article sits on, a tag is a word
          * it shares with others.
          */
-        Schema::create('gadyacms_terms', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_terms', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('site_id')->constrained('gadyacms_sites')->cascadeOnDelete();
             $table->string('taxonomy', 20)->default('category');
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->unique(['site_id', 'taxonomy', 'slug']);
         });
 
-        Schema::create('gadyacms_post_term', function (Blueprint $table): void {
+        $this->createIfMissing('gadyacms_post_term', function (Blueprint $table): void {
             $table->foreignId('post_id')->constrained('gadyacms_posts')->cascadeOnDelete();
             $table->foreignId('term_id')->constrained('gadyacms_terms')->cascadeOnDelete();
             $table->primary(['post_id', 'term_id']);
@@ -51,5 +51,16 @@ return new class extends Migration
 
         Schema::dropIfExists('gadyacms_post_term');
         Schema::dropIfExists('gadyacms_terms');
+    }
+
+    /**
+     * Create a table only when it is missing, so a migration that failed
+     * half way can be run again and finish the job.
+     */
+    private function createIfMissing(string $table, Closure $definition): void
+    {
+        if (! Schema::hasTable($table)) {
+            Schema::create($table, $definition);
+        }
     }
 };
