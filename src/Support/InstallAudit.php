@@ -300,6 +300,12 @@ class InstallAudit
                 app(SharedSender::class)->enabled() || ! in_array((string) config('mail.default'), ['log', 'array', ''], true),
                 'Pair the site with the Gadya Media portal and it sends through Gadya (see docs/email.md), or set MAIL_MAILER and the rest of the mail details in .env for the client\'s own service.',
             ),
+            $this->check(
+                'Install',
+                'A queue carries the email, not the visitor',
+                ! app(SharedSender::class)->enabled() || config('queue.default') !== 'sync',
+                'Email is sent through Gadya Media, and with QUEUE_CONNECTION=sync a visitor waits for the portal to answer before her form says thank you. Set QUEUE_CONNECTION=database, run php artisan queue:table and migrate, and run a worker.',
+            ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
             $this->check('Install', 'AI readiness score is 80 or more (now '.$readiness.')', $readiness >= 80, 'php artisan gadya-cms:agent-ready lists what to fix; most are page descriptions to write in the panel.', optional: true),
         ];

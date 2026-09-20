@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Seo;
 
+use Gadya\Cms\Mail\SharedSender;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -88,6 +89,27 @@ class SiteSetup
                 'status' => $verified === [] ? 'missing' : 'ok',
                 'found' => $verified,
             ];
+
+            $shared = app(SharedSender::class);
+
+            if (! $this->sendsMailFrom($domain) && $shared->enabled()) {
+                /*
+                 * The site's email is sent by Gadya Media from its own
+                 * domain, so SPF here would say nothing. DMARC still
+                 * belongs on the client's domain: it is what stops someone
+                 * else sending as her, and Gmail and Yahoo look for it.
+                 */
+                $dmarc = array_values(array_filter($this->values('_dmarc.'.$domain, 'TXT'), fn (string $value): bool => str_starts_with($value, 'v=DMARC1')));
+
+                $records[] = [
+                    'type' => 'TXT',
+                    'name' => '_dmarc',
+                    'value' => 'v=DMARC1; p=none; rua=mailto:dmarc@'.$domain,
+                    'why' => 'Your email is sent by Gadya Media from '.$shared->address().', so this domain needs no SPF record of its own. DMARC still belongs here: it stops anyone else sending as '.$domain.'.',
+                    'status' => $dmarc === [] ? 'missing' : 'ok',
+                    'found' => $dmarc,
+                ];
+            }
 
             if ($this->sendsMailFrom($domain)) {
                 $spf = array_values(array_filter($txt, fn (string $value): bool => str_starts_with($value, 'v=spf1')));
@@ -263,6 +285,7 @@ class SiteSetup
             'postmark' => 'include:spf.mtasv.net',
             'mailgun' => 'include:mailgun.org',
             'ses', 'ses-v2', 'resend' => 'include:amazonses.com',
+            'cloudflare' => 'include:(the record Cloudflare gives you for this domain)',
             default => 'include:(your email provider)',
         };
     }

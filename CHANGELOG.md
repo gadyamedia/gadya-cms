@@ -8,7 +8,17 @@ All notable changes to `gadya/cms` are documented here.
 
 - **Email without setting anything up.** A site paired with the Gadya Media portal and with no mail service of its own now sends through Gadya: the message goes to the portal over the signed link `gadya/connect` already keeps, and the portal sends it on. No SMTP details to collect, no mail credential on the client's server, and sending can be capped or cut off per site from the portal. Messages come from `{site}@on.gadya.media` with a Reply-To the business actually reads, and carry one quiet line at the foot saying gadya.media sent them.
 
-  A site with `MAIL_MAILER` set to a real service is never touched. `GADYA_MAIL=false` opts out for good, `GADYA_MAIL=true` insists, and `GADYA_MAIL_MAILBOX`, `GADYA_MAIL_DOMAIN`, `GADYA_MAIL_REPLY_TO` and `GADYA_MAIL_FOOTER` cover the rest. **Settings → Automatic replies** says who sends the site's email and offers **Send me a test email**; `gadya-cms:audit` checks the site can send at all. Copy the new `mail` block into `config/gadya-cms.php`. See [Email](docs/email.md).
+  A site with `MAIL_MAILER` set to a real service is never touched. `GADYA_MAIL=false` opts out for good, `GADYA_MAIL=true` insists, and `GADYA_MAIL_MAILBOX`, `GADYA_MAIL_DOMAIN`, `GADYA_MAIL_REPLY_TO` and `GADYA_MAIL_FOOTER` cover the rest. Copy the new `mail` block into `config/gadya-cms.php`. See [Email](docs/email.md).
+
+- **Settings → Automatic replies** now says who sends the site's email and from which address - asked of the portal, which is what decides it, rather than guessed from the site's own name - lists what has gone out lately and whether it arrived, and offers **Send me a test email** that reports the failure on the screen rather than in a log.
+
+- **Where replies go is the client's to choose**, on that same screen. Nobody reads the shared sending address, so every message asks for replies at the address she names there; left blank it falls back to the business email from the site's details, as before.
+
+- `gadya-cms:audit` checks the site can send email at all, and that a real queue carries it: with `QUEUE_CONNECTION=sync` a visitor waits for the portal to answer before her form says thank you.
+
+### Changed
+
+- The DNS checklist on **Get found** no longer asks for an SPF record on a domain that does not send. A site whose email goes through Gadya is told so, and is still asked for DMARC - which belongs on the client's own domain whoever sends for her.
 
 ## 0.7.3
 

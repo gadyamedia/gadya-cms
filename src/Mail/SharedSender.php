@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Mail;
 
+use Gadya\Cms\Options\Options;
 use Gadya\Connect\Models\Connection;
 use Illuminate\Support\Str;
 
@@ -59,6 +60,12 @@ class SharedSender
      */
     public function address(): string
     {
+        $fromPortal = app(PortalMail::class)->address();
+
+        if ($fromPortal !== null) {
+            return $fromPortal;
+        }
+
         $domain = trim((string) config('gadya-cms.mail.domain', 'on.gadya.media'), " \t@.");
 
         return $this->mailbox().'@'.$domain;
@@ -91,7 +98,9 @@ class SharedSender
      */
     public function replyTo(): ?string
     {
-        foreach ([config('gadya-cms.mail.reply_to'), config('gadya-cms.seo.organization.email')] as $address) {
+        $chosen = rescue(fn () => app(Options::class)->get('mail.reply_to'), null, report: false);
+
+        foreach ([$chosen, config('gadya-cms.mail.reply_to'), config('gadya-cms.seo.organization.email')] as $address) {
             if (is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL)) {
                 return $address;
             }

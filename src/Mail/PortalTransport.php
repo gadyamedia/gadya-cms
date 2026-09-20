@@ -45,10 +45,20 @@ class PortalTransport extends AbstractTransport
 
         $payload = $this->payload($message);
 
+        /*
+         * A site whose queue is `sync` sends inside the visitor's own
+         * request - a form submission - so the wait for the portal is a
+         * wait she sits through. Shorter here than the check-in's.
+         */
+        $timeout = config('gadya-connect.timeout');
+        config(['gadya-connect.timeout' => max(1, (int) config('gadya-cms.mail.timeout', 8))]);
+
         try {
             $response = $this->portal->send($connection, 'POST', self::PATH, $payload);
         } catch (Throwable $exception) {
             throw new TransportException('Gadya Media could not be reached to send the message: '.$exception->getMessage(), 0, $exception);
+        } finally {
+            config(['gadya-connect.timeout' => $timeout]);
         }
 
         if (! $response->successful()) {

@@ -421,6 +421,13 @@ return [
         /* The quiet line at the foot of a message Gadya Media sent. */
         'footer' => env('GADYA_MAIL_FOOTER', true),
 
+        /*
+         * Seconds to wait for the portal to take a message. Kept short:
+         * without a queue this wait happens inside a visitor's form
+         * submission, and a failed send is retried, not lost.
+         */
+        'timeout' => 8,
+
         /* How much of an attachment the portal will carry in one message. */
         'max_attachment_megabytes' => 10,
     ],

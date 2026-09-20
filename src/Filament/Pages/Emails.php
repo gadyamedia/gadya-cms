@@ -17,8 +17,10 @@ use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Forms\AutoReplies;
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Mail\PortalMail;
 use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Notifications\TestEmail;
+use Gadya\Cms\Options\Options;
 use Illuminate\Support\Facades\Notification as Notifier;
 use Throwable;
 use UnitEnum;
@@ -46,9 +48,12 @@ class Emails extends Page
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
-    public function mount(AutoReplies $replies): void
+    public function mount(AutoReplies $replies, Options $options): void
     {
-        $this->form->fill(['replies' => $replies->all()]);
+        $this->form->fill([
+            'replies' => $replies->all(),
+            'reply_to' => (string) ($options->get('mail.reply_to') ?? ''),
+        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -79,7 +84,19 @@ class Emails extends Page
         return $schema
             ->components([
                 $this->sendingSection(),
-                Form::make($sections)
+                Form::make([
+                    Section::make('Where replies go')
+                        ->description('Nobody reads the address your email is sent from, so every message asks for replies to come here instead. Leave it blank and the business email from your site details is used.')
+                        ->schema([
+                            TextInput::make('reply_to')
+                                ->label('Replies go to')
+                                ->email()
+                                ->maxLength(190)
+                                ->placeholder($this->sender()->replyTo() ?? 'someone@yourbusiness.co.uk')
+                                ->columnSpanFull(),
+                        ]),
+                    ...$sections,
+                ])
                     ->livewireSubmitHandler('save')
                     ->footer([
                         Actions::make([
@@ -95,13 +112,43 @@ class Emails extends Page
      */
     private function sendingSection(): Section
     {
-        $sender = app(SharedSender::class);
+        $sender = $this->sender();
+
+        if (! $sender->enabled()) {
+            return Section::make('How this site sends email')
+                ->description('Your email is sent by this site\'s own mail service ('.config('mail.default').'), from '.(config('mail.from.address') ?: 'no address yet').'.')
+                ->schema([]);
+        }
+
+        /*
+         * Asked of the portal here, on a screen someone opened, because
+         * the portal is what decides the address - not this site's guess
+         * at it - and this is where the client is told what it is.
+         */
+        $status = app(PortalMail::class)->status();
 
         return Section::make('How this site sends email')
-            ->description($sender->enabled()
-                ? 'Your email is sent by Gadya Media, from '.$sender->address().'. There is nothing to set up, and nothing to pay for. Replies go to '.($sender->replyTo() ?? 'whoever the message is about').'.'
-                : 'Your email is sent by this site\'s own mail service ('.config('mail.default').'), from '.(config('mail.from.address') ?: 'no address yet').'.')
+            ->description('Your email is sent by Gadya Media, from '.($status['address'] ?? $sender->address()).'. There is nothing to set up, and nothing to pay for. Replies go to '.($sender->replyTo() ?? 'whoever the message is about').'.')
             ->schema([]);
+    }
+
+    private function sender(): SharedSender
+    {
+        return app(SharedSender::class);
+    }
+
+    /**
+     * What has gone out lately, as the portal that sent it has it.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentEmails(): array
+    {
+        if (! $this->sender()->enabled()) {
+            return [];
+        }
+
+        return (array) (app(PortalMail::class)->status()['recent'] ?? []);
     }
 
     /**
@@ -145,9 +192,14 @@ class Emails extends Page
         Notification::make()->success()->title('Sent to '.$address)->body('If it has not arrived in a few minutes, look in the junk folder.')->send();
     }
 
-    public function save(AutoReplies $replies): void
+    public function save(AutoReplies $replies, Options $options): void
     {
-        $replies->save((array) ($this->form->getState()['replies'] ?? []));
+        $state = $this->form->getState();
+
+        $replies->save((array) ($state['replies'] ?? []));
+
+        $chosen = trim((string) ($state['reply_to'] ?? ''));
+        $options->set('mail.reply_to', $chosen !== '' ? $chosen : null);
 
         Notification::make()->success()->title('Saved')->send();
     }
