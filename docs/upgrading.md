@@ -42,6 +42,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.8.0 → 0.8.1
+
+`php artisan migrate` adds the `failures` column to `gadyacms_page_scores` and the `gadyacms_fixes` table. Nothing else is needed: **Settings → Speed & accessibility** appears wherever `search()` is on, and uses Gadya Media's AI key over the portal link on a paired site with no key of its own.
+
 ## 0.4 → 0.5
 
 Gadya CMS now requires gadya/connect.

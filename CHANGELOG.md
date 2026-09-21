@@ -2,6 +2,24 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.8.1
+
+### Added
+
+- **Settings → Speed & accessibility.** Google's Lighthouse check already ran weekly; now what it found is written where the client can read it. Each failure is in plain English, against the page it was found on, split into what the CMS can put right itself and what lives in the templates - the second with the failing selector, for whoever looks after the code.
+
+- **Two buttons that fix the first pile.** *Describe the photos* looks at each photo with no description and writes one sentence saying what is in it. *Write the missing search snippets* reads each page and writes the sentence Google shows under its name. Both write into the **draft**: the client reads them, changes anything she would say differently, and publishes. `php artisan gadya-cms:fix` does the same from the command line and prints the brief for everything left.
+
+- **The writing is Gadya's, not another bill.** A site with its own key under Settings → AI keeps using it. A site without one, paired with the portal, borrows **Gadya Media's key** over the link `gadya/connect` already keeps - nothing to buy, nothing to configure, and no API key on a client's server. The portal counts and can cap each site.
+
+- **The client is told what was fixed.** Every change is recorded in the new `gadyacms_fixes` table and listed on the screen: what was changed, what it now says, when, and whether Gadya or her own key wrote it. They are her words from then on, editable wherever that page or photo is edited.
+
+- A page speed check now keeps **every failing audit** and the elements that failed it, not only the scores and the biggest opportunities (new `failures` column on `gadyacms_page_scores`).
+
+### Fixed
+
+- `opportunities` were stored but `failures` would not have been: `PageScore` did not list the new column as fillable.
+
 ## 0.8.0
 
 ### Added

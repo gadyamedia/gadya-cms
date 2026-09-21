@@ -66,8 +66,79 @@ class PageSpeed
             'lcp_ms' => isset($audits['largest-contentful-paint']['numericValue']) ? (int) $audits['largest-contentful-paint']['numericValue'] : null,
             'cls' => isset($audits['cumulative-layout-shift']['numericValue']) ? (float) $audits['cumulative-layout-shift']['numericValue'] : null,
             'opportunities' => $opportunities,
+            'failures' => $this->failures($audits, $categories),
             'checked_at' => now(),
         ]);
+    }
+
+    /**
+     * Every audit the page failed, with the elements it failed on: the
+     * selector so a person can find it, and the snippet so she can
+     * recognise it. Manual audits and ones that do not apply are not
+     * failures and are left out.
+     *
+     * @param  array<string, mixed>  $audits
+     * @param  array<string, mixed>  $categories
+     * @return list<array{id: string, title: string, description: string, category: string, elements: list<array{selector: string, snippet: string, explanation: string}>}>
+     */
+    private function failures(array $audits, array $categories): array
+    {
+        $categoryOf = [];
+
+        foreach ($categories as $name => $category) {
+            foreach ((array) ($category['auditRefs'] ?? []) as $ref) {
+                if (is_array($ref) && isset($ref['id'])) {
+                    $categoryOf[(string) $ref['id']] = (string) $name;
+                }
+            }
+        }
+
+        return collect($audits)
+            ->filter(fn ($audit): bool => is_array($audit)
+                && is_numeric($audit['score'] ?? null)
+                && (float) $audit['score'] < 1
+                && ($audit['scoreDisplayMode'] ?? '') !== 'informative')
+            ->map(fn (array $audit, string $id): array => [
+                'id' => $id,
+                'title' => (string) ($audit['title'] ?? $id),
+                'description' => $this->plain((string) ($audit['description'] ?? '')),
+                'category' => $categoryOf[$id] ?? 'other',
+                'elements' => $this->elements($audit),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $audit
+     * @return list<array{selector: string, snippet: string, explanation: string}>
+     */
+    private function elements(array $audit): array
+    {
+        return collect((array) ($audit['details']['items'] ?? []))
+            ->map(function ($item): ?array {
+                $node = is_array($item) ? ($item['node'] ?? null) : null;
+
+                if (! is_array($node)) {
+                    return null;
+                }
+
+                return [
+                    'selector' => (string) ($node['selector'] ?? ''),
+                    'snippet' => (string) ($node['snippet'] ?? ''),
+                    'explanation' => $this->plain((string) ($node['explanation'] ?? $item['explanation'] ?? '')),
+                ];
+            })
+            ->filter()
+            ->take(10)
+            ->values()
+            ->all();
+    }
+
+    /** Lighthouse writes Markdown links into its prose; the panel wants words. */
+    private function plain(string $text): string
+    {
+        return trim((string) preg_replace(['/\[([^\]]*)\]\([^)]*\)/', '/\s+/'], ['$1', ' '], $text));
     }
 
     /**

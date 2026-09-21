@@ -26,7 +26,23 @@ php artisan gadya-cms:pagespeed                       # the first five pages of 
 php artisan gadya-cms:pagespeed --url=https://example.com/pricing --strategy=desktop
 ```
 
-Scores (performance, accessibility, best practices, SEO), LCP, CLS and the five biggest opportunities are kept per check, so a page's history can be read back. Schedule it weekly rather than daily; the quota is not large.
+Scores (performance, accessibility, best practices, SEO), LCP, CLS, the five biggest opportunities and every failing audit - with the elements that failed it - are kept per check, so a page's history can be read back. Schedule it weekly rather than daily; the quota is not large.
+
+## Speed & accessibility
+
+**Settings → Speed &amp; accessibility** turns the last check into something the client can act on. Each failure is written in plain English, against the page it was found on, and sorted into two piles:
+
+- **Things the CMS owns** - a photo with no description, a page with nothing to show under its name in search results. Two buttons at the top of the screen put them right: Gadya looks at each photo and writes one sentence saying what is in it, and reads each page and writes its search snippet. Everything lands in the **draft**, so the client reads it and presses Publish; nothing reaches visitors on its own.
+- **Things the templates own** - an ARIA attribute where it is not allowed, a heading that jumps a level. These are named, with the failing selector, and left for whoever looks after the code. `Failures::brief()` writes the same thing out for a developer or an agent.
+
+```bash
+php artisan gadya-cms:fix                 # describe the photos, write the missing snippets, list what is left
+php artisan gadya-cms:fix --photos --limit=10
+```
+
+The writing is done with the site's own AI key when she has one under **Settings → AI**. When she has not, and the site is paired with the portal, it is done by **Gadya Media's key**: nothing to buy, nothing to configure, and no key on the client's server. The portal counts what each site asks for and can stop a site on its own.
+
+Every fix is written down in `gadyacms_fixes` and listed at the foot of the screen - what was changed, what it now says, and whether Gadya or her own key wrote it - so the client is told rather than finding her words quietly rewritten.
 
 ## Ready for AI assistants
 

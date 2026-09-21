@@ -11,7 +11,7 @@ class PageScore extends Model
     protected $table = 'gadyacms_page_scores';
 
     /** @var list<string> */
-    protected $fillable = ['site_id', 'path', 'strategy', 'performance', 'accessibility', 'best_practices', 'seo', 'lcp_ms', 'cls', 'opportunities', 'checked_at'];
+    protected $fillable = ['site_id', 'path', 'strategy', 'performance', 'accessibility', 'best_practices', 'seo', 'lcp_ms', 'cls', 'opportunities', 'failures', 'checked_at'];
 
     /**
      * @return array<string, string>
@@ -26,6 +26,7 @@ class PageScore extends Model
             'lcp_ms' => 'integer',
             'cls' => 'float',
             'opportunities' => 'array',
+            'failures' => 'array',
             'checked_at' => 'datetime',
         ];
     }

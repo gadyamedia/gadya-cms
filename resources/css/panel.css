@@ -326,6 +326,19 @@
     margin: 0;
 }
 
+.gadya-dash__list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.gadya-dash__list code {
+    font-size: 0.75rem;
+    word-break: break-all;
+}
+
 .gadya-dash__grid {
     display: grid;
     gap: 1.25rem;

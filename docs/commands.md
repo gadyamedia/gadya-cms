@@ -17,6 +17,7 @@
 | `gadya-cms:check-links` | Find links on the site that lead nowhere (`--external`) |
 | `gadya-cms:search-console` | Fetch queries and landing pages from Google (`--days=28`) |
 | `gadya-cms:pagespeed` | Run Lighthouse through PageSpeed Insights (`--url=`, `--limit=5`, `--strategy=`) |
+| `gadya-cms:fix` | Describe photos and write missing search snippets into the draft, and print what is left for a developer (`--photos`, `--pages`, `--limit=25`) |
 | `gadya-cms:agent-ready` | Score readiness for search engines and AI assistants (`--live`) |
 | `gadya-cms:analytics-digest` | Email the summary to the people who signed up for it (`--days=7`) |
 | `gadya-cms:prune-analytics` | Delete page views and events past the retention window (`--days=`) |

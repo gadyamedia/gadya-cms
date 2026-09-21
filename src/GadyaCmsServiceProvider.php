@@ -14,6 +14,7 @@ use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
 use Gadya\Cms\Console\FetchSearchConsoleCommand;
+use Gadya\Cms\Console\FixQualityCommand;
 use Gadya\Cms\Console\ImportLegacyContentCommand;
 use Gadya\Cms\Console\ImportLegacyMediaCommand;
 use Gadya\Cms\Console\ImportSiteCommand;
@@ -94,6 +95,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 InstallCommand::class,
                 MakeEditorCommand::class,
+                FixQualityCommand::class,
                 ResetPasswordCommand::class,
                 DoctorCommand::class,
                 ExportSiteContentCommand::class,
