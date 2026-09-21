@@ -396,12 +396,20 @@ class GadyaCmsPlugin implements Plugin
                 ...static::connectPages(),
             ]));
 
+        /*
+         * The colours and faces the CMS screens are drawn with, always:
+         * without them the dashboard, the editor and the photo library
+         * have no surfaces, no type and no accent at all. `->brand(false)`
+         * says "leave the panel's chrome alone", not "leave these screens
+         * unstyled", so only the chrome below is skipped.
+         */
+        $panel->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('gadya-cms::filament.brand-head', static::brandTokens()));
+
         if (! $this->hasBrand()) {
             return;
         }
 
         $panel
-            ->renderHook(PanelsRenderHook::HEAD_START, fn (): View => view('gadya-cms::filament.brand-head', static::brandTokens()))
             ->brandName((string) config('gadya-cms.brand.name'))
             ->brandLogo(fn (): ?string => static::brandLogo())
             ->brandLogoHeight((string) config('gadya-cms.brand.logo_height', '2.75rem'))

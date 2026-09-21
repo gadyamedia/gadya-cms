@@ -60,6 +60,8 @@ The panel and its sign-in screen follow the site itself, so the client signs in 
 
 They change when she presses **Publish changes**, not before - the panel shows the live look, never an unpublished draft.
 
+`->brand(false)` on the plugin is a different thing again: it leaves the panel's name, logo, font and colours as the site set them, while the CMS's own screens keep the colours and type they are drawn with.
+
 A site that wants the panel to look different from the site sets `brand.follow_site` to `false` and fills in `brand.primary`, `brand.logo` and the rest by hand; the logo picker then disappears from her screen.
 
 ```php

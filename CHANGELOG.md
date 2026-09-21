@@ -20,6 +20,12 @@ All notable changes to `gadya/cms` are documented here.
 
 - The DNS checklist on **Get found** no longer asks for an SPF record on a domain that does not send. A site whose email goes through Gadya is told so, and is still asked for DMARC - which belongs on the client's own domain whoever sends for her.
 
+## 0.7.4
+
+### Fixed
+
+- A panel using `->brand(false)` - keeping its own chrome - no longer loses the colours and faces the CMS screens are drawn with. The dashboard, the photo library and the editor were rendering with no surfaces, no type and no accent, because the switch also withheld the custom properties the panel stylesheet reads. It now only skips the panel's name, logo, font and colours, as it says.
+
 ## 0.7.3
 
 ### Fixed
