@@ -7,9 +7,12 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
@@ -84,21 +87,35 @@ class SubmissionResource extends Resource
                     ->formatStateUsing(fn (string $state): string => Str::headline($state))
                     ->color(fn (string $state): string => match ($state) {
                         FormSubmission::STATUS_NEW => 'primary',
+                        FormSubmission::STATUS_READ => 'warning',
                         FormSubmission::STATUS_ARCHIVED => 'gray',
                         default => 'success',
                     }),
+                TextColumn::make('follow_up_at')
+                    ->label('Follow up')
+                    ->date()
+                    ->placeholder('—')
+                    ->color(fn (FormSubmission $record): ?string => $record->follow_up_at?->isPast() && $record->status !== FormSubmission::STATUS_ARCHIVED ? 'danger' : null)
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('created_at')->label('Received')->since()->sortable(),
             ])
             ->filters([
                 SelectFilter::make('form')->options(fn (): array => FormDefinition::labels()),
                 SelectFilter::make('status')->options([
                     FormSubmission::STATUS_NEW => 'New',
-                    FormSubmission::STATUS_READ => 'Read',
+                    FormSubmission::STATUS_READ => 'Read, not answered',
+                    FormSubmission::STATUS_ANSWERED => 'Answered',
                     FormSubmission::STATUS_ARCHIVED => 'Archived',
                 ]),
+                Filter::make('follow_up_due')
+                    ->label('Follow-up due')
+                    ->query(fn (Builder $query): Builder => $query->dueForFollowUp()),
             ])
             ->recordActions([
                 static::openAction(),
+                static::answeredAction(),
+                static::notesAction(),
                 static::archiveAction(),
                 DeleteAction::make(),
             ])
@@ -131,6 +148,45 @@ class SubmissionResource extends Resource
             ->modalContent(fn (FormSubmission $record): View => view('gadya-cms::filament.submissions.detail', ['submission' => $record]));
     }
 
+    protected static function answeredAction(): Action
+    {
+        return Action::make('answered')
+            ->label('Mark answered')
+            ->icon(Heroicon::OutlinedCheckCircle)
+            ->color('success')
+            ->visible(fn (FormSubmission $record): bool => ! in_array($record->status, [FormSubmission::STATUS_ANSWERED, FormSubmission::STATUS_ARCHIVED], true))
+            ->action(fn (FormSubmission $record) => $record->markAnswered());
+    }
+
+    /**
+     * Notes nobody but the team reads, and a day to come back to it -
+     * for the enquiry whose answer was "try me again in March".
+     */
+    protected static function notesAction(): Action
+    {
+        return Action::make('notes')
+            ->label('Notes and follow-up')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->fillForm(fn (FormSubmission $record): array => [
+                'notes' => $record->notes,
+                'follow_up_at' => $record->follow_up_at,
+            ])
+            ->schema([
+                Textarea::make('notes')
+                    ->label('Internal notes')
+                    ->helperText('Only your team sees these. They are never sent to anyone.')
+                    ->rows(6)
+                    ->maxLength(5000),
+                DatePicker::make('follow_up_at')
+                    ->label('Come back to it on')
+                    ->native(false),
+            ])
+            ->action(fn (FormSubmission $record, array $data) => $record->update([
+                'notes' => $data['notes'] ?: null,
+                'follow_up_at' => $data['follow_up_at'] ?: null,
+            ]));
+    }
+
     protected static function archiveAction(): Action
     {
         return Action::make('archive')
@@ -153,13 +209,16 @@ class SubmissionResource extends Resource
 
                 return response()->streamDownload(function () use ($records, $fields): void {
                     $out = fopen('php://output', 'w');
-                    fputcsv($out, ['Received', 'Form', 'Status', 'Page', 'Country', ...array_map(Str::headline(...), $fields)]);
+                    fputcsv($out, ['Received', 'Form', 'Status', 'Answered', 'Follow up', 'Notes', 'Page', 'Country', ...array_map(Str::headline(...), $fields)]);
 
                     foreach ($records as $record) {
                         fputcsv($out, [
                             $record->created_at->toDateTimeString(),
                             $record->form,
                             $record->status,
+                            $record->answered_at?->toDateTimeString(),
+                            $record->follow_up_at?->toDateString(),
+                            $record->notes,
                             $record->path,
                             $record->country,
                             ...array_map(fn (string $field): string => (string) (is_array($record->data[$field] ?? null) ? implode(', ', $record->data[$field]) : ($record->data[$field] ?? '')), $fields),

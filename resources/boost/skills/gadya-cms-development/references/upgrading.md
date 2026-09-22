@@ -42,6 +42,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.12.0 → 0.13.0
+
+`php artisan migrate` adds `notes`, `follow_up_at` and `answered_at` to `gadyacms_form_submissions`. Nothing else is required. Tell the client that *Automatic replies* is now **Enquiry emails**, and that she can add who is told about new enquiries there.
+
 ## 0.11.4 → 0.12.0
 
 Nothing is required. A site moving a hand-written `<head>` onto `@cmsSeo` may want the three new `seo` keys - `suffix_written_titles`, `organization_schema` and `organization.anchor` - described in the changelog; copy them into `config/gadya-cms.php` if so.

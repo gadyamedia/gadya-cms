@@ -47,9 +47,9 @@ A request with `Accept: application/json` gets `{"ok": true, "message": "..."}` 
 
 Submissions are throttled to six a minute per address (`gadya-cms-forms` rate limiter).
 
-## Automatic replies
+## Who is told, and the reply
 
-**Settings → Automatic replies** holds the thank-you email each form sends back, in the client's own words. `{{ name }}`, `{{ business }}` and the name of any field are replaced; a blank line starts a new paragraph. Only sent when the form collected an email address.
+**Settings → Enquiry emails** says, per form, who is emailed the moment an enquiry arrives - in addition to any `notify` addresses fixed in config, so the client can add a new member of staff without a developer - and holds the thank-you email each form sends back, in the client's own words. `{{ name }}`, `{{ business }}` and the name of any field are replaced; a blank line starts a new paragraph. Only sent when the form collected an email address.
 
 ## The mailing list
 
@@ -57,4 +57,23 @@ A sign-up box is not a contact form - it needs dedupe, an unsubscribe link and a
 
 ## The inbox
 
-Opening an enquiry marks it read; the navigation badge counts the rest. Enquiries can be archived, deleted, and downloaded as CSV with one column per field.
+Opening an enquiry marks it read; the navigation badge counts the rest. An enquiry moves on from there as the client deals with it:
+
+- **Mark answered** once someone has replied. The date is kept, so "how long did we take?" has an answer.
+- **Notes and follow-up** holds internal notes - never sent to anyone - and a date to come back to it. Enquiries due a follow-up are highlighted, can be filtered to, and are listed in the drift digest.
+- **Archive** puts it away.
+
+Enquiries can be deleted, and downloaded as CSV with one column per field plus the notes and dates.
+
+## A form of the site's own
+
+A form written as a Livewire component, or any other way, can still keep its enquiries in the inbox and send the same emails. Validate as usual, then hand the result over:
+
+```php
+use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Forms\StoreFormSubmission;
+
+app(StoreFormSubmission::class)->handle(FormDefinition::find('contact'), $validated, request());
+```
+
+Only the fields listed for the form under `forms.forms` are kept, exactly as for a posted form.

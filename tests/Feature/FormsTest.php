@@ -3,11 +3,14 @@
 namespace Gadya\Cms\Tests\Feature;
 
 use Filament\Actions\Testing\TestAction;
+use Gadya\Cms\Filament\Pages\Emails;
 use Gadya\Cms\Filament\Resources\Submissions\Pages\ListSubmissions;
 use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
 use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Notifications\FormSubmitted;
+use Gadya\Cms\Options\Options;
+use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Support\SiteContext;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Support\Facades\Blade;
@@ -160,5 +163,70 @@ class FormsTest extends TestCase
             ->assertFileDownloaded();
 
         $this->assertTrue(true);
+    }
+
+    public function test_an_enquiry_can_be_marked_answered_and_the_date_is_kept(): void
+    {
+        $enquiry = FormSubmission::query()->create(['site_id' => app(SiteContext::class)->id(), 'form' => 'contact', 'data' => ['name' => 'Pat', 'message' => 'Hi'], 'created_at' => now()->subDay()]);
+
+        Livewire::actingAs($this->editor())
+            ->test(ListSubmissions::class)
+            ->callAction(TestAction::make('answered')->table($enquiry));
+
+        $enquiry->refresh();
+        $this->assertSame(FormSubmission::STATUS_ANSWERED, $enquiry->status);
+        $this->assertNotNull($enquiry->answered_at);
+        $this->assertNotNull($enquiry->read_at, 'Answering it implies it was opened.');
+    }
+
+    public function test_notes_and_a_follow_up_date_are_kept_and_the_digest_says_when_one_is_due(): void
+    {
+        $enquiry = FormSubmission::query()->create(['site_id' => app(SiteContext::class)->id(), 'form' => 'contact', 'data' => ['name' => 'Pat', 'message' => 'Call me in March'], 'status' => FormSubmission::STATUS_READ, 'created_at' => now()->subMonth()]);
+
+        Livewire::actingAs($this->editor())
+            ->test(ListSubmissions::class)
+            ->callAction(TestAction::make('notes')->table($enquiry), [
+                'notes' => 'Budget confirmed. Wants a quote after the board meets.',
+                'follow_up_at' => now()->subDay()->toDateString(),
+            ]);
+
+        $enquiry->refresh();
+        $this->assertSame('Budget confirmed. Wants a quote after the board meets.', $enquiry->notes);
+        $this->assertTrue($enquiry->follow_up_at->isYesterday());
+
+        $this->assertSame(1, FormSubmission::query()->dueForFollowUp()->count());
+        $this->assertSame('follow-ups-due', app(Drift::class)->findings()->firstWhere('key', 'follow-ups-due')['key']);
+
+        $this->assertStringContainsString('Budget confirmed', view('gadya-cms::filament.submissions.detail', ['submission' => $enquiry])->render());
+
+        $enquiry->update(['status' => FormSubmission::STATUS_ARCHIVED]);
+        $this->assertSame(0, FormSubmission::query()->dueForFollowUp()->count(), 'An archived enquiry is not due anything.');
+    }
+
+    public function test_the_client_can_add_who_is_told_without_a_deploy(): void
+    {
+        app(Options::class)->set('forms.notify.contact', ['New.Starter@example.com', 'owner@example.com', 'not an address']);
+
+        $this->assertSame(
+            ['owner@example.com', 'new.starter@example.com'],
+            FormDefinition::find('contact')->notify,
+            'Config and panel together, once each, and only real addresses.',
+        );
+
+        $this->post('/cms/forms/contact', ['name' => 'Pat', 'email' => 'pat@example.com', 'message' => 'Hello']);
+
+        Notification::assertSentOnDemand(FormSubmitted::class, fn (FormSubmitted $notification, array $channels, $notifiable): bool => in_array('new.starter@example.com', $notifiable->routes['mail'] ?? [], true));
+    }
+
+    public function test_the_recipients_are_edited_on_the_enquiry_emails_screen(): void
+    {
+        /* Who is told is a settings decision, so it is an administrator's. */
+        Livewire::actingAs($this->administrator())
+            ->test(Emails::class)
+            ->set('data.notify.contact', ['sales@example.com'])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(['sales@example.com'], FormDefinition::chosenRecipients('contact'));
     }
 }

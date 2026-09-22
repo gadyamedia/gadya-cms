@@ -71,7 +71,7 @@ Schedule::command('gadya-cms:check-links')->weekly();
 
 ## Automatic replies
 
-**Settings → Automatic replies** is the "thank you, we have your message" email, per form, in the client's own words. `{{ name }}`, `{{ business }}` and the name of any field on the form are replaced; a blank line starts a new paragraph. It is only sent when the form collected an email address to send it to.
+**Settings → Enquiry emails** is the "thank you, we have your message" email, per form, in the client's own words. `{{ name }}`, `{{ business }}` and the name of any field on the form are replaced; a blank line starts a new paragraph. It is only sent when the form collected an email address to send it to.
 
 ## Everything to schedule
 

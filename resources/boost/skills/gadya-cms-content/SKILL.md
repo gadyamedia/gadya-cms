@@ -37,7 +37,7 @@ Use it when the person is an editor, writer or site owner asking how to change s
 | Invite someone | **Settings → Team** (they get an email link; no password is sent) |
 | Set up the AI writer | **Settings → AI** |
 | Close the site while you work on it | **Settings → Coming soon mode** |
-| Change the thank-you email a form sends | **Settings → Automatic replies** |
+| Change the thank-you email a form sends | **Settings → Enquiry emails** |
 | Find out who changed something | **Settings → Activity** |
 | Fix a link that goes nowhere | **Settings → Broken links** |
 | Connect Google Search Console / PageSpeed | **Settings → Search & speed** |

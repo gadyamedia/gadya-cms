@@ -4,6 +4,7 @@ namespace Gadya\Cms\Filament\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -39,9 +40,9 @@ class Emails extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Settings';
 
-    protected static ?string $navigationLabel = 'Automatic replies';
+    protected static ?string $navigationLabel = 'Enquiry emails';
 
-    protected static ?string $title = 'Automatic replies';
+    protected static ?string $title = 'Enquiry emails';
 
     protected static ?int $navigationSort = 7;
 
@@ -53,6 +54,9 @@ class Emails extends Page
         $this->form->fill([
             'replies' => $replies->all(),
             'reply_to' => (string) ($options->get('mail.reply_to') ?? ''),
+            'notify' => collect(FormDefinition::labels())
+                ->mapWithKeys(fn (string $label, string $name): array => [$name => FormDefinition::chosenRecipients($name)])
+                ->all(),
         ]);
     }
 
@@ -64,6 +68,14 @@ class Emails extends Page
             $sections[] = Section::make($label)
                 ->description('Sent to whoever filled this form in, as soon as they send it. Only sent when the form asks for an email address.')
                 ->schema([
+                    TagsInput::make("notify.{$name}")
+                        ->label('Who is told about a new one')
+                        ->placeholder('Add an email address')
+                        ->nestedRecursiveRules(['email'])
+                        ->helperText(fn (): ?string => ($fixed = array_values(array_diff(FormDefinition::find($name)?->notify ?? [], FormDefinition::chosenRecipients($name)))) === []
+                            ? 'Everyone here gets an email the moment one arrives, with the reply going straight to the sender.'
+                            : 'Also always sent to '.implode(', ', $fixed).', which is set in the site\'s code.')
+                        ->columnSpanFull(),
                     Toggle::make("replies.{$name}.enabled")
                         ->label('Send a reply')
                         ->columnSpanFull(),
@@ -200,6 +212,10 @@ class Emails extends Page
 
         $chosen = trim((string) ($state['reply_to'] ?? ''));
         $options->set('mail.reply_to', $chosen !== '' ? $chosen : null);
+
+        foreach ((array) ($state['notify'] ?? []) as $form => $addresses) {
+            $options->set('forms.notify.'.$form, array_values(array_filter(array_map('trim', (array) $addresses))));
+        }
 
         Notification::make()->success()->title('Saved')->send();
     }

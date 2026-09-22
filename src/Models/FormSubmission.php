@@ -20,12 +20,15 @@ class FormSubmission extends Model
 
     public const STATUS_READ = 'read';
 
+    /** Someone has replied to it. */
+    public const STATUS_ANSWERED = 'answered';
+
     public const STATUS_ARCHIVED = 'archived';
 
     protected $table = 'gadyacms_form_submissions';
 
     /** @var list<string> */
-    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at'];
+    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at', 'notes', 'follow_up_at', 'answered_at'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -41,6 +44,8 @@ class FormSubmission extends Model
             'data' => 'array',
             'read_at' => 'datetime',
             'created_at' => 'datetime',
+            'follow_up_at' => 'datetime',
+            'answered_at' => 'datetime',
         ];
     }
 
@@ -57,6 +62,21 @@ class FormSubmission extends Model
     public function scopeUnread(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_NEW);
+    }
+
+    /**
+     * Enquiries someone said they would come back to, and the day has
+     * come - excluding the ones put away since.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeDueForFollowUp(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('follow_up_at')
+            ->where('follow_up_at', '<=', now())
+            ->where('status', '!=', self::STATUS_ARCHIVED);
     }
 
     /**
@@ -83,5 +103,18 @@ class FormSubmission extends Model
         if ($this->status === self::STATUS_NEW) {
             $this->update(['status' => self::STATUS_READ, 'read_at' => now()]);
         }
+    }
+
+    /**
+     * Someone has replied. Kept as a date, so "how long did we take?" has
+     * an answer; opening it on the way is implied.
+     */
+    public function markAnswered(): void
+    {
+        $this->update([
+            'status' => self::STATUS_ANSWERED,
+            'answered_at' => $this->answered_at ?? now(),
+            'read_at' => $this->read_at ?? now(),
+        ]);
     }
 }

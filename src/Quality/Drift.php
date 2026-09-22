@@ -37,6 +37,7 @@ class Drift
     {
         return collect([
             $this->unansweredEnquiries(),
+            $this->followUpsDue(),
             $this->emptyWhatsOn(),
             $this->brokenLinks(),
             $this->undescribedPhotos(),
@@ -80,6 +81,23 @@ class Drift
             'urgency' => 'now',
             'says' => $leads['count'].' '.str('enquiry')->plural($leads['count']).' nobody has opened, the oldest '.$this->plainly($leads['oldest_hours']).' old.',
             'does' => 'Open the Enquiries screen and answer them. Somebody is waiting.',
+        ];
+    }
+
+    /** @return array{key: string, urgency: string, says: string, does: string}|null */
+    private function followUpsDue(): ?array
+    {
+        $count = FormSubmission::query()->dueForFollowUp()->count();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        return [
+            'key' => 'follow-ups-due',
+            'urgency' => 'now',
+            'says' => $count.' '.str('enquiry')->plural($count).' you meant to come back to '.($count === 1 ? 'is' : 'are').' due.',
+            'does' => 'Open Enquiries and filter to "Follow-up due".',
         ];
     }
 

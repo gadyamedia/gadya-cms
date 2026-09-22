@@ -2,6 +2,20 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.13.0
+
+### Added
+
+- **The enquiry inbox is now a small CRM.** An enquiry is not finished when it is opened; it is finished when someone has answered it, and sometimes not even then. Each one can now be **marked answered** (the date is kept, so "how long did we take?" has an answer), and carry **internal notes** nobody outside the team sees and a **date to follow it up**. Follow-ups that are due are shown in red, can be filtered to, and are listed in the drift digest. The CSV download carries the notes and dates too. `php artisan migrate` adds three nullable columns.
+
+- **The client decides who is told about a new enquiry.** Per form, on the settings screen now called **Enquiry emails** (it was *Automatic replies*), alongside the thank-you email. Those addresses are added to any `notify` fixed in config, so a new member of staff can be added without a developer or a deploy.
+
+- **A form of the site's own can use the inbox.** A Livewire form, or any other, validates as usual and hands over to `StoreFormSubmission::handle(FormDefinition::find('contact'), $validated, request())`, and gets the same inbox, emails, thank-you reply and analytics event as a posted form. See *A form of the site's own* in `docs/forms.md`.
+
+### Changed
+
+- *Settings → Automatic replies* is renamed **Enquiry emails**, since it now says who is told as well as what the sender is sent.
+
 ## 0.12.0
 
 ### Added

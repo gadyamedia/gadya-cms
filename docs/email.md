@@ -75,7 +75,7 @@ carries it.
 
 ## In the panel
 
-**Settings → Automatic replies** says who sends the site's email and from
+**Settings → Enquiry emails** says who sends the site's email and from
 which address, lists what has gone out lately and whether it arrived, and
 has **Send me a test email**, which sends to the signed-in person's own
 address and reports the failure on the screen rather than in a log.
