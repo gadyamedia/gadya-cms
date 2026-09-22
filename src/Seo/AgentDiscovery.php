@@ -251,9 +251,38 @@ class AgentDiscovery
         return filled($endpoint) ? url((string) $endpoint) : null;
     }
 
+    /**
+     * Whether the site serves this, by the package's switch or by a route
+     * of the application's own.
+     *
+     * An application that writes its own sitemap or llms.txt switches ours
+     * off; that is not a reason to leave the address out of the
+     * catalogues, because the address still answers. What must never be
+     * advertised is an address nothing answers at all.
+     */
     private function has(string $feature): bool
     {
-        return (bool) config("gadya-cms.seo.{$feature}", true);
+        if ((bool) config("gadya-cms.seo.{$feature}", true)) {
+            return true;
+        }
+
+        return match ($feature) {
+            'llms' => $this->routed('llms.txt'),
+            'sitemap' => $this->routed('sitemap.xml'),
+            default => false,
+        };
+    }
+
+    /** Whether anything in the application answers a GET at this path. */
+    private function routed(string $path): bool
+    {
+        foreach (app('router')->getRoutes()->getRoutes() as $route) {
+            if (trim($route->uri(), '/') === trim($path, '/') && in_array('GET', $route->methods(), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function siteName(): string

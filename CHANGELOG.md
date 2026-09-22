@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.10.1
+
+### Fixed
+
+- The catalogues now advertise an address the **application** serves, not only one the package serves. A site that writes its own `llms.txt` or `sitemap.xml` and switches ours off was having those addresses left out of its own capability manifest, although they answer perfectly well. An address nothing answers is still never advertised.
+
 ## 0.10.0
 
 ### Added

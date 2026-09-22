@@ -17,6 +17,7 @@ class AgentDiscoveryOffTest extends TestCase
         parent::defineEnvironment($app);
 
         $app['config']->set('gadya-cms.seo.discovery', false);
+        $app['config']->set('gadya-cms.seo.llms', false);
     }
 
     public function test_nothing_is_served_under_well_known_when_discovery_is_off(): void

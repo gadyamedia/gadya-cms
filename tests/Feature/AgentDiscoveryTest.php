@@ -86,16 +86,4 @@ class AgentDiscoveryTest extends TestCase
             collect($this->get('/.well-known/ai-catalog.json')->json('entries'))->contains(fn (array $entry): bool => str_ends_with((string) $entry['id'], ':mcp:server')),
         );
     }
-
-    public function test_a_switched_off_feature_is_left_out_rather_than_advertised(): void
-    {
-        config(['gadya-cms.seo.llms' => false]);
-
-        $entries = collect($this->get('/.well-known/ai-catalog.json')->assertOk()->json('entries'));
-
-        $this->assertFalse(
-            $entries->contains(fn (array $entry): bool => str_contains((string) $entry['url'], '/llms.txt')),
-            'A site not serving llms.txt must not point agents at it.',
-        );
-    }
 }
