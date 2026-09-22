@@ -64,7 +64,23 @@ import '../../vendor/gadya/cms/resources/js/analytics.js';
 | `@cmsSeo($page)` | The head tags - see [SEO](seo.md) |
 | `@gadyaBuiltBy` | The "built by Gadya Media" badge, as the last thing in the footer - see below |
 
-The directives render nothing for a visitor. For an editor they add `data-cms-path` and `data-cms-type`, which the editor's JavaScript turns into an inline editor (`text`), a side panel (`multiline`) or the photo library (`image`).
+The directives render nothing for a visitor. For an editor they add `data-cms-path` and `data-cms-type`, which the editor's JavaScript turns into an inline editor (`text`), a side panel (`multiline` and `markdown`) or the photo library (`image`).
+
+## Longer copy with a little structure
+
+A legal page, a policy or a long answer needs a list, a bold phrase or a link, which plain text cannot hold. Make the field `markdown` and render it with `@cmsMarkdown`:
+
+```blade
+<div @editable("sections.{$index}.body", 'markdown')>@cmsMarkdown($section['body'])</div>
+```
+
+```php
+'editable_fields' => [
+    'pages.*.sections.*.body' => 'markdown',
+],
+```
+
+The client writes `**bold**`, `[a link](https://...)` and lines starting with `- `; the side panel shows her those three reminders. For an editor the element carries its Markdown source, so the panel opens on what she wrote rather than on the rendered page, and after saving the server sends back the HTML, so the page shows exactly what visitors will. Raw HTML is stripped and `javascript:` links are refused, whoever typed them.
 
 ## The built-by badge
 

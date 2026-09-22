@@ -2,6 +2,14 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.0
+
+### Added
+
+- **Markdown fields**, for longer copy that needs a little structure. A legal page, a policy or a long answer needs a bullet list, a bold phrase or a link - which is why pages like that used to stay in the template, out of the client's reach. Mark the field `markdown` in `editable_fields` and render it with `@cmsMarkdown($text)`: she edits the source in the side panel, with a three-line reminder of the syntax, and the page redraws from the server's HTML as soon as it saves. Raw HTML is stripped and `javascript:` links refused. See *Longer copy with a little structure* in `docs/live-editor.md`.
+
+  Sites import the editor's JavaScript from `vendor/`, so it reaches a site with its next `npm run build`.
+
 ## 0.13.1
 
 ### Fixed

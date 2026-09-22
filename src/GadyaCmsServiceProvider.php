@@ -277,6 +277,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         Blade::directive('siteThumbnail', fn (string $expression): string => "<?php echo e(app(\Gadya\Cms\Content\SiteImage::class)->thumbnailUrl({$expression})); ?>");
         Blade::directive('editable', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->attributes({$expression}); ?>");
         Blade::directive('editableGlobal', fn (string $expression): string => "<?php echo app(\Gadya\Cms\Editor\EditContext::class)->globalAttributes({$expression}); ?>");
+        Blade::directive('cmsMarkdown', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Content\\SiteMarkdown::class)->render({$expression}); ?>");
         Blade::directive('editableFor', fn (string $expression): string => "<?php app(\Gadya\Cms\Editor\EditContext::class)->for({$expression}); ?>");
         /*
          * Both take an optional array of overrides, so `@cmsSearchForm` and

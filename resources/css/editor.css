@@ -138,6 +138,17 @@
     letter-spacing: 0.12em;
 }
 
+.gadya-cms-panel__hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: #525252;
+}
+
+.gadya-cms-panel__hint[hidden] {
+    display: none;
+}
+
 .gadya-cms-panel textarea {
     min-height: 16rem;
     width: 100%;

@@ -3,6 +3,8 @@
 namespace Gadya\Cms\Editor;
 
 use Gadya\Cms\Content\EditableFields;
+use Gadya\Cms\Content\SiteContentRepository;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
 
@@ -22,6 +24,14 @@ class EditContext
     private bool $previewing = false;
 
     private ?string $basePath = null;
+
+    /**
+     * The draft, read once per request and only when a Markdown field
+     * needs its source.
+     *
+     * @var array<string, mixed>|null
+     */
+    private ?array $draft = null;
 
     public function __construct(private readonly EditableFields $fields) {}
 
@@ -82,10 +92,31 @@ class EditContext
             return new HtmlString('');
         }
 
+        $type = $this->fields->typeFor($path) ?? $type;
+
+        /*
+         * A Markdown field shows rendered HTML, so the editor cannot read
+         * its source back off the page the way it reads plain text - the
+         * bullets and links would be flattened on the first save. The
+         * source travels with the element instead, for editors only.
+         */
+        $source = $type === 'markdown'
+            ? sprintf(' data-cms-value="%s"', e((string) (Arr::get($this->draft(), $path) ?? '')))
+            : '';
+
         return new HtmlString(sprintf(
-            ' data-cms-path="%s" data-cms-type="%s"',
+            ' data-cms-path="%s" data-cms-type="%s"%s',
             e($path),
-            e($this->fields->typeFor($path) ?? $type),
+            e($type),
+            $source,
         ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function draft(): array
+    {
+        return $this->draft ??= app(SiteContentRepository::class)->draft();
     }
 }

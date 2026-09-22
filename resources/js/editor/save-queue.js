@@ -36,8 +36,10 @@ const send = async (path, value) => {
             throw new Error(`Save failed with status ${response.status}`);
         }
 
+        const body = await response.json().catch(() => ({}));
+
         failed.delete(path);
-        window.dispatchEvent(new CustomEvent('cms:saved', { detail: { path } }));
+        window.dispatchEvent(new CustomEvent('cms:saved', { detail: { path, html: body.html } }));
     } catch (error) {
         failed.add(path);
         window.dispatchEvent(new CustomEvent('cms:save-failed', { detail: { path, error } }));
