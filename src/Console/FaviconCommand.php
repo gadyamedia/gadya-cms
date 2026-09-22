@@ -46,6 +46,12 @@ class FaviconCommand extends Command
             $this->bytes($described['bytes']),
         ));
 
+        if ($described['blank']) {
+            $this->components->error('What was drawn is one flat colour, so nothing legible came out. Set brand.favicon_source to a square mark, or put a favicon.ico in public/.');
+
+            return self::FAILURE;
+        }
+
         if ($described['from'] === 'initials') {
             $this->components->warn('There is no logo to draw from. Upload one under Look & feel, or set brand.favicon_source.');
         }

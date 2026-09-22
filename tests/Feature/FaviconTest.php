@@ -54,6 +54,31 @@ class FaviconTest extends TestCase
         $this->assertTrue($described['drawn']);
         $this->assertSame('initials', $described['from']);
         $this->assertGreaterThan(0, $described['bytes']);
+
+        /*
+         * The assertion that matters: a flat coloured square passes every
+         * other check here - it is a real PNG of the right size - and is
+         * exactly what a failed draw produces.
+         */
+        $this->assertFalse($described['blank'], 'Something legible has to be on it.');
+    }
+
+    public function test_an_svg_logo_is_drawn_rather_than_producing_an_empty_square(): void
+    {
+        $logo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72"><rect width="320" height="72" fill="#123456"/><circle cx="36" cy="36" r="24" fill="#ffffff"/></svg>';
+
+        File::ensureDirectoryExists(public_path('images/site'));
+        File::put(public_path('images/site/lockup.svg'), $logo);
+        config(['gadya-cms.brand.logo' => 'lockup.svg', 'gadya-cms.brand.follow_site' => false]);
+
+        try {
+            $favicon = app(Favicon::class);
+
+            $this->assertSame('logo', $favicon->describe()['from']);
+            $this->assertFalse($favicon->looksBlank($favicon->png(180)), 'A wordmark that cannot be rasterised must not silently become a blank square.');
+        } finally {
+            File::delete(public_path('images/site/lockup.svg'));
+        }
     }
 
     public function test_the_head_asks_for_the_icon_and_the_manifest(): void

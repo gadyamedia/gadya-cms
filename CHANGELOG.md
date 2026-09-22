@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.1
+
+### Fixed
+
+- The icon is actually drawn. On Intervention 4 the composite method is `insert`, not `place`, so every logo fell through to the initials - and the initials needed a font file that is not there, so what came out was a flat coloured square. A square is a valid PNG of the right size, which is why the first tests passed it. Logos are composited properly now, the initials are drawn with GD's own font and scaled, and `describe()` reports whether what came out is one flat colour. `gadya-cms:favicon` fails loudly when it is.
+
 ## 0.11.0
 
 ### Added

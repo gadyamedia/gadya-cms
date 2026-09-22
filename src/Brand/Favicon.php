@@ -152,24 +152,60 @@ class Favicon
         $inner = max(1, (int) round($size * 0.82));
         $logo->scaleDown(width: $inner, height: $inner);
 
-        return $this->images->read($this->square($size))->place($logo, 'center');
+        $canvas = $this->images->read($this->square($size));
+
+        /* `place` in one release, `insert` in another; both centre it. */
+        $put = method_exists($canvas, 'place') ? 'place' : 'insert';
+
+        return $canvas->{$put}($logo, 'center');
     }
 
-    /** The business's initials, white on the brand colour. */
+    /**
+     * The business's initials, white on the brand colour.
+     *
+     * Drawn with GD's own bitmap font and scaled up, because a font file
+     * is the one thing we cannot count on being installed: an icon whose
+     * letters are a little soft is worth having, and a flat coloured
+     * square with nothing on it is not.
+     */
     private function fromInitials(int $size): ImageInterface
     {
-        $canvas = $this->images->read($this->square($size, $this->colour()));
+        return $this->images->read($this->initialsPng($size));
+    }
 
-        return rescue(function () use ($canvas, $size): ImageInterface {
-            $canvas->text($this->initials(), (int) ($size / 2), (int) ($size * 0.56), function ($font) use ($size): void {
-                $font->size($size * 0.5);
-                $font->color('#ffffff');
-                $font->align('center');
-                $font->valign('middle');
-            });
+    private function initialsPng(int $size): string
+    {
+        $initials = $this->initials();
 
-            return $canvas;
-        }, $canvas, report: false);
+        /*
+         * Drawn small and scaled up: GD's built-in font has fixed sizes,
+         * so the letters are laid out at the size they come in and the
+         * whole square is then enlarged to the size asked for.
+         */
+        $small = 32;
+        $canvas = imagecreatetruecolor($small, $small);
+        [$r, $g, $b] = $this->rgb($this->colour());
+        imagefill($canvas, 0, 0, imagecolorallocate($canvas, $r, $g, $b));
+
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+        $font = 5;
+        $width = imagefontwidth($font) * strlen($initials);
+        $height = imagefontheight($font);
+
+        imagestring($canvas, $font, (int) (($small - $width) / 2), (int) (($small - $height) / 2), $initials, $white);
+
+        if ($size !== $small) {
+            $scaled = imagescale($canvas, $size, $size, IMG_NEAREST_NEIGHBOUR);
+
+            if ($scaled !== false) {
+                $canvas = $scaled;
+            }
+        }
+
+        ob_start();
+        imagepng($canvas);
+
+        return (string) ob_get_clean();
     }
 
     /** A blank square, transparent unless a colour is given. */
@@ -188,7 +224,6 @@ class Favicon
 
         ob_start();
         imagepng($image);
-        imagedestroy($image);
 
         return (string) ob_get_clean();
     }
@@ -264,6 +299,35 @@ class Favicon
             : Str::substr($words[0], 0, 1).Str::substr($words[1], 0, 1));
     }
 
+    /**
+     * Whether what was drawn is one flat colour - which is what a failed
+     * draw looks like, and is worse than no icon at all because nobody
+     * would ever notice it was wrong.
+     */
+    public function looksBlank(string $png): bool
+    {
+        $image = @imagecreatefromstring($png);
+
+        if ($image === false) {
+            return true;
+        }
+
+        $first = null;
+
+        for ($x = 0; $x < imagesx($image); $x += 2) {
+            for ($y = 0; $y < imagesy($image); $y += 2) {
+                $colour = imagecolorat($image, $x, $y);
+                $first ??= $colour;
+
+                if ($colour !== $first) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     /** Throws away what was drawn, so the next request draws it again. */
     public function forget(): void
     {
@@ -289,6 +353,8 @@ class Favicon
             'from' => $this->logoBinary() === null ? 'initials' : 'logo',
             'drawn' => $drawn,
             'bytes' => $bytes,
+            /* A single flat colour means nothing legible was drawn. */
+            'blank' => $drawn ? $this->looksBlank($this->png(32)) : true,
         ];
     }
 }
