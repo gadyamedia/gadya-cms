@@ -2,8 +2,10 @@
 
 namespace Gadya\Cms\Http\Controllers;
 
+use Gadya\Cms\Seo\AgentDiscovery;
 use Gadya\Cms\Seo\LlmsText;
 use Gadya\Cms\Seo\SitemapEntries;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 
@@ -14,6 +16,51 @@ class SeoController extends Controller
         return response()
             ->view('gadya-cms::seo.sitemap', ['entries' => $entries->all()])
             ->header('Content-Type', 'application/xml; charset=utf-8')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    /**
+     * The discovery documents. Each is served with permissive CORS
+     * because an agent reading them is, by definition, coming from
+     * somewhere else, and they say nothing that is not already public.
+     */
+    public function aiCatalog(AgentDiscovery $discovery): JsonResponse
+    {
+        return $this->discoveryJson($discovery->aiCatalog());
+    }
+
+    public function apiCatalog(AgentDiscovery $discovery): JsonResponse
+    {
+        return $this->discoveryJson($discovery->apiCatalog(), 'application/linkset+json');
+    }
+
+    public function agentSkills(AgentDiscovery $discovery): JsonResponse
+    {
+        return $this->discoveryJson($discovery->agentSkills());
+    }
+
+    public function mcpServerCard(AgentDiscovery $discovery): JsonResponse
+    {
+        $card = $discovery->mcpServerCard();
+
+        /*
+         * A site that runs no MCP server says so with a 404 rather than an
+         * empty card: an agent that finds a card expects it to work.
+         */
+        abort_if($card === null, 404);
+
+        return $this->discoveryJson($card);
+    }
+
+    /**
+     * @param  array<string, mixed>  $document
+     */
+    private function discoveryJson(array $document, string $type = 'application/json'): JsonResponse
+    {
+        return response()
+            ->json($document, 200, [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            ->header('Content-Type', $type.'; charset=utf-8')
+            ->header('Access-Control-Allow-Origin', '*')
             ->header('Cache-Control', 'public, max-age=3600');
     }
 

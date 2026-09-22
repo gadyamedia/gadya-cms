@@ -134,6 +134,24 @@ class SiteSetup
                 ];
             }
 
+            /*
+             * DNS for AI Discovery (draft-mozleywilliams-dnsop-dnsaid):
+             * an agent that knows only the domain can find the site's
+             * discovery documents without fetching a page first. Optional,
+             * and a draft - but the record costs nothing and the registrar
+             * is the only place it can be added.
+             */
+            $dnsaid = $this->values('_index._agents.'.$domain, 'HTTPS');
+
+            $records[] = [
+                'type' => 'HTTPS',
+                'name' => '_index._agents',
+                'value' => '1 . alpn="h2" endpoint="/.well-known/ai-catalog.json"',
+                'why' => 'Optional and still a draft standard. It lets an AI agent that knows only the domain find what the site offers, without loading a page first. Add it as an HTTPS (SVCB) record at your registrar; sign the zone with DNSSEC if it offers that.',
+                'status' => $dnsaid === [] ? 'optional' : 'ok',
+                'found' => $dnsaid,
+            ];
+
             $caa = $this->values($domain, 'CAA');
 
             $records[] = [

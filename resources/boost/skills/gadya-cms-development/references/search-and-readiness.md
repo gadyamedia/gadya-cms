@@ -44,6 +44,21 @@ The writing is done with the site's own AI key when she has one under **Settings
 
 Every fix is written down in `gadyacms_fixes` and listed at the foot of the screen - what was changed, what it now says, and whether Gadya or her own key wrote it - so the client is told rather than finding her words quietly rewritten.
 
+## Found by agents
+
+Beside `robots.txt`, `sitemap.xml` and `llms.txt`, the site publishes three machine-readable documents describing what an agent can use here. Each is generated from what the site actually serves, so nothing in them points at an address that would answer 404:
+
+| Address | What it is |
+| --- | --- |
+| `/.well-known/ai-catalog.json` | An ARD capability manifest: each capability with an `urn:air:` id, a media type, and a few representative questions so a registry can index it |
+| `/.well-known/api-catalog` | An RFC 9727 linkset anchored on the site, with `service-doc` and `service-desc` links |
+| `/.well-known/agent-skills/index.json` | The Agent Skills discovery index - reading skills only, each with a digest |
+| `/.well-known/mcp/server-card.json` | Only where `seo.mcp.endpoint` is set; otherwise 404, because an agent that finds a card expects it to work |
+
+The home page's `Link` header points at llms.txt (`describedby`, `service-doc`), the sitemap, and the API catalogue. `seo.discovery` switches the documents off; **Get found** also asks for an optional `_index._agents` DNS record, which only a registrar can add.
+
+The skills index deliberately lists nothing that writes. An enquiry an agent sends unattended is one the client still has to answer, so agents are told how to *read* the site and left to hand the enquiry to a person.
+
 ## Ready for AI assistants
 
 `gadya-cms:agent-ready` scores the site out of 100 against what search engines and AI assistants look for, and names the fix for anything missing. The same score sits on the dashboard. The checks:

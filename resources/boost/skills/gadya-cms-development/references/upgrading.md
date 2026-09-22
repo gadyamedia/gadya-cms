@@ -42,6 +42,14 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.9.1 → 0.10.0
+
+Copy the new `seo.discovery` and `seo.mcp` keys into `config/gadya-cms.php` (the published file overrides the package's `seo` array wholesale, so a key you do not copy is simply absent). A site with its own catch-all page route needs nothing: the discovery routes are all under `.well-known`.
+
+A site that runs its own MCP server should set `seo.mcp.endpoint` so the server card and the catalogues name it.
+
+**If a readiness checker says Content Signals or Link headers are missing**, check that nothing is shadowing the package's routes: a static `public/robots.txt` and an application's own `/robots.txt` route both win over ours, and the Link headers come from the home page's response, so a page served by a cache in front of Laravel may lose them.
+
 ## 0.8.1 → 0.9.0
 
 `php artisan migrate` has nothing new to do. Copy the new `accessibility` block into `config/gadya-cms.php`, and add the digest to `routes/console.php`:

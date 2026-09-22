@@ -3,13 +3,15 @@
 namespace Gadya\Cms\Http\Middleware;
 
 use Closure;
+use Gadya\Cms\Seo\AgentDiscovery;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Points agents at the sitemap and llms.txt from the home page's own
- * headers (RFC 8288), so a crawler that reads only the first response
- * still learns where the machine-readable versions live.
+ * Points agents at the sitemap, llms.txt and the API catalogue from the
+ * home page's own headers (RFC 8288, RFC 9727 section 3), so a crawler
+ * that reads only the first response still learns where the
+ * machine-readable versions live.
  */
 class AdvertiseDiscovery
 {
@@ -21,15 +23,7 @@ class AdvertiseDiscovery
             return $response;
         }
 
-        $links = [];
-
-        if (config('gadya-cms.seo.llms', true)) {
-            $links[] = '<'.url('/llms.txt').'>; rel="describedby"; type="text/markdown"';
-        }
-
-        if (config('gadya-cms.seo.sitemap', true)) {
-            $links[] = '<'.url('/sitemap.xml').'>; rel="sitemap"; type="application/xml"';
-        }
+        $links = app(AgentDiscovery::class)->links();
 
         if ($links !== []) {
             $response->headers->set('Link', implode(', ', $links), false);

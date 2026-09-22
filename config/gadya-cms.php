@@ -510,10 +510,32 @@ return [
         'content_signals' => ['search' => 'yes', 'ai-input' => 'yes', 'ai-train' => 'no'],
 
         /*
-         * Link headers on the home page pointing agents at the sitemap and
-         * llms.txt (RFC 8288), so they need not guess the addresses.
+         * Link headers on the home page pointing agents at the sitemap,
+         * llms.txt and the API catalogue (RFC 8288, RFC 9727 section 3),
+         * so they need not guess the addresses.
          */
         'link_headers' => true,
+
+        /*
+         * The well-known discovery documents: /.well-known/ai-catalog.json
+         * (Agentic Resource Discovery), /.well-known/api-catalog (RFC 9727)
+         * and /.well-known/agent-skills/index.json. Each is generated from
+         * what this site really serves, so nothing points an agent at an
+         * address that would answer 404.
+         */
+        'discovery' => true,
+
+        /*
+         * An MCP server the application itself runs. Only with an endpoint
+         * here does the site publish an MCP server card (SEP-1649) or name
+         * MCP in its catalogues - a site that runs no server says nothing.
+         */
+        'mcp' => [
+            'endpoint' => null,
+            'name' => null,
+            'version' => '1.0.0',
+            'capabilities' => ['tools' => []],
+        ],
 
         /*
          * Every domain the business owns, for the DNS checklist on the Get

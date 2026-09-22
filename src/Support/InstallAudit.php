@@ -170,6 +170,7 @@ class InstallAudit
             'seo.llms' => 'llms.txt',
             'seo.markdown' => 'Markdown for AI assistants',
             'seo.link_headers' => 'Discovery Link headers',
+            'seo.discovery' => 'Agent discovery documents (.well-known)',
         ] as $key => $label) {
             $checks[] = $this->check('Features', $label.' ('.$key.')', (bool) config('gadya-cms.'.$key, false), "Switched off. To offer it, set {$key} to true in config/gadya-cms.php.", optional: true);
         }

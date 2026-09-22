@@ -2,6 +2,29 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.10.0
+
+### Added
+
+- **Machine-readable discovery, for the agents that now do the choosing.** Three documents, generated from what the site really serves:
+  - `/.well-known/ai-catalog.json` - an ARD capability manifest naming each thing an agent can use, with two or three representative questions per entry so a registry can index it;
+  - `/.well-known/api-catalog` - an RFC 9727 linkset anchored on the site, with `service-doc` and `service-desc` links;
+  - `/.well-known/agent-skills/index.json` - the Agent Skills discovery index, each skill carrying a digest.
+
+  All three are served with `Access-Control-Allow-Origin: *` and an hour's cache. `seo.discovery` turns them off.
+
+- **An MCP server card** at `/.well-known/mcp/server-card.json` (SEP-1649), but only where the application declares `seo.mcp.endpoint`. A site that runs no MCP server answers 404 rather than publishing an empty card, and says nothing about MCP in its catalogues.
+
+- **Richer Link headers** on the home page: `describedby` and `service-doc` to llms.txt, `sitemap`, and `api-catalog` to the new catalogue (RFC 8288, RFC 9727 section 3).
+
+- **The DNS checklist asks for a DNS-AID record** (`_index._agents`), so an agent that knows only the domain can find the catalogue without loading a page. Optional, marked as a draft standard, with what to type at the registrar - it is the one part of this that a web application cannot publish for itself.
+
+- `gadya-cms:agent-ready` scores the Link headers and the discovery documents, and `gadya-cms:audit` lists `seo.discovery`.
+
+### A note on what is deliberately not here
+
+Agent-readiness checkers also ask for OAuth and OIDC discovery metadata, `auth.md`, OAuth protected-resource metadata, and the agent payment protocols (x402, MPP, UCP, ACP). Those describe protected APIs, agent registration and machine payments. A site that has none of them must not advertise them: an agent that follows a catalogue to an address answering 404 is worse off than one that found nothing, and a published payment endpoint that cannot take a payment is worse still. When a site really gains an authenticated API or sells through an agent, the metadata belongs with it.
+
 ## 0.9.1
 
 ### Added

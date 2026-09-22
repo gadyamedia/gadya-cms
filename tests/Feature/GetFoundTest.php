@@ -34,14 +34,19 @@ class GetFoundTest extends TestCase
         $this->assertStringNotContainsString('Content-Signal', $this->get('/robots.txt')->getContent());
     }
 
-    public function test_the_home_page_points_agents_at_the_sitemap_and_llms_txt(): void
+    public function test_the_home_page_points_agents_at_the_sitemap_llms_txt_and_the_api_catalogue(): void
     {
         Route::middleware('web')->get('/', fn () => response('<html>home</html>'));
         Route::middleware('web')->get('/about', fn () => response('<html>about</html>'));
 
         $this->get('/')
             ->assertOk()
-            ->assertHeader('Link', '<'.url('/llms.txt').'>; rel="describedby"; type="text/markdown", <'.url('/sitemap.xml').'>; rel="sitemap"; type="application/xml"');
+            ->assertHeader('Link', implode(', ', [
+                '<'.url('/llms.txt').'>; rel="describedby"; type="text/markdown"',
+                '<'.url('/llms.txt').'>; rel="service-doc"; type="text/markdown"',
+                '<'.url('/sitemap.xml').'>; rel="sitemap"; type="application/xml"',
+                '<'.url('/.well-known/api-catalog').'>; rel="api-catalog"; type="application/linkset+json"',
+            ]));
 
         $this->get('/about')->assertOk()->assertHeaderMissing('Link');
 
