@@ -19,6 +19,7 @@ class PortalSummary
         private readonly AccessibilityRecord $accessibility,
         private readonly Drift $drift,
         private readonly Backups $backups,
+        private readonly BackupDrill $drill,
     ) {}
 
     /**
@@ -31,7 +32,7 @@ class PortalSummary
             'accessibility' => $this->accessibility(),
             'drift' => $this->drift(),
             'leads' => $this->drift->unansweredLeads(),
-            'backups' => $this->backups->state(),
+            'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
         ];
     }
 

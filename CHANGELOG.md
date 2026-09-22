@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.9.1
+
+### Added
+
+- **`gadya-cms:backup-drill` looks inside the newest backup.** It opens the archive, finds the database dump and checks it holds real tables, then writes down what it found - pass or fail - so there is something to show a client besides a promise. A backup that is running but saving nothing is found on an ordinary Tuesday rather than on the worst day of her year. Schedule it monthly; the result travels in the check-in.
+
 ## 0.9.0
 
 ### Added
