@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.13.1
+
+### Fixed
+
+- **Requires gadya/connect 0.5.** The package asked for `^0.4`, which on a 0.x version means *below 0.5* - so every site stayed on connect 0.4, whose check-in carries no summary. The fleet screen in the portal was receiving no accessibility record, drift, unanswered enquiries or backup state from any site. A test now builds the check-in with the installed connect and fails if the summary is missing. Also released as 0.11.5 and 0.12.1, so sites held at those minors get it from `composer update`.
+
 ## 0.13.0
 
 ### Added

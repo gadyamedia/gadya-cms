@@ -51,6 +51,23 @@ class PortalSummaryTest extends TestCase
         $this->assertFalse($summary['backups']['configured'], 'A site that takes no backups says so, which is worth knowing.');
     }
 
+    public function test_the_check_in_the_installed_connect_sends_carries_the_summary(): void
+    {
+        /*
+         * The summary is only worth building if it reaches the portal.
+         * gadya/connect before 0.5 sends a check-in without it, and for a
+         * while every site was held back to 0.4 by this package's own
+         * constraint, so the fleet screen received nothing.
+         */
+        $this->publishDocument();
+
+        $report = app(\Gadya\Connect\Report\ReportBuilder::class)->build();
+
+        foreach (['leads', 'backups', 'drift'] as $section) {
+            $this->assertArrayHasKey($section, $report, "The check-in must carry {$section}; is gadya/connect held below 0.5?");
+        }
+    }
+
     public function test_a_site_never_checked_reports_no_quality_rather_than_zeroes(): void
     {
         $this->publishDocument();
