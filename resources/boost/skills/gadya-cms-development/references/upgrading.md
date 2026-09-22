@@ -42,6 +42,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.10.4 → 0.11.0
+
+Copy the new `brand.favicon` and `brand.favicon_source` keys into `config/gadya-cms.php`. Nothing else is needed: a site with its own `public/favicon.ico` is untouched, and one without now serves an icon drawn from its logo. Run `php artisan gadya-cms:favicon` to see which it did, and whether it found a logo to draw from.
+
 ## 0.9.1 → 0.10.0
 
 Copy the new `seo.discovery` and `seo.mcp` keys into `config/gadya-cms.php` (the published file overrides the package's `seo` array wholesale, so a key you do not copy is simply absent). A site with its own catch-all page route needs nothing: the discovery routes are all under `.well-known`.

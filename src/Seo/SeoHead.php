@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Seo;
 
+use Gadya\Cms\Brand\Favicon;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Models\Post;
 use Illuminate\Contracts\View\View;
@@ -24,7 +25,12 @@ class SeoHead
      */
     public function render(array|Post $subject, ?string $canonical = null): View
     {
-        return view('gadya-cms::seo.head', ['tags' => $this->tags($subject, $canonical), 'structured' => $this->structuredData($subject, $canonical)]);
+        return view('gadya-cms::seo.head', [
+            'tags' => $this->tags($subject, $canonical),
+            'structured' => $this->structuredData($subject, $canonical),
+            /* Drawn from the logo, and empty on a site with its own icon. */
+            'icons' => rescue(fn (): array => app(Favicon::class)->tags(), [], report: false),
+        ]);
     }
 
     /**

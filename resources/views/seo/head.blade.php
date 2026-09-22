@@ -15,6 +15,12 @@
 @endif
 <meta name="twitter:title" content="{{ $tags['title'] }}">
 <meta name="twitter:description" content="{{ $tags['description'] }}">
+@foreach ($icons ?? [] as $icon)
+<link rel="{{ $icon['rel'] }}" href="{{ $icon['href'] }}"@if ($icon['sizes']) sizes="{{ $icon['sizes'] }}"@endif type="{{ $icon['type'] }}">
+@endforeach
+@if (($icons ?? []) !== [])
+<link rel="manifest" href="{{ url('/site.webmanifest') }}">
+@endif
 @foreach ($structured ?? [] as $node)
 <script type="application/ld+json">{!! json_encode($node, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endforeach

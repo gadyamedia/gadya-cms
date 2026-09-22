@@ -601,6 +601,21 @@ return [
         'name' => env('GADYA_CMS_BRAND', config('app.name')),
 
         /*
+         * The browser-tab icon, drawn from the site's logo - or from the
+         * business's initials on the brand colour where there is no logo.
+         * A real favicon.ico or favicon.png in public/ is served by the
+         * web server first, so a site with its own keeps it and these
+         * routes are never reached. False to serve none at all.
+         */
+        'favicon' => true,
+
+        /*
+         * A different image to draw the icon from: a mark that reads at
+         * 32 pixels, where a wide wordmark does not. Null uses the logo.
+         */
+        'favicon_source' => null,
+
+        /*
          * The panel and its sign-in screen follow the site: the colours and
          * type the client chose under Look & feel, and the logo she picked
          * there. Set this to false to paint the panel from the values below

@@ -2,6 +2,16 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.0
+
+### Added
+
+- **Every site gets a favicon, without anyone asking for one.** Almost every site we take over arrives without the little square in the browser tab, because the client does not know the word and it is too small a thing to raise. The site now draws its own from the logo - contained rather than cropped, so a wordmark stays legible - and serves it at `/favicon.ico` (a real .ico wrapping a PNG), `/favicon-32.png`, `/apple-touch-icon.png`, `/favicon-512.png` and `/site.webmanifest`, with the tags written into `@cmsSeo`.
+
+  A site with no logo at all gets the business's initials in white on its brand colour, which still beats the blank page browsers show. A site with a real `favicon.ico` or `favicon.png` in `public/` keeps it and publishes no tags of ours, because two different icons in one head is worse than none - and the web server answers that file before Laravel is asked anyway.
+
+  `brand.favicon` turns it off; `brand.favicon_source` names a different image, for a mark that reads at 32 pixels where a wide wordmark does not. `gadya-cms:favicon` draws it and says where it came from; `--forget` draws it again after a logo change.
+
 ## 0.10.4
 
 ### Fixed

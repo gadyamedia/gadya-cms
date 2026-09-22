@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Support;
 
+use Intervention\Image\Encoders\PngEncoder;
 use Intervention\Image\Format;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageInterface;
@@ -28,6 +29,14 @@ class Images
         return method_exists($image, 'encodeUsingFormat')
             ? (string) $image->encodeUsingFormat(Format::WEBP, quality: $quality)
             : (string) $image->toWebp($quality);
+    }
+
+    /** The same, as a PNG, which is what an icon wants. */
+    public function png(ImageInterface $image): string
+    {
+        return method_exists($image, 'encodeUsingFormat')
+            ? (string) $image->encodeUsingFormat(Format::PNG)
+            : (string) $image->encode(new PngEncoder);
     }
 
     private function manager(): ImageManager

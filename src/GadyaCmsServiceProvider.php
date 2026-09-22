@@ -14,6 +14,7 @@ use Gadya\Cms\Console\CheckPageSpeedCommand;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
+use Gadya\Cms\Console\FaviconCommand;
 use Gadya\Cms\Console\FetchSearchConsoleCommand;
 use Gadya\Cms\Console\FixQualityCommand;
 use Gadya\Cms\Console\ImportLegacyContentCommand;
@@ -99,6 +100,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 InstallCommand::class,
                 MakeEditorCommand::class,
                 BackupDrillCommand::class,
+                FaviconCommand::class,
                 FixQualityCommand::class,
                 SendDriftDigestCommand::class,
                 TakeoutCommand::class,
@@ -155,6 +157,10 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         if (config('gadya-cms.events.routes', true)) {
             $this->loadRoutesFrom(__DIR__.'/../routes/events.php');
+        }
+
+        if (config('gadya-cms.brand.favicon', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/favicon.php');
         }
 
         if (config('gadya-cms.accessibility.statement', true)) {
