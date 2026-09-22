@@ -153,6 +153,40 @@ class FaviconTest extends TestCase
         }
     }
 
+    public function test_laravels_empty_placeholder_is_not_mistaken_for_a_favicon_and_the_audit_says_to_delete_it(): void
+    {
+        File::ensureDirectoryExists(public_path());
+        File::put(public_path('favicon.ico'), '');
+
+        try {
+            $favicon = app(Favicon::class);
+
+            $this->assertFalse($favicon->siteHasItsOwn(), 'Zero bytes is no icon at all.');
+            $this->assertTrue($favicon->emptyPlaceholder());
+            $this->assertNotSame([], $favicon->tags(), 'The drawn icon is offered instead.');
+
+            $check = collect(app(\Gadya\Cms\Support\InstallAudit::class)->checks())
+                ->firstWhere('label', 'No empty public/favicon.ico hides the browser-tab icon');
+
+            $this->assertSame('todo', $check['status']);
+            $this->assertStringContainsString('Delete public/favicon.ico', $check['fix']);
+        } finally {
+            File::delete(public_path('favicon.ico'));
+        }
+    }
+
+    public function test_a_real_svg_counts_as_the_sites_own(): void
+    {
+        File::ensureDirectoryExists(public_path());
+        File::put(public_path('favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+
+        try {
+            $this->assertTrue(app(Favicon::class)->siteHasItsOwn());
+        } finally {
+            File::delete(public_path('favicon.svg'));
+        }
+    }
+
     public function test_the_command_says_where_the_icon_came_from(): void
     {
         $this->artisan('gadya-cms:favicon')

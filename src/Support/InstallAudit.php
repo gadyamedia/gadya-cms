@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Support;
 
 use Filament\Facades\Filament;
+use Gadya\Cms\Brand\Favicon;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Seo\AgentReadiness;
@@ -294,6 +295,12 @@ class InstallAudit
             $this->check('Install', 'Panel stylesheet is published and current', $this->files->exists($published) && $this->files->get($published) === $this->files->get($this->packagePath('resources/css/panel.css')), 'php artisan filament:assets'),
             $this->check('Install', 'Gates manage-content and manage-users are defined', Gate::has('manage-content') && Gate::has('manage-users'), 'Define both gates in a service provider (see docs/installation.md).'),
             $this->check('Install', 'No static public/robots.txt hides the generated one', ! $this->files->exists(public_path('robots.txt')), 'Delete public/robots.txt to use the generated one (on Forge, also remove the nginx location = /robots.txt line), unless the site keeps its own on purpose.', optional: true),
+            $this->check(
+                'Install',
+                'No empty public/favicon.ico hides the browser-tab icon',
+                ! (config('gadya-cms.brand.favicon', true) && app(Favicon::class)->emptyPlaceholder()),
+                'Delete public/favicon.ico. It is Laravel\'s empty placeholder: browsers get a blank icon, and the web server answers it before the icon drawn from the logo can be.',
+            ),
             $this->check('Install', 'No static public/sitemap.xml hides the generated one', ! $this->files->exists(public_path('sitemap.xml')), 'Delete public/sitemap.xml to use the generated one, unless the site keeps its own on purpose.', optional: true),
             $this->check('Install', 'Connected to the Gadya Media portal', Connection::current() !== null, 'In the portal: Sites → Connect a site, then php artisan gadya:connect <code> on the live server.', optional: true),
             $this->check(

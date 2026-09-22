@@ -43,16 +43,32 @@ class Favicon
     /**
      * Whether the site already has a favicon of its own in `public/`, in
      * which case we do not offer one at all.
+     *
+     * An empty file does not count. Laravel's skeleton ships a zero-byte
+     * favicon.ico, so almost every site we build has one - and a browser
+     * asking for it gets nothing, while the site looks as though it has an
+     * icon. That file has to be deleted (the web server answers it before
+     * Laravel is asked); `emptyPlaceholder()` says when it is there.
      */
     public function siteHasItsOwn(): bool
     {
-        foreach (['favicon.ico', 'favicon.png'] as $name) {
-            if (File::exists(public_path($name))) {
+        foreach (['favicon.ico', 'favicon.png', 'favicon.svg'] as $name) {
+            $path = public_path($name);
+
+            if (File::exists($path) && File::size($path) > 0) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /** Whether Laravel's empty favicon.ico is in public/, hiding the real one. */
+    public function emptyPlaceholder(): bool
+    {
+        $path = public_path('favicon.ico');
+
+        return File::exists($path) && File::size($path) === 0;
     }
 
     /** A PNG at this size, drawn from the logo or from the site's initials. */

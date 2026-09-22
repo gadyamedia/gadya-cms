@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.1
+
+### Fixed
+
+- **An empty `public/favicon.ico` is no longer mistaken for a favicon.** Laravel's skeleton ships a zero-byte one, so nearly every site had one - and a browser asking for it got nothing, while the package took it as the site's own and drew no icon. Empty files are now ignored, a real `favicon.svg` counts as the site's own, and `gadya-cms:audit` says to delete the empty file (the web server answers it before the drawn icon can be).
+
 ## 0.14.0
 
 ### Added
