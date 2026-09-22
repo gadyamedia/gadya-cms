@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.10.3
+
+### Added
+
+- An **agent card the site already publishes** at `/.well-known/agent-card.json` is named in the capability manifest and the home page's `Link` header, rather than ignored or duplicated. Several of our sites wrote one before the package could.
+
 ## 0.10.2
 
 ### Fixed

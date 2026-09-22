@@ -174,6 +174,10 @@ class AgentDiscovery
             $links[] = '<'.url('/.well-known/api-catalog').'>; rel="api-catalog"; type="application/linkset+json"';
         }
 
+        if ($this->routed('.well-known/agent-card.json')) {
+            $links[] = '<'.url('/.well-known/agent-card.json').'>; rel="service-desc"; type="application/json"';
+        }
+
         return $links;
     }
 
@@ -226,6 +230,20 @@ class AgentDiscovery
                 'representativeQueries' => [
                     'Read the '.$this->siteName().' services page.',
                     'Summarise a page from '.$this->siteName().'.',
+                ],
+            ];
+        }
+
+        if ($this->routed('.well-known/agent-card.json')) {
+            $entries[] = [
+                'id' => "urn:air:{$namespace}:agent:card",
+                'displayName' => $this->siteName().' agent card',
+                'description' => 'What this business does and what an agent may ask of it.',
+                'type' => 'application/json',
+                'url' => url('/.well-known/agent-card.json'),
+                'representativeQueries' => [
+                    'What can I ask '.$this->siteName().' to do?',
+                    'How do I book with '.$this->siteName().'?',
                 ],
             ];
         }

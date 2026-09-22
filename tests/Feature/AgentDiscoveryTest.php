@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Tests\Feature;
 
 use Gadya\Cms\Tests\TestCase;
+use Illuminate\Support\Facades\Route;
 
 /**
  * The machine-readable index of what an agent can do here.
@@ -65,6 +66,17 @@ class AgentDiscoveryTest extends TestCase
         $this->assertFalse(
             $skills->contains(fn (array $skill): bool => str_contains($skill['name'], 'send') || str_contains($skill['name'], 'book')),
             'Nothing that writes: an enquiry sent by an agent is one the client still has to answer.',
+        );
+    }
+
+    public function test_an_agent_card_the_site_already_publishes_is_named_in_the_catalogue(): void
+    {
+        Route::middleware('web')->get('/.well-known/agent-card.json', fn () => response()->json(['name' => 'Acme Dental']));
+
+        $this->assertTrue(
+            collect($this->get('/.well-known/ai-catalog.json')->assertOk()->json('entries'))
+                ->contains(fn (array $entry): bool => str_ends_with((string) $entry['id'], ':agent:card')),
+            'A site that already has an agent card should have it named, not duplicated.',
         );
     }
 
