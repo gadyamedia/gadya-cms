@@ -54,7 +54,16 @@ class SeoHead
             ? (string) $subject->excerpt
             : (string) ($subject['description'] ?? config('gadya-cms.seo.default_description', ''));
 
-        $title = trim((string) ($seo['meta_title'] ?? '')) ?: $this->withSuffix($fallbackTitle);
+        $written = trim((string) ($seo['meta_title'] ?? ''));
+
+        /*
+         * A written title is used as written - unless the site asks for its
+         * suffix on every title, as a local business does when the town
+         * belongs in each one ("Menu | Manalapan, NJ").
+         */
+        $title = $written !== ''
+            ? (config('gadya-cms.seo.suffix_written_titles', false) ? $this->withSuffix($written) : $written)
+            : $this->withSuffix($fallbackTitle);
         $description = Str::limit(trim(strip_tags((string) (($seo['meta_description'] ?? '') ?: $fallbackDescription))), 300, '');
         $image = (string) (($seo['og_image'] ?? '') ?: ($subject instanceof Post ? '' : ($subject['hero_image'] ?? '')) ?: config('gadya-cms.seo.default_image', ''));
 
@@ -62,8 +71,9 @@ class SeoHead
             'title' => $title,
             'description' => $description,
             'canonical' => trim((string) ($seo['canonical'] ?? '')) ?: ($canonical ?? url()->current()),
-            'robots' => ! empty($seo['noindex']) ? 'noindex, nofollow' : 'index, follow',
-            'image' => $image !== '' ? $this->images->url($image) : null,
+            /* Large previews in search and Discover, which Google asks to be told. */
+            'robots' => ! empty($seo['noindex']) ? 'noindex, nofollow' : 'index, follow, max-image-preview:large',
+            'image' => $image !== '' ? $this->imageUrl($image) : null,
             'type' => $subject instanceof Post ? 'article' : 'website',
             'site_name' => (string) config('gadya-cms.seo.site_name', config('gadya-cms.brand.name', config('app.name'))),
         ];
@@ -85,7 +95,7 @@ class SeoHead
 
         $organisationNode = array_filter([
             '@type' => (string) ($organisation['type'] ?? 'LocalBusiness'),
-            '@id' => url('/').'#organization',
+            '@id' => $this->organisationId(),
             'name' => $tags['site_name'],
             'url' => url('/'),
             'logo' => $logo !== '' ? $this->images->url($logo) : null,
@@ -96,10 +106,16 @@ class SeoHead
             'sameAs' => array_values(array_filter((array) ($organisation['same_as'] ?? []))) ?: null,
         ], fn ($value): bool => $value !== null && $value !== []);
 
-        $nodes = [
+        /*
+         * A site that describes its own business - a restaurant with its
+         * hours and menu, say - switches ours off, so search engines are
+         * not handed two businesses with the same name. Articles still get
+         * their node, pointing at the site's own business by its anchor.
+         */
+        $nodes = config('gadya-cms.seo.organization_schema', true) ? [
             ['@context' => 'https://schema.org', ...$organisationNode],
-            ['@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => $tags['site_name'], 'url' => url('/'), 'publisher' => ['@id' => url('/').'#organization']],
-        ];
+            ['@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => $tags['site_name'], 'url' => url('/'), 'publisher' => ['@id' => $this->organisationId()]],
+        ] : [];
 
         if ($subject instanceof Post) {
             $nodes[] = array_filter([
@@ -111,12 +127,34 @@ class SeoHead
                 'datePublished' => $subject->published_at?->toIso8601String(),
                 'dateModified' => $subject->updated_at?->toIso8601String(),
                 'mainEntityOfPage' => $tags['canonical'],
-                'author' => ['@id' => url('/').'#organization'],
-                'publisher' => ['@id' => url('/').'#organization'],
+                'author' => ['@id' => $this->organisationId()],
+                'publisher' => ['@id' => $this->organisationId()],
             ], fn ($value): bool => $value !== null);
         }
 
         return $nodes;
+    }
+
+    /** The business's node, as the site's own structured data names it. */
+    private function organisationId(): string
+    {
+        $anchor = trim((string) config('gadya-cms.seo.organization.anchor', 'organization'), '#') ?: 'organization';
+
+        return url('/').'#'.$anchor;
+    }
+
+    /**
+     * A photo-library name, or a path under public/ or a full address
+     * given as they are: a share card made for social previews usually
+     * lives beside the site's other images, not in the library.
+     */
+    private function imageUrl(string $image): string
+    {
+        if (preg_match('#^https?://#i', $image)) {
+            return $image;
+        }
+
+        return str_starts_with($image, '/') ? url($image) : $this->images->url($image);
     }
 
     private function withSuffix(string $title): string

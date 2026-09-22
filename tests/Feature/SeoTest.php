@@ -29,7 +29,7 @@ class SeoTest extends TestCase
         $this->assertSame('About us | Springfield Parties', $tags['title']);
         $this->assertSame('The people behind the site.', $tags['description']);
         $this->assertSame('http://cms.test/about', $tags['canonical']);
-        $this->assertSame('index, follow', $tags['robots']);
+        $this->assertSame('index, follow, max-image-preview:large', $tags['robots']);
         $this->assertStringContainsString('hero.webp', (string) $tags['image']);
         $this->assertSame('Springfield Parties', $tags['site_name']);
     }
@@ -131,5 +131,43 @@ class SeoTest extends TestCase
 
         $this->assertSame('Who we are, really', $seo['meta_title']);
         $this->assertTrue($seo['noindex']);
+    }
+
+    public function test_a_local_business_can_have_its_town_on_every_title_including_the_written_ones(): void
+    {
+        config(['gadya-cms.seo.title_suffix' => ' | Manalapan, NJ']);
+
+        $written = ['title' => 'Menu', 'seo' => ['meta_title' => 'Menu']];
+
+        $this->assertSame('Menu', app(SeoHead::class)->tags($written)['title'], 'Off by default: a written title is used as written.');
+
+        config(['gadya-cms.seo.suffix_written_titles' => true]);
+
+        $this->assertSame('Menu | Manalapan, NJ', app(SeoHead::class)->tags($written)['title']);
+        $this->assertSame(
+            'Menu | Manalapan, NJ',
+            app(SeoHead::class)->tags(['seo' => ['meta_title' => 'Menu | Manalapan, NJ']])['title'],
+            'A title that already carries the suffix is not given it twice.',
+        );
+    }
+
+    public function test_a_site_that_describes_its_own_business_is_not_given_a_second_one(): void
+    {
+        config(['gadya-cms.seo.organization_schema' => false, 'gadya-cms.seo.organization.anchor' => 'restaurant']);
+
+        $this->assertSame([], app(SeoHead::class)->structuredData(['title' => 'Menu']), 'No organisation or website node: the site writes its own.');
+
+        $post = Post::factory()->create(['title' => 'Our new rye', 'status' => 'published', 'published_at' => now()->subDay()]);
+        $nodes = app(SeoHead::class)->structuredData($post);
+
+        $this->assertCount(1, $nodes, 'An article still gets its own node.');
+        $this->assertSame(url('/').'#restaurant', $nodes[0]['publisher']['@id'], 'And it points at the site\'s own business.');
+    }
+
+    public function test_a_share_card_can_be_named_by_its_public_path(): void
+    {
+        config(['gadya-cms.seo.default_image' => '/images/social-card.jpg']);
+
+        $this->assertSame(url('/images/social-card.jpg'), app(SeoHead::class)->tags(['title' => 'Home'])['image']);
     }
 }

@@ -42,6 +42,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.11.4 → 0.12.0
+
+Nothing is required. A site moving a hand-written `<head>` onto `@cmsSeo` may want the three new `seo` keys - `suffix_written_titles`, `organization_schema` and `organization.anchor` - described in the changelog; copy them into `config/gadya-cms.php` if so.
+
 ## 0.10.4 → 0.11.0
 
 Copy the new `brand.favicon` and `brand.favicon_source` keys into `config/gadya-cms.php`. Nothing else is needed: a site with its own `public/favicon.ico` is untouched, and one without now serves an icon drawn from its logo. Run `php artisan gadya-cms:favicon` to see which it did, and whether it found a logo to draw from.

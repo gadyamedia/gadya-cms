@@ -478,6 +478,22 @@ return [
     'seo' => [
         'site_name' => null,
         'title_suffix' => '',
+
+        /*
+         * Put the suffix on titles the client wrote too, not only on the
+         * ones made from a page's name - for a local business whose town
+         * belongs in every title. Off, a written title is used as written.
+         */
+        'suffix_written_titles' => false,
+
+        /*
+         * The organisation and website nodes in @cmsSeo's structured data.
+         * Turn off on a site that describes its own business in richer
+         * JSON-LD (a restaurant with its hours and menu), so search engines
+         * are not given two businesses; set organization.anchor to the
+         * fragment that site's node uses, so articles still point at it.
+         */
+        'organization_schema' => true,
         'default_description' => '',
         'default_image' => null,
         'sitemap' => true,
@@ -549,6 +565,8 @@ return [
          * The name and logo come from the brand; these are the rest.
          */
         'organization' => [
+            /* The #fragment of the business's JSON-LD node. */
+            'anchor' => 'organization',
             'type' => 'LocalBusiness',
             'telephone' => null,
             'email' => null,

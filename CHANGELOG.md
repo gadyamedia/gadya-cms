@@ -2,6 +2,20 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.12.0
+
+### Added
+
+Three switches for a site whose own `<head>` did things `@cmsSeo` did not, so it can move onto `@cmsSeo` without losing any of them. All three are off by default; nothing changes for a site that does not set them.
+
+- `seo.suffix_written_titles` puts `seo.title_suffix` on the titles the client wrote too, not only on those made from a page's name - for a local business whose town belongs in every title ("Menu | Manalapan, NJ"). A title already carrying the suffix is not given it twice.
+- `seo.organization_schema` set to false leaves out `@cmsSeo`'s organisation and website nodes, for a site that describes its own business in richer JSON-LD - a restaurant with its hours, holiday hours and menu. Search engines are not then handed two businesses with the same name. Articles still get their node, pointing at `seo.organization.anchor`, the fragment the site's own business node uses.
+- `seo.default_image` and a page's share image accept a path under `public/` or a full address, as well as a photo-library name: a share card made for social previews usually lives beside the site's other images.
+
+### Changed
+
+- Indexable pages ask for `max-image-preview:large`, which lets Google show a large image preview in search and Discover. It has to be said; it is not assumed.
+
 ## 0.11.4
 
 ### Fixed
