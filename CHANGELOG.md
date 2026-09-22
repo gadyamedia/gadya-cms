@@ -2,6 +2,14 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.3
+
+### Changed
+
+- **A wide lockup is cropped to its mark** rather than shrunk whole: a name that is legible at 320 pixels is a smudge at 32, and the leading square of a lockup is the mark (or, on a wordmark, its first letters). A logo that carries its own opaque background keeps it and fills the tile, so there is no white square floating inside a coloured one; a logo on transparency is padded on a colour chosen to contrast with it.
+
+  A purpose-made square mark still beats anything drawn automatically - `brand.favicon_source` names one.
+
 ## 0.11.2
 
 ### Fixed

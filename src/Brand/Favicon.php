@@ -145,14 +145,29 @@ class Favicon
         $logo = $this->images->read($binary);
 
         /*
-         * Contained rather than cropped: a wordmark cropped to a square
-         * becomes one illegible letter. The padding keeps it off the
-         * edges, where a browser rounds the corners.
+         * A lockup is usually a mark followed by the business's name. The
+         * whole thing contained in a 32-pixel square is an illegible
+         * smudge, so anything much wider than it is tall is cropped to its
+         * leading square - which is the mark on a lockup, and the first
+         * letters on a wordmark. Either reads.
          */
-        $inner = max(1, (int) round($size * 0.82));
+        if ($logo->width() > $logo->height() * 1.6) {
+            $edge = $logo->height();
+            $logo->crop($edge, $edge, 0, 0);
+        }
+
+        /*
+         * A logo with its own opaque background is scaled to fill the
+         * tile and its own colour goes behind it, so there is no white
+         * square floating inside a coloured one. A logo on transparency
+         * is padded instead, on a colour chosen to contrast with it.
+         */
+        $own = $this->ownBackground($logo);
+        $inner = max(1, (int) round($size * ($own === null ? 0.84 : 1)));
+
         $logo->scaleDown(width: $inner, height: $inner);
 
-        $canvas = $this->images->read($this->square($size));
+        $canvas = $this->images->read($this->square($size, $own ?? $this->backdropFor($logo)));
 
         /*
          * `place` takes the position second; `insert` takes it fourth,
@@ -162,6 +177,89 @@ class Favicon
         return method_exists($canvas, 'place')
             ? $canvas->place($logo, 'center')
             : $canvas->insert($logo, 0, 0, 'center');
+    }
+
+    /**
+     * The logo's own background colour, when it has one: the corners all
+     * being the same opaque colour is what a logo on a solid tile looks
+     * like, and is worth keeping.
+     */
+    private function ownBackground(ImageInterface $logo): ?string
+    {
+        return rescue(function () use ($logo): ?string {
+            $image = @imagecreatefromstring($this->images->png($logo));
+
+            if ($image === false) {
+                return null;
+            }
+
+            $width = imagesx($image) - 1;
+            $height = imagesy($image) - 1;
+            $corners = [];
+
+            foreach ([[0, 0], [$width, 0], [0, $height], [$width, $height]] as [$x, $y]) {
+                $colour = imagecolorat($image, $x, $y);
+
+                if ((($colour >> 24) & 0x7F) > 16) {
+                    return null;
+                }
+
+                $corners[] = $colour & 0xFFFFFF;
+            }
+
+            return count(array_unique($corners)) === 1
+                ? sprintf('#%06x', $corners[0])
+                : null;
+        }, null, report: false);
+    }
+
+    /**
+     * What to put behind the logo: the brand colour, unless the logo is
+     * itself dark, in which case white - a navy wordmark on a navy tile
+     * is a navy tile.
+     */
+    private function backdropFor(ImageInterface $logo): string
+    {
+        $luminance = rescue(fn (): ?float => $this->luminanceOf($this->images->png($logo)), null, report: false);
+
+        if ($luminance === null) {
+            return $this->colour();
+        }
+
+        [$r, $g, $b] = $this->rgb($this->colour());
+        $brand = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
+
+        /* Keep them apart; when they are not, white almost always works. */
+        return abs($luminance - $brand) > 0.25 ? $this->colour() : ($luminance > 0.5 ? '#1f2937' : '#ffffff');
+    }
+
+    /** The average brightness of a PNG's opaque pixels, 0 to 1. */
+    private function luminanceOf(string $png): ?float
+    {
+        $image = @imagecreatefromstring($png);
+
+        if ($image === false) {
+            return null;
+        }
+
+        $total = 0.0;
+        $counted = 0;
+
+        for ($x = 0; $x < imagesx($image); $x += 2) {
+            for ($y = 0; $y < imagesy($image); $y += 2) {
+                $colour = imagecolorat($image, $x, $y);
+
+                /* Transparent pixels say nothing about the mark's colour. */
+                if ((($colour >> 24) & 0x7F) > 64) {
+                    continue;
+                }
+
+                $total += (0.2126 * (($colour >> 16) & 0xFF) + 0.7152 * (($colour >> 8) & 0xFF) + 0.0722 * ($colour & 0xFF)) / 255;
+                $counted++;
+            }
+        }
+
+        return $counted === 0 ? null : $total / $counted;
     }
 
     /**

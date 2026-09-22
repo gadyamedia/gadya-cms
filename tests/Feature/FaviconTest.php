@@ -103,6 +103,31 @@ class FaviconTest extends TestCase
         }
     }
 
+    public function test_a_wide_lockup_is_cropped_to_its_mark_and_keeps_its_own_background(): void
+    {
+        /* A white tile: a red mark on the left, the "wordmark" on the right. */
+        $logo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72">'
+            .'<rect width="320" height="72" fill="#ffffff"/>'
+            .'<circle cx="36" cy="36" r="20" fill="#cc0000"/>'
+            .'<rect x="90" y="30" width="200" height="12" fill="#222222"/></svg>';
+
+        File::ensureDirectoryExists(public_path('images/site'));
+        File::put(public_path('images/site/lockup.svg'), $logo);
+        config(['gadya-cms.brand.logo' => 'lockup.svg', 'gadya-cms.brand.follow_site' => false]);
+
+        try {
+            $image = imagecreatefromstring(app(Favicon::class)->png(180));
+
+            $corner = imagecolorat($image, 2, 2);
+            $this->assertSame(0xFFFFFF, $corner & 0xFFFFFF, 'The logo\'s own white tile fills the icon, so no square floats inside another.');
+
+            $middle = imagecolorat($image, 90, 90);
+            $this->assertSame(0xCC0000, $middle & 0xFFFFFF, 'The mark, not the wordmark, is what a 32-pixel square can show.');
+        } finally {
+            File::delete(public_path('images/site/lockup.svg'));
+        }
+    }
+
     public function test_the_head_asks_for_the_icon_and_the_manifest(): void
     {
         $tags = app(Favicon::class)->tags();
