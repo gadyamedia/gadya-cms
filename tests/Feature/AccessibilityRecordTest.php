@@ -101,6 +101,13 @@ class AccessibilityRecordTest extends TestCase
             ->assertSee('hello@acmedental.test');
     }
 
+    public function test_the_statement_is_in_the_sitemap_like_any_other_page(): void
+    {
+        $this->publishDocument();
+
+        $this->get('/sitemap.xml')->assertOk()->assertSee(url('/accessibility-statement'));
+    }
+
     public function test_a_site_that_has_never_been_checked_says_so_rather_than_claiming_anything(): void
     {
         $this->publishDocument();

@@ -8,6 +8,7 @@ use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Events\EventCalendar;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Quality\AccessibilityRecord;
 use Illuminate\Support\Carbon;
 
 /**
@@ -107,6 +108,19 @@ class SitemapEntries
                     'priority' => '0.5',
                 ];
             }
+        }
+
+        /*
+         * The accessibility statement is a page a person reads - often the
+         * person deciding whether to complain - so it is listed like one,
+         * dated by the last check that rewrote it.
+         */
+        if (config('gadya-cms.accessibility.statement', true)) {
+            $entries[] = [
+                'loc' => url('/'.trim((string) config('gadya-cms.accessibility.path', 'accessibility-statement'), '/')),
+                'lastmod' => rescue(fn (): ?string => app(AccessibilityRecord::class)->lastCheckedAt()?->toAtomString(), null, report: false),
+                'priority' => '0.3',
+            ];
         }
 
         foreach ((array) config('gadya-cms.seo.sitemap_extra', []) as $path) {

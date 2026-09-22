@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.4
+
+### Fixed
+
+- The accessibility statement is listed in the sitemap. It is a page a person reads - often the person deciding whether to complain - and was the one public page the package served that the sitemap left out. A site's own sitemap guard found it.
+
 ## 0.11.3
 
 ### Changed
