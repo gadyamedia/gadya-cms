@@ -114,12 +114,18 @@ class SeoController extends Controller
             $lines[] = $signals;
         }
 
-        if (config('gadya-cms.seo.sitemap', true)) {
+        /*
+         * Named whether we serve them or the application does: a site that
+         * writes its own sitemap still wants crawlers told where it is.
+         */
+        $discovery = app(AgentDiscovery::class);
+
+        if ($discovery->serves('sitemap')) {
             $lines[] = '';
             $lines[] = 'Sitemap: '.url('/sitemap.xml');
         }
 
-        if (config('gadya-cms.seo.llms', true)) {
+        if ($discovery->serves('llms')) {
             $lines[] = '# For AI assistants: '.url('/llms.txt');
         }
 

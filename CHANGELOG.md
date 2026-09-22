@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.10.2
+
+### Fixed
+
+- `robots.txt` names the sitemap and llms.txt when the **application** serves them, not only when the package does. A site with its own sitemap was serving a robots.txt with no `Sitemap:` line at all.
+
 ## 0.10.1
 
 ### Fixed

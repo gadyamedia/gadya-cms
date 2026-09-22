@@ -260,6 +260,12 @@ class AgentDiscovery
      * catalogues, because the address still answers. What must never be
      * advertised is an address nothing answers at all.
      */
+    /** Public so robots.txt can ask the same question the catalogues ask. */
+    public function serves(string $feature): bool
+    {
+        return $this->has($feature);
+    }
+
     private function has(string $feature): bool
     {
         if ((bool) config("gadya-cms.seo.{$feature}", true)) {

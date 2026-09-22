@@ -22,6 +22,18 @@ class AgentDiscoveryElsewhereTest extends TestCase
         $app['config']->set('gadya-cms.seo.sitemap', false);
     }
 
+    public function test_robots_txt_names_the_sitemap_the_application_serves(): void
+    {
+        $this->publishDocument();
+
+        Route::middleware('web')->get('/sitemap.xml', fn () => response('<urlset/>', 200, ['Content-Type' => 'application/xml']));
+
+        $this->get('/robots.txt')
+            ->assertOk()
+            ->assertSee('Sitemap: '.url('/sitemap.xml'))
+            ->assertSee('Content-Signal:');
+    }
+
     public function test_an_address_the_application_serves_itself_is_still_advertised(): void
     {
         $this->publishDocument();
