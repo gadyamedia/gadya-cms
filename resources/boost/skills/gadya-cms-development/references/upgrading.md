@@ -42,6 +42,16 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.8.1 → 0.9.0
+
+`php artisan migrate` has nothing new to do. Copy the new `accessibility` block into `config/gadya-cms.php`, and add the digest to `routes/console.php`:
+
+```php
+Schedule::command('gadya-cms:drift-digest')->twiceMonthly(1, 15, '08:00');
+```
+
+The statement is served at `/accessibility-statement` unless `accessibility.statement` is false. A site with its own catch-all page route must add `accessibility-statement` to `pages.route_excluded_slugs`.
+
 ## 0.8.0 → 0.8.1
 
 `php artisan migrate` adds the `failures` column to `gadyacms_page_scores` and the `gadyacms_fixes` table. Nothing else is needed: **Settings → Speed & accessibility** appears wherever `search()` is on, and uses Gadya Media's AI key over the portal link on a paired site with no key of its own.

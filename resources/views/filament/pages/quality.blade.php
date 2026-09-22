@@ -4,6 +4,58 @@
             <p class="gadya-dash__notice">The writing here is done by Gadya Media on your behalf - there is nothing for you to set up and no key to buy. Everything it writes goes into your draft first, so you always read it before the world does.</p>
         @endif
 
+        @if ($this->drift->isNotEmpty())
+            <div class="gadya-dash__card">
+                <p class="gadya-dash__title">What needs you</p>
+                <ul class="gadya-dash__list">
+                    @foreach ($this->drift as $finding)
+                        <li>
+                            <strong>{{ $finding['says'] }}</strong>
+                            <br><span class="gadya-dash__muted">{{ $finding['does'] }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if ($this->visibility)
+            <div class="gadya-dash__card">
+                <p class="gadya-dash__title">Do AI assistants recommend you?</p>
+                <p class="gadya-dash__muted">
+                    More and more people ask ChatGPT or Google's AI rather than searching. We ask them, weekly, whether they name you.
+                    You were named in <strong>{{ $this->visibility['named'] }}</strong> of {{ $this->visibility['asked'] }} questions.
+                </p>
+                <ul class="gadya-dash__list">
+                    @foreach ($this->visibility['queries'] as $query)
+                        <li>
+                            {{ $query['named'] ?? false ? '✓' : '—' }} "{{ $query['query'] ?? '' }}"
+                            @if (! empty($query['excerpt']))
+                                <br><span class="gadya-dash__muted">{{ \Illuminate\Support\Str::limit($query['excerpt'], 200) }}</span>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if ($this->accessibility['exists'])
+            <div class="gadya-dash__card">
+                <p class="gadya-dash__title">Your accessibility record</p>
+                <p class="gadya-dash__muted">
+                    {{ $this->accessibility['pages'] }} pages checked, scoring {{ $this->accessibility['score'] ?? '—' }} out of 100.
+                    {{ $this->accessibility['remediated'] }} {{ \Illuminate\Support\Str::plural('barrier', $this->accessibility['remediated']) }} put right,
+                    {{ $this->accessibility['outstanding'] }} outstanding.
+                    @if ($this->accessibility['since'])
+                        The record begins {{ $this->accessibility['since']->format('j F Y') }}.
+                    @endif
+                </p>
+                <p class="gadya-dash__muted">This matters if anyone ever asks: it is a dated record of the work, not a badge. Your public statement is written from it and updates itself.</p>
+                @if ($this->accessibility['url'])
+                    <p class="gadya-dash__muted"><a href="{{ $this->accessibility['url'] }}" target="_blank" rel="noopener">Read your accessibility statement</a></p>
+                @endif
+            </div>
+        @endif
+
         @forelse ($this->failures as $failure)
             <div class="gadya-dash__card">
                 <p class="gadya-dash__title">{{ $failure['title'] }}</p>

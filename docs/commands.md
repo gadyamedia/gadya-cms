@@ -17,6 +17,8 @@
 | `gadya-cms:check-links` | Find links on the site that lead nowhere (`--external`) |
 | `gadya-cms:search-console` | Fetch queries and landing pages from Google (`--days=28`) |
 | `gadya-cms:pagespeed` | Run Lighthouse through PageSpeed Insights (`--url=`, `--limit=5`, `--strategy=`) |
+| `gadya-cms:drift-digest` | Email what has quietly gone out of date (`--show` to print it instead) |
+| `gadya-cms:takeout` | Pack the whole site into one zip the client owns (`--path=`) |
 | `gadya-cms:fix` | Describe photos and write missing search snippets into the draft, and print what is left for a developer (`--photos`, `--pages`, `--limit=25`) |
 | `gadya-cms:agent-ready` | Score readiness for search engines and AI assistants (`--live`) |
 | `gadya-cms:analytics-digest` | Email the summary to the people who signed up for it (`--days=7`) |
@@ -34,6 +36,7 @@ Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
 Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
 Schedule::command('gadya-cms:check-links')->weeklyOn(2, '03:00');
 Schedule::command('gadya-cms:pagespeed')->weeklyOn(2, '04:00');
+Schedule::command('gadya-cms:drift-digest')->twiceMonthly(1, 15, '08:00');
 Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');
 Schedule::command('gadya-cms:prune-trash')->daily();
 Schedule::command('gadya-cms:prune-activity')->weekly();

@@ -28,6 +28,8 @@ use Gadya\Cms\Console\PruneTrashCommand;
 use Gadya\Cms\Console\PublishDueCommand;
 use Gadya\Cms\Console\ResetPasswordCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
+use Gadya\Cms\Console\SendDriftDigestCommand;
+use Gadya\Cms\Console\TakeoutCommand;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Content\SlugPagePaths;
@@ -96,6 +98,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 InstallCommand::class,
                 MakeEditorCommand::class,
                 FixQualityCommand::class,
+                SendDriftDigestCommand::class,
+                TakeoutCommand::class,
                 ResetPasswordCommand::class,
                 DoctorCommand::class,
                 ExportSiteContentCommand::class,
@@ -149,6 +153,10 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         if (config('gadya-cms.events.routes', true)) {
             $this->loadRoutesFrom(__DIR__.'/../routes/events.php');
+        }
+
+        if (config('gadya-cms.accessibility.statement', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/accessibility.php');
         }
 
         if (config('gadya-cms.newsletter.enabled', true)) {

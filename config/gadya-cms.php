@@ -537,6 +537,19 @@ return [
     ],
 
     /*
+     * The accessibility statement: a public page written from the site's
+     * own record of what was checked, what was fixed and when, rather than
+     * a promise nobody tested. Turn `statement` off on a site with its own
+     * hand-written statement. `pledge` is the extra sentence at the foot -
+     * how someone reports a barrier, and what happens then.
+     */
+    'accessibility' => [
+        'statement' => true,
+        'path' => 'accessibility-statement',
+        'pledge' => 'If any part of this site gets in your way, tell us and we will put it right. We answer within two working days.',
+    ],
+
+    /*
      * The "built by Gadya Media" badge that @gadyaBuiltBy puts at the end of
      * the site's footer. Its colour follows brand.ink unless one is named
      * here; the logo is recoloured to match automatically.

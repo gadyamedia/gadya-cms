@@ -2,6 +2,24 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.9.0
+
+### Added
+
+- **An accessibility record, and a statement written from it.** A public **/accessibility-statement** page generated from the site's own history: the standard it aims at, how it is assessed, how many pages were checked and when, what is still outstanding, and a dated table of every barrier put right. It never claims full conformance - automated checks cannot justify that, and a claim nobody tested is what gets businesses into trouble in the first place. This is the opposite of an overlay widget: no script, no badge, a record. `accessibility.statement`, `accessibility.path` and `accessibility.pledge` in config; turn the page off on a site with its own statement.
+
+- **The fortnightly nudge.** `gadya-cms:drift-digest` emails the handful of things that have quietly gone out of date - an enquiry nobody opened for a day, a What's on page with nothing coming up, links that lead nowhere, photos with no description, pages with no search snippet, a blog untouched for four months, business details Google is not being given. It sends nothing when there is nothing to say. `--show` prints them instead. Schedule it fortnightly.
+
+- **Download everything.** `gadya-cms:takeout`, and a **Download everything** button on Speed & accessibility: one zip with every word as Markdown, every photograph at full size, every article, every enquiry as a spreadsheet, the whole site as JSON, and a README that tells the client plainly how to take it to someone else. A client who cannot leave has to be kept rather than earned.
+
+- **Do AI assistants recommend her?** The panel shows whether the assistants people now ask for recommendations actually name the business, and what they say. The asking is done weekly by the portal, which holds the key; the site only reads the answer.
+
+- **Her accessibility record on her own screen**, and, where the site takes backups, what the portal knows about them.
+
+### Changed
+
+- The check-in carries one `PortalSummary` - quality, accessibility, drift, unanswered enquiries and backup state - so the portal shows every site at a glance without opening any of them.
+
 ## 0.8.1
 
 ### Added

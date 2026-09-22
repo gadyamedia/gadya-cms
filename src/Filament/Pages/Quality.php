@@ -10,9 +10,16 @@ use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\PortalBrain;
 use Gadya\Cms\Models\Fix;
+use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\ApplyFix;
+use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Quality\Failures;
+use Gadya\Cms\Quality\Visibility;
+use Gadya\Cms\Transfer\Takeout;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 use UnitEnum;
 
 /**
@@ -48,6 +55,25 @@ class Quality extends Page
                     $result = $fixer->describePhotos();
 
                     $this->report('photo', $result);
+                }),
+            Action::make('takeout')
+                ->label('Download everything')
+                ->icon(Heroicon::OutlinedArrowDownTray)
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Download everything on this website')
+                ->modalDescription('One zip with every word, photograph, article and enquiry - yours to keep, and readable without us. It takes a moment to pack.')
+                ->modalSubmitActionLabel('Pack it up')
+                ->action(function (Takeout $takeout): ?BinaryFileResponse {
+                    try {
+                        $path = $takeout->write(storage_path('app/takeout/'.Str::slug((string) config('app.name')).'-'.now()->format('Y-m-d').'.zip'));
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Could not pack it up')->body($exception->getMessage())->send();
+
+                        return null;
+                    }
+
+                    return response()->download($path)->deleteFileAfterSend();
                 }),
             Action::make('describePages')
                 ->label('Write the missing search snippets')
@@ -98,6 +124,36 @@ class Quality extends Page
     public function getRecentFixesProperty(): Collection
     {
         return Fix::query()->latest()->limit(20)->get();
+    }
+
+    /** @return array<string, mixed> */
+    public function getAccessibilityProperty(): array
+    {
+        $record = app(AccessibilityRecord::class);
+
+        return [
+            'exists' => $record->exists(),
+            'score' => $record->score(),
+            'pages' => $record->pagesChecked(),
+            'outstanding' => $record->outstanding()->count(),
+            'remediated' => $record->remediated()->count(),
+            'since' => $record->since(),
+            'url' => config('gadya-cms.accessibility.statement', true)
+                ? url('/'.trim((string) config('gadya-cms.accessibility.path', 'accessibility-statement'), '/'))
+                : null,
+        ];
+    }
+
+    /** @return Collection<int, array<string, string>> */
+    public function getDriftProperty(): Collection
+    {
+        return app(Drift::class)->findings();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getVisibilityProperty(): ?array
+    {
+        return app(Visibility::class)->latest();
     }
 
     public function getWritesForUsProperty(): bool
