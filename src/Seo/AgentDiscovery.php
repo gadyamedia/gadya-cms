@@ -297,10 +297,18 @@ class AgentDiscovery
         };
     }
 
-    /** Whether anything in the application answers a GET at this path. */
+    /**
+     * Whether the application - not this package - answers a GET at this
+     * path. Our own routes are skipped by name, so a switch turned off
+     * cannot be satisfied by the route it would have registered.
+     */
     private function routed(string $path): bool
     {
         foreach (app('router')->getRoutes()->getRoutes() as $route) {
+            if (str_starts_with((string) $route->getName(), 'gadya-cms.')) {
+                continue;
+            }
+
             if (trim($route->uri(), '/') === trim($path, '/') && in_array('GET', $route->methods(), true)) {
                 return true;
             }

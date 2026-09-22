@@ -6,6 +6,8 @@ use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 
 /**
  * How ready the site is to be read by machines - search engines and the
@@ -22,7 +24,24 @@ class AgentReadiness
         private readonly SiteContentRepository $repository,
         private readonly PageRegistry $registry,
         private readonly BlogRepository $blog,
+        private readonly AgentDiscovery $discovery,
     ) {}
+
+    /**
+     * Whether the application answers a request for Markdown itself. The
+     * home page is asked, in process, because content negotiation cannot
+     * be read off the routing table the way an address can.
+     */
+    private function servesMarkdownItself(): bool
+    {
+        return rescue(function (): bool {
+            $response = app(Kernel::class)
+                ->handle(Request::create('/', 'GET', server: ['HTTP_ACCEPT' => 'text/markdown']));
+
+            return $response->getStatusCode() === 200
+                && str_contains((string) $response->headers->get('Content-Type'), 'text/markdown');
+        }, false, report: false);
+    }
 
     /**
      * @return array{score: int, passed: int, total: int, checks: list<array{label: string, group: string, points: int, passed: bool, fix: string}>}
@@ -41,13 +60,13 @@ class AgentReadiness
 
         $checks = [
             ['group' => 'Discoverability', 'label' => 'robots.txt is served', 'points' => 10, 'passed' => (bool) config('gadya-cms.seo.robots', true), 'fix' => 'Turn on seo.robots (or keep your own public/robots.txt).'],
-            ['group' => 'Discoverability', 'label' => 'sitemap.xml is served and linked from robots.txt', 'points' => 10, 'passed' => (bool) config('gadya-cms.seo.sitemap', true) && (bool) config('gadya-cms.seo.robots', true), 'fix' => 'Turn on seo.sitemap.'],
-            ['group' => 'Discoverability', 'label' => 'llms.txt describes the site for AI assistants', 'points' => 15, 'passed' => (bool) config('gadya-cms.seo.llms', true), 'fix' => 'Turn on seo.llms.'],
+            ['group' => 'Discoverability', 'label' => 'sitemap.xml is served and linked from robots.txt', 'points' => 10, 'passed' => $this->discovery->serves('sitemap') && (bool) config('gadya-cms.seo.robots', true), 'fix' => 'Turn on seo.sitemap, or serve your own at /sitemap.xml.'],
+            ['group' => 'Discoverability', 'label' => 'llms.txt describes the site for AI assistants', 'points' => 15, 'passed' => $this->discovery->serves('llms'), 'fix' => 'Turn on seo.llms, or serve your own at /llms.txt.'],
             ['group' => 'Bot access', 'label' => 'AI crawlers are told where they may go', 'points' => 10, 'passed' => (array) config('gadya-cms.seo.ai_crawlers.allow', []) !== [] || (array) config('gadya-cms.seo.ai_crawlers.block', []) !== [], 'fix' => 'List the AI crawlers to allow or block under seo.ai_crawlers.'],
             ['group' => 'Bot access', 'label' => 'robots.txt says how AI may use the content (Content Signals)', 'points' => 5, 'passed' => (bool) config('gadya-cms.seo.robots', true) && array_filter((array) config('gadya-cms.seo.content_signals', [])) !== [], 'fix' => 'Set seo.content_signals, e.g. search=yes, ai-input=yes, ai-train=no.'],
             ['group' => 'Discoverability', 'label' => 'Agents are pointed at the catalogues from the home page (Link headers)', 'points' => 5, 'passed' => (bool) config('gadya-cms.seo.link_headers', true), 'fix' => 'Turn on seo.link_headers.'],
             ['group' => 'Discoverability', 'label' => 'A capability manifest and API catalogue are published', 'points' => 10, 'passed' => (bool) config('gadya-cms.seo.discovery', true), 'fix' => 'Turn on seo.discovery: it serves /.well-known/ai-catalog.json, /.well-known/api-catalog and the skills index.'],
-            ['group' => 'Content', 'label' => 'Articles can be read as Markdown (Accept: text/markdown)', 'points' => 10, 'passed' => (bool) config('gadya-cms.seo.markdown', true), 'fix' => 'Turn on seo.markdown.'],
+            ['group' => 'Content', 'label' => 'Articles can be read as Markdown (Accept: text/markdown)', 'points' => 10, 'passed' => (bool) config('gadya-cms.seo.markdown', true) || $this->servesMarkdownItself(), 'fix' => 'Turn on seo.markdown.'],
             ['group' => 'Content', 'label' => 'Every visible page has a description', 'points' => 10, 'passed' => $withDescription === count($pages), 'fix' => 'Write a description (or a search snippet) for every page: '.(count($pages) - $withDescription).' missing.'],
             ['group' => 'Content', 'label' => 'Most pages have a written search snippet', 'points' => 5, 'passed' => $withSnippet / $pageCount >= 0.5, 'fix' => 'Write a title and description under In search results for at least half the pages ('.$withSnippet.' of '.count($pages).').'],
             ['group' => 'Structured data', 'label' => 'The organisation is described in JSON-LD', 'points' => 10, 'passed' => filled($organisation['telephone'] ?? null) || filled($organisation['same_as'] ?? null) || filled(config('gadya-cms.seo.site_name')), 'fix' => 'Set seo.site_name and seo.organization (telephone, same_as).'],

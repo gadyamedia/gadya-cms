@@ -2,6 +2,14 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.10.4
+
+### Fixed
+
+- `gadya-cms:agent-ready` no longer tells a site to turn on llms.txt, the sitemap or Markdown when the **application already serves them itself**. Three of our own sites were being marked down for features they had, written their own way. The Markdown check asks the application for the home page as Markdown rather than reading a switch, because content negotiation cannot be read off the routing table.
+
+- The "does the application serve this?" check skips the package's own routes by name, so a switch turned off cannot be satisfied by the route it would have registered.
+
 ## 0.10.3
 
 ### Added
