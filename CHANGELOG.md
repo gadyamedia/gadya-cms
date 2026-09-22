@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+
+## 0.12.1
+
+### Fixed
+
+- **Requires gadya/connect 0.5.** `^0.4` on a 0.x version means *below 0.5*, so sites stayed on connect 0.4, whose check-in carries no summary for the portal's fleet screen. Only the constraint changes.
 ## 0.12.0
 
 ### Added
