@@ -75,7 +75,29 @@ class FaviconTest extends TestCase
             $favicon = app(Favicon::class);
 
             $this->assertSame('logo', $favicon->describe()['from']);
-            $this->assertFalse($favicon->looksBlank($favicon->png(180)), 'A wordmark that cannot be rasterised must not silently become a blank square.');
+
+            $png = $favicon->png(180);
+            $this->assertFalse($favicon->looksBlank($png), 'A wordmark that cannot be rasterised must not silently become a blank square.');
+
+            /*
+             * The proof that the logo was composited rather than fallen
+             * back from: the mark's own colour is in the icon.
+             */
+            $image = imagecreatefromstring($png);
+            $found = false;
+
+            for ($x = 0; $x < 180 && ! $found; $x += 2) {
+                for ($y = 0; $y < 180; $y += 2) {
+                    $rgb = imagecolorat($image, $x, $y);
+
+                    if ((($rgb >> 16) & 0xFF) === 0x12 && (($rgb >> 8) & 0xFF) === 0x34 && ($rgb & 0xFF) === 0x56) {
+                        $found = true;
+                        break;
+                    }
+                }
+            }
+
+            $this->assertTrue($found, 'The logo\'s own colour should be in the icon, which means it was drawn there.');
         } finally {
             File::delete(public_path('images/site/lockup.svg'));
         }

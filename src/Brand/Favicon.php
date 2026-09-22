@@ -154,10 +154,14 @@ class Favicon
 
         $canvas = $this->images->read($this->square($size));
 
-        /* `place` in one release, `insert` in another; both centre it. */
-        $put = method_exists($canvas, 'place') ? 'place' : 'insert';
-
-        return $canvas->{$put}($logo, 'center');
+        /*
+         * `place` takes the position second; `insert` takes it fourth,
+         * after the offsets - passing it second there is a type error,
+         * which is how every logo quietly became a blank square.
+         */
+        return method_exists($canvas, 'place')
+            ? $canvas->place($logo, 'center')
+            : $canvas->insert($logo, 0, 0, 'center');
     }
 
     /**
@@ -347,10 +351,13 @@ class Favicon
             $drawn = false;
         }
 
+        /* What was actually used, not what was available to try. */
+        $fromLogo = rescue(fn (): bool => $this->fromLogo(32) !== null, false, report: false);
+
         return [
             'enabled' => $this->enabled(),
             'site_has_its_own' => $this->siteHasItsOwn(),
-            'from' => $this->logoBinary() === null ? 'initials' : 'logo',
+            'from' => $fromLogo ? 'logo' : 'initials',
             'drawn' => $drawn,
             'bytes' => $bytes,
             /* A single flat colour means nothing legible was drawn. */

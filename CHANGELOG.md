@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.2
+
+### Fixed
+
+- Logos are composited. `insert()` takes the alignment as its **fourth** argument, after the offsets; passing `'center'` second is a type error, so every logo fell silently through to the initials. `gadya-cms:favicon` also now reports the source it actually used rather than the one it could have tried.
+
 ## 0.11.1
 
 ### Fixed
