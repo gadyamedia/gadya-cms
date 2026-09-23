@@ -35,9 +35,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The lock can need more than composer.json says: one resolved on a
+      # newer PHP pulls packages (Symfony 8.1 wants 8.4) that an older PHP
+      # refuses to install. So the higher of the two is used.
       - name: Read the PHP version this site needs
         id: php
-        run: echo "version=$(jq -r '.require.php // "8.3"' composer.json | grep -oE '[0-9]+\.[0-9]+' | head -1)" >> "$GITHUB_OUTPUT"
+        run: |
+          required=$(jq -r '.require.php // "8.3"' composer.json | grep -oE '[0-9]+\.[0-9]+' | head -1)
+          # Each package's lowest allowed version is its minimum ("8.1 - 8.5"
+          # and "^8.2|^8.3" both mean 8.1 or 8.2 will do); the site needs the
+          # highest of those minimums.
+          locked=$(jq -r '(.packages + (."packages-dev" // []))[].require.php // empty' composer.lock 2>/dev/null | while read -r constraint; do echo "$constraint" | grep -oE '[0-9]+\.[0-9]+' | sort -V | head -1; done | sort -V | tail -1)
+          echo "version=$(printf '%s\n%s\n' "$required" "$locked" | sort -V | tail -1)" >> "$GITHUB_OUTPUT"
 
       - uses: shivammathur/setup-php@v2
         with:

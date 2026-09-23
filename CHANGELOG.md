@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.8
+
+### Fixed
+
+- The update workflow (`.github/workflows/gadya-update.yml`) sets up the PHP version the lock file needs, not only the one `composer.json` names. A site saying `"php": "^8.3"` whose lock was resolved on a newer PHP holds Symfony 8.1, which needs 8.4, so the workflow failed at `composer install` before updating anything. Existing sites keep their copy of the workflow: copy the new one from `vendor/gadya/cms/resources/github/gadya-update.yml`.
+
 ## 0.14.7
 
 ### Added
