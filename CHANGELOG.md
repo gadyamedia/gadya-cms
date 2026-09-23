@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.4
+
+### Fixed
+
+- A logo file with empty space around its lettering is trimmed before the icon is cut from it, so the square starts at the mark rather than in the margin. Gadya's own wordmark came out as the edge of a cut-off "g"; it now shows "ga", centred. A logo on a solid tile keeps its tile and is not trimmed.
+
 ## 0.14.3
 
 ### Added

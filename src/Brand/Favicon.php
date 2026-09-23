@@ -185,6 +185,24 @@ class Favicon
         $logo = $this->images->read($binary);
 
         /*
+         * A logo with its own opaque background is scaled to fill the
+         * tile and its own colour goes behind it, so there is no white
+         * square floating inside a coloured one. A logo on transparency
+         * is padded instead, on a colour chosen to contrast with it. Read
+         * before trimming, which would take the tile away.
+         */
+        $own = $this->ownBackground($logo);
+
+        /*
+         * Logo files often carry empty space around the lettering, so the
+         * square below would start in that space and catch only the edge
+         * of the mark. Trimmed first, it starts at the mark itself.
+         */
+        if ($own === null) {
+            rescue(fn () => $logo->trim(10), null, report: false);
+        }
+
+        /*
          * A lockup is usually a mark followed by the business's name. The
          * whole thing contained in a 32-pixel square is an illegible
          * smudge, so anything much wider than it is tall is cropped to its
@@ -195,14 +213,6 @@ class Favicon
             $edge = $logo->height();
             $logo->crop($edge, $edge, 0, 0);
         }
-
-        /*
-         * A logo with its own opaque background is scaled to fill the
-         * tile and its own colour goes behind it, so there is no white
-         * square floating inside a coloured one. A logo on transparency
-         * is padded instead, on a colour chosen to contrast with it.
-         */
-        $own = $this->ownBackground($logo);
         $inner = max(1, (int) round($size * ($own === null ? 0.84 : 1)));
 
         $logo->scaleDown(width: $inner, height: $inner);
