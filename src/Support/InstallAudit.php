@@ -299,7 +299,7 @@ class InstallAudit
                 'Install',
                 'No empty public/favicon.ico hides the browser-tab icon',
                 ! (config('gadya-cms.brand.favicon', true) && app(Favicon::class)->emptyPlaceholder()),
-                'Delete public/favicon.ico. It is Laravel\'s empty placeholder: browsers get a blank icon, and the web server answers it before the icon drawn from the logo can be.',
+                'Run php artisan gadya-cms:favicon --write. public/favicon.ico is Laravel\'s empty placeholder, so browsers get a blank icon; the command replaces it with one drawn from the logo, as a real file the web server can serve.',
             ),
             $this->check('Install', 'No static public/sitemap.xml hides the generated one', ! $this->files->exists(public_path('sitemap.xml')), 'Delete public/sitemap.xml to use the generated one, unless the site keeps its own on purpose.', optional: true),
             $this->check('Install', 'Connected to the Gadya Media portal', Connection::current() !== null, 'In the portal: Sites → Connect a site, then php artisan gadya:connect <code> on the live server.', optional: true),

@@ -18,7 +18,7 @@
 | `gadya-cms:search-console` | Fetch queries and landing pages from Google (`--days=28`) |
 | `gadya-cms:pagespeed` | Run Lighthouse through PageSpeed Insights (`--url=`, `--limit=5`, `--strategy=`) |
 | `gadya-cms:drift-digest` | Email what has quietly gone out of date (`--show` to print it instead) |
-| `gadya-cms:favicon` | Draw the browser-tab icon from the site's logo (`--forget` to redraw) |
+| `gadya-cms:favicon` | Draw the browser-tab icon from the site's logo (`--forget` to redraw, `--write` to save it into `public/` for a web server that answers `/favicon.ico` from disk) |
 | `gadya-cms:backup-drill` | Open the newest backup and check its database dump could be restored |
 | `gadya-cms:takeout` | Pack the whole site into one zip the client owns (`--path=`) |
 | `gadya-cms:fix` | Describe photos and write missing search snippets into the draft, and print what is left for a developer (`--photos`, `--pages`, `--limit=25`) |

@@ -7,10 +7,17 @@ use Illuminate\Console\Command;
 
 /**
  * Draws the browser-tab icon, or says why it did not.
+ *
+ * With --write it also saves the icon into public/ as real files. Forge's
+ * and Herd's nginx answer /favicon.ico (and /robots.txt) from disk alone,
+ * with a `location =` rule that never asks Laravel, so a drawn icon can
+ * only be seen at that address once it is a file there.
  */
 class FaviconCommand extends Command
 {
-    protected $signature = 'gadya-cms:favicon {--forget : Throw away what was drawn and draw it again}';
+    protected $signature = 'gadya-cms:favicon
+                            {--forget : Throw away what was drawn and draw it again}
+                            {--write : Save the icon into public/ as favicon.ico and apple-touch-icon.png}';
 
     protected $description = 'Draw the site\'s browser-tab icon from its logo';
 
@@ -26,7 +33,8 @@ class FaviconCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($favicon->siteHasItsOwn()) {
+        /* A file this command wrote is ours to redraw; one a person made is not. */
+        if ($favicon->siteHasItsOwn() && ! ($this->option('write') && $favicon->wroteOwnFiles())) {
             $this->components->info('The site has its own favicon in public/, which is served before Laravel is asked. Nothing to draw.');
 
             return self::SUCCESS;
@@ -54,6 +62,11 @@ class FaviconCommand extends Command
 
         if ($described['from'] === 'initials') {
             $this->components->warn('There is no logo to draw from. Upload one under Look & feel, or set brand.favicon_source.');
+        }
+
+        if ($this->option('write')) {
+            $written = $favicon->writeFiles();
+            $this->components->info('Saved '.implode(' and ', array_map(fn (string $path): string => 'public/'.$path, $written)).'. Run this again after changing the logo.');
         }
 
         return self::SUCCESS;

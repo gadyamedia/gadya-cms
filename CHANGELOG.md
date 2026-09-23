@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.3
+
+### Added
+
+- **`gadya-cms:favicon --write`** saves the drawn icon into `public/` as a real `favicon.ico` and `apple-touch-icon.png`. Forge's and Herd's nginx answer `/favicon.ico` from disk with a `location =` rule that never asks Laravel, so the drawn icon could not be seen at that address - only at the PNG addresses the page's tags name. Run it once on a site, and again after changing the logo; it redraws its own files but never overwrites an icon a person put there. `gadya-cms:audit` now suggests it for Laravel's empty placeholder.
+
 ## 0.14.2
 
 ### Fixed

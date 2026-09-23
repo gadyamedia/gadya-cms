@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Tests\Feature;
 
 use Gadya\Cms\Brand\Favicon;
+use Gadya\Cms\Support\InstallAudit;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 
@@ -165,13 +166,40 @@ class FaviconTest extends TestCase
             $this->assertTrue($favicon->emptyPlaceholder());
             $this->assertNotSame([], $favicon->tags(), 'The drawn icon is offered instead.');
 
-            $check = collect(app(\Gadya\Cms\Support\InstallAudit::class)->checks())
+            $check = collect(app(InstallAudit::class)->checks())
                 ->firstWhere('label', 'No empty public/favicon.ico hides the browser-tab icon');
 
             $this->assertSame('todo', $check['status']);
-            $this->assertStringContainsString('Delete public/favicon.ico', $check['fix']);
+            $this->assertStringContainsString('gadya-cms:favicon --write', $check['fix']);
         } finally {
             File::delete(public_path('favicon.ico'));
+        }
+    }
+
+    public function test_write_saves_a_real_icon_the_web_server_can_serve_and_redraws_its_own_but_never_a_persons(): void
+    {
+        File::ensureDirectoryExists(public_path());
+        File::put(public_path('favicon.ico'), '');
+
+        try {
+            /* Laravel's empty placeholder is replaced. */
+            $this->artisan('gadya-cms:favicon', ['--write' => true])->assertSuccessful();
+
+            $ico = File::get(public_path('favicon.ico'));
+            $this->assertSame([0, 1, 1], array_values(unpack('vreserved/vtype/vcount', substr($ico, 0, 6))));
+            $this->assertNotFalse(imagecreatefromstring(File::get(public_path('apple-touch-icon.png'))));
+
+            /* Its own files are redrawn on the next run... */
+            $this->artisan('gadya-cms:favicon', ['--write' => true])->expectsOutputToContain('Saved public/favicon.ico')->assertSuccessful();
+
+            /* ...but an icon a person put there is never overwritten. */
+            File::delete(public_path('favicon.gadya-cms'));
+            File::put(public_path('favicon.ico'), 'a real icon the client made');
+
+            $this->artisan('gadya-cms:favicon', ['--write' => true])->expectsOutputToContain('has its own favicon')->assertSuccessful();
+            $this->assertSame('a real icon the client made', File::get(public_path('favicon.ico')));
+        } finally {
+            File::delete([public_path('favicon.ico'), public_path('apple-touch-icon.png'), public_path('favicon.gadya-cms')]);
         }
     }
 

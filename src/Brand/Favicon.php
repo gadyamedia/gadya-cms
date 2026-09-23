@@ -63,6 +63,30 @@ class Favicon
         return false;
     }
 
+    /** Where --write records that the files in public/ are ours to redraw. */
+    private const WRITTEN_MARKER = 'favicon.gadya-cms';
+
+    /**
+     * Save the icon into public/ as real files, for a web server that
+     * answers /favicon.ico from disk without asking Laravel.
+     *
+     * @return list<string> What was written, relative to public/.
+     */
+    public function writeFiles(): array
+    {
+        File::put(public_path('favicon.ico'), $this->ico());
+        File::put(public_path('apple-touch-icon.png'), $this->png(180));
+        File::put(public_path(self::WRITTEN_MARKER), $this->signature());
+
+        return ['favicon.ico', 'apple-touch-icon.png'];
+    }
+
+    /** Whether the icon files in public/ were written by writeFiles(). */
+    public function wroteOwnFiles(): bool
+    {
+        return File::exists(public_path(self::WRITTEN_MARKER));
+    }
+
     /** Whether Laravel's empty favicon.ico is in public/, hiding the real one. */
     public function emptyPlaceholder(): bool
     {
