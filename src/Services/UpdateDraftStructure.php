@@ -4,6 +4,7 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Content\SiteContentRepository;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class UpdateDraftStructure
@@ -28,7 +29,8 @@ class UpdateDraftStructure
     {
         $document = $this->repository->draft();
         $items = $this->itemsAt($document, $sectionPath);
-        $items[] = Arr::only($item, ['title', 'text', 'image']);
+        /* A key outlives renames and reorders, so a site can sync the item elsewhere. */
+        $items[] = [...Arr::only($item, ['title', 'text', 'image']), 'key' => (string) Str::ulid()];
 
         $this->writeItems($document, $sectionPath, $items);
     }

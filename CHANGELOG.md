@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.12.3
+
+### Added
+
+- Every item in a section carries a `key` that survives renames and reorders, so a site can sync its cards to another system and still know which one is which. **Add item** on the page and a new item in the admin both give one; saving a page in the admin keeps the keys already there. Items from before this release have none until a site assigns them.
+
 ## 0.12.2
 
 ### Fixed

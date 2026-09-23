@@ -10,6 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -150,6 +151,10 @@ class PageResource extends Resource
                             Textarea::make('text')->rows(3)->columnSpanFull(),
                             Repeater::make('items')
                                 ->schema([
+                                    /* An item's key outlives renames, so a site can sync it elsewhere. */
+                                    Hidden::make('key')
+                                        ->default(fn (): string => (string) Str::ulid())
+                                        ->dehydrated(fn (?string $state): bool => filled($state)),
                                     TextInput::make('title')->maxLength(200),
                                     Textarea::make('text')->rows(2),
                                     MediaSelect::make('image', 'Photo'),
