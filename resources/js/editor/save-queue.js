@@ -3,6 +3,7 @@ import { endpoint, token } from './endpoints.js';
 const pending = new Map();
 const active = new Set();
 const failed = new Set();
+const waiters = [];
 
 const announce = (message) => {
     const status = document.querySelector('[data-cms-status]');
@@ -18,6 +19,7 @@ const settle = () => {
     }
 
     announce(failed.size > 0 ? 'Could not save — check your connection' : 'All changes saved');
+    waiters.splice(0).forEach((resolve) => resolve());
 };
 
 const send = async (path, value) => {
@@ -73,3 +75,17 @@ export const queueSave = (path, value) => {
     pending.set(path, value);
     flush(path);
 };
+
+/*
+ * Resolves once every queued save has landed, so an action that reads the
+ * draft (publishing) never runs ahead of the edit that was just made.
+ */
+export const whenSaved = () => {
+    if (active.size === 0 && pending.size === 0) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => waiters.push(resolve));
+};
+
+export const hasFailedSaves = () => failed.size > 0;
