@@ -6,6 +6,7 @@ use Gadya\Cms\Support\InstallAudit;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\File;
 
 class InstallAuditTest extends TestCase
 {
@@ -116,5 +117,33 @@ class InstallAuditTest extends TestCase
         }
 
         $this->assertStringContainsString('gadya-cms:audit', $skill);
+    }
+
+    public function test_a_skill_boost_reformatted_still_counts_as_current_but_a_stale_one_does_not(): void
+    {
+        $label = 'Boost skills match this version';
+        $source = dirname(__DIR__, 2).'/resources/boost/skills';
+        $installed = base_path('.claude/skills');
+
+        File::deleteDirectory($installed);
+
+        try {
+            foreach (glob($source.'/*/SKILL.md') as $skill) {
+                $name = basename(dirname($skill));
+                File::ensureDirectoryExists("{$installed}/{$name}");
+
+                /* Older Boost installs put a blank line around every list item. */
+                file_put_contents("{$installed}/{$name}/SKILL.md", str_replace("\n- ", "\n\n- ", (string) file_get_contents($skill)));
+            }
+
+            $this->assertSame('ok', collect(app(InstallAudit::class)->checks())->firstWhere('label', $label)['status']);
+
+            $any = glob("{$installed}/*/SKILL.md")[0];
+            file_put_contents($any, file_get_contents($any)."\nA line this version does not have.\n");
+
+            $this->assertSame('todo', collect(app(InstallAudit::class)->checks())->firstWhere('label', $label)['status']);
+        } finally {
+            File::deleteDirectory($installed);
+        }
     }
 }

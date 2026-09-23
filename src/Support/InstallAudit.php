@@ -328,12 +328,24 @@ class InstallAudit
                 ->map(fn (string $dir): string => base_path($dir.'/'.$name.'/SKILL.md'))
                 ->filter(fn (string $path): bool => $this->files->exists($path));
 
-            if ($installed->isEmpty() || $installed->contains(fn (string $path): bool => $this->files->get($path) !== $this->files->get($skill))) {
+            $expected = $this->skillText($this->files->get($skill));
+
+            if ($installed->isEmpty() || $installed->contains(fn (string $path): bool => $this->skillText($this->files->get($path)) !== $expected)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * A skill's words, without the blank lines some versions of Boost add
+     * around lists when they install it - which would otherwise make a
+     * current skill look stale.
+     */
+    private function skillText(string $markdown): string
+    {
+        return trim((string) preg_replace("/\n{2,}/", "\n", str_replace("\r\n", "\n", $markdown)));
     }
 
     private function plugin(): ?GadyaCmsPlugin

@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.2
+
+### Fixed
+
+- `gadya-cms:audit` no longer reports the Boost skills as out of date on a site whose Boost puts blank lines around lists when it installs them (Boost 2.7 does). The check is whether the words are current, not whether they are formatted identically.
+
 ## 0.14.1
 
 ### Fixed
