@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.11.6
+
+### Fixed
+
+- A card added with **Add item** can be given a description and a photo. It starts with a title alone, and the editor refused to save a field the item did not already have ("That field does not exist on this page"), so the new card could only ever hold its title. A field of an existing list item is now filled in; a page still never gains a field it does not have, and a list never gains a slot. Templates that hide an empty description or photo with `@isset` should show an empty slot in edit mode so there is something to click.
+- **Publish** waits for the edit that was just made. Clicking it straight after typing blurred the field, which started its save at the same moment the form posted, so the old draft went live and the client had to press Publish twice. The button now waits for every save to land, and does not publish over one that failed.
 
 ## 0.11.5
 

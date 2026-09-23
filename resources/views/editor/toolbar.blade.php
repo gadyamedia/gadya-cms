@@ -18,7 +18,7 @@
             <a class="gadya-cms-link" href="{{ $panelUrl }}">Admin</a>
 
             @if (! $heldByOther && auth()->user()?->can(\Gadya\Cms\Access\Abilities::gate(\Gadya\Cms\Access\Abilities::PUBLISH)))
-                <form method="POST" action="{{ route('gadya-cms.publish') }}">
+                <form method="POST" action="{{ route('gadya-cms.publish') }}" data-cms-publish>
                     @csrf
                     <button class="gadya-cms-button" type="submit">Publish</button>
                 </form>

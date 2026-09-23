@@ -5,14 +5,15 @@ namespace Gadya\Cms\Rules;
 use Closure;
 use Gadya\Cms\Content\EditableFields;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Services\UpdateDraftField;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Arr;
 
 class EditablePath implements ValidationRule
 {
     public function __construct(
         private readonly EditableFields $fields,
         private readonly SiteContentRepository $repository,
+        private readonly UpdateDraftField $action,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -23,7 +24,7 @@ class EditablePath implements ValidationRule
             return;
         }
 
-        if (! Arr::has($this->repository->draft(), $value)) {
+        if (! $this->action->canWrite($this->repository->draft(), $value)) {
             $fail('That field does not exist on this page.');
         }
     }
