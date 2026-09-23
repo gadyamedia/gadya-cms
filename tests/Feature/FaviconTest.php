@@ -3,9 +3,11 @@
 namespace Gadya\Cms\Tests\Feature;
 
 use Gadya\Cms\Brand\Favicon;
+use Gadya\Cms\Support\Images;
 use Gadya\Cms\Support\InstallAudit;
 use Gadya\Cms\Tests\TestCase;
 use Illuminate\Support\Facades\File;
+use Intervention\Image\Interfaces\ImageInterface;
 
 /**
  * Almost every site we take over arrives without a favicon, and nobody
@@ -28,10 +30,9 @@ class FaviconTest extends TestCase
 
         $this->assertSame('image/png', $png->headers->get('Content-Type'));
 
-        $image = imagecreatefromstring($png->getContent());
-        $this->assertNotFalse($image, 'What comes back has to be a real image.');
-        $this->assertSame(32, imagesx($image));
-        $this->assertSame(32, imagesy($image));
+        $size = getimagesizefromstring($png->getContent());
+        $this->assertNotFalse($size, 'What comes back has to be a real image.');
+        $this->assertSame([32, 32], [$size[0], $size[1]]);
 
         $this->get('/apple-touch-icon.png')->assertOk()->assertHeader('Content-Type', 'image/png');
     }
@@ -84,14 +85,12 @@ class FaviconTest extends TestCase
              * The proof that the logo was composited rather than fallen
              * back from: the mark's own colour is in the icon.
              */
-            $image = imagecreatefromstring($png);
+            $image = app(Images::class)->read($png);
             $found = false;
 
-            for ($x = 0; $x < 180 && ! $found; $x += 2) {
-                for ($y = 0; $y < 180; $y += 2) {
-                    $rgb = imagecolorat($image, $x, $y);
-
-                    if ((($rgb >> 16) & 0xFF) === 0x12 && (($rgb >> 8) & 0xFF) === 0x34 && ($rgb & 0xFF) === 0x56) {
+            for ($x = 0; $x < 180 && ! $found; $x += 4) {
+                for ($y = 0; $y < 180; $y += 4) {
+                    if ($this->hexAt($image, $x, $y) === '123456') {
                         $found = true;
                         break;
                     }
@@ -117,13 +116,10 @@ class FaviconTest extends TestCase
         config(['gadya-cms.brand.logo' => 'lockup.svg', 'gadya-cms.brand.follow_site' => false]);
 
         try {
-            $image = imagecreatefromstring(app(Favicon::class)->png(180));
+            $image = app(Images::class)->read(app(Favicon::class)->png(180));
 
-            $corner = imagecolorat($image, 2, 2);
-            $this->assertSame(0xFFFFFF, $corner & 0xFFFFFF, 'The logo\'s own white tile fills the icon, so no square floats inside another.');
-
-            $middle = imagecolorat($image, 90, 90);
-            $this->assertSame(0xCC0000, $middle & 0xFFFFFF, 'The mark, not the wordmark, is what a 32-pixel square can show.');
+            $this->assertSame('ffffff', $this->hexAt($image, 2, 2), 'The logo\'s own white tile fills the icon, so no square floats inside another.');
+            $this->assertSame('cc0000', $this->hexAt($image, 90, 90), 'The mark, not the wordmark, is what a 32-pixel square can show.');
         } finally {
             File::delete(public_path('images/site/lockup.svg'));
         }
@@ -187,7 +183,7 @@ class FaviconTest extends TestCase
 
             $ico = File::get(public_path('favicon.ico'));
             $this->assertSame([0, 1, 1], array_values(unpack('vreserved/vtype/vcount', substr($ico, 0, 6))));
-            $this->assertNotFalse(imagecreatefromstring(File::get(public_path('apple-touch-icon.png'))));
+            $this->assertNotFalse(getimagesizefromstring(File::get(public_path('apple-touch-icon.png'))));
 
             /* Its own files are redrawn on the next run... */
             $this->artisan('gadya-cms:favicon', ['--write' => true])->expectsOutputToContain('Saved public/favicon.ico')->assertSuccessful();
@@ -220,5 +216,13 @@ class FaviconTest extends TestCase
         $this->artisan('gadya-cms:favicon')
             ->expectsOutputToContain('initials')
             ->assertSuccessful();
+    }
+
+    /** A pixel's colour through Intervention, so the tests run on a server without GD. */
+    private function hexAt(ImageInterface $image, int $x, int $y): string
+    {
+        $colour = method_exists($image, 'colorAt') ? $image->colorAt($x, $y) : $image->pickColor($x, $y);
+
+        return strtolower(ltrim($colour->toHex(), '#'));
     }
 }

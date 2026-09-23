@@ -43,7 +43,7 @@ class FaviconCommand extends Command
         $described = $favicon->describe();
 
         if (! $described['drawn']) {
-            $this->components->error('The icon could not be drawn. Check that the image driver is installed with `gadya-cms:doctor`.');
+            $this->components->error('The icon could not be drawn: '.($described['error'] ?? 'no reason was given').'. Check the image driver with `gadya-cms:doctor`.');
 
             return self::FAILURE;
         }

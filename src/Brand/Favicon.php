@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Brand;
 
+use Closure;
 use Gadya\Cms\Content\PanelBrand;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Support\Images;
@@ -9,6 +10,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Imagick;
+use ImagickDraw;
+use ImagickPixel;
 use Intervention\Image\Interfaces\ImageInterface;
 use Throwable;
 
@@ -29,6 +33,14 @@ class Favicon
 
     /** How long a generated icon is kept before it is drawn again. */
     private const CACHE_DAYS = 30;
+
+    /** Bold fonts found on most Linux servers and Macs, for initials drawn by Imagick. */
+    private const FONTS = [
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+        '/System/Library/Fonts/Supplemental/Arial Bold.ttf',
+    ];
 
     public function __construct(
         private readonly PanelBrand $brand,
@@ -237,29 +249,26 @@ class Favicon
     private function ownBackground(ImageInterface $logo): ?string
     {
         return rescue(function () use ($logo): ?string {
-            $image = @imagecreatefromstring($this->images->png($logo));
+            $pixels = $this->pixelsOf($this->images->png($logo));
 
-            if ($image === false) {
+            if ($pixels === null) {
                 return null;
             }
 
-            $width = imagesx($image) - 1;
-            $height = imagesy($image) - 1;
+            [$width, $height, $at] = $pixels;
             $corners = [];
 
-            foreach ([[0, 0], [$width, 0], [0, $height], [$width, $height]] as [$x, $y]) {
-                $colour = imagecolorat($image, $x, $y);
+            foreach ([[0, 0], [$width - 1, 0], [0, $height - 1], [$width - 1, $height - 1]] as [$x, $y]) {
+                [$r, $g, $b, $alpha] = $at($x, $y);
 
-                if ((($colour >> 24) & 0x7F) > 16) {
+                if ($alpha > 16) {
                     return null;
                 }
 
-                $corners[] = $colour & 0xFFFFFF;
+                $corners[] = sprintf('#%02x%02x%02x', $r, $g, $b);
             }
 
-            return count(array_unique($corners)) === 1
-                ? sprintf('#%06x', $corners[0])
-                : null;
+            return count(array_unique($corners)) === 1 ? $corners[0] : null;
         }, null, report: false);
     }
 
@@ -286,25 +295,26 @@ class Favicon
     /** The average brightness of a PNG's opaque pixels, 0 to 1. */
     private function luminanceOf(string $png): ?float
     {
-        $image = @imagecreatefromstring($png);
+        $pixels = $this->pixelsOf($png);
 
-        if ($image === false) {
+        if ($pixels === null) {
             return null;
         }
 
+        [$width, $height, $at] = $pixels;
         $total = 0.0;
         $counted = 0;
 
-        for ($x = 0; $x < imagesx($image); $x += 2) {
-            for ($y = 0; $y < imagesy($image); $y += 2) {
-                $colour = imagecolorat($image, $x, $y);
+        for ($x = 0; $x < $width; $x += 2) {
+            for ($y = 0; $y < $height; $y += 2) {
+                [$r, $g, $b, $alpha] = $at($x, $y);
 
                 /* Transparent pixels say nothing about the mark's colour. */
-                if ((($colour >> 24) & 0x7F) > 64) {
+                if ($alpha > 64) {
                     continue;
                 }
 
-                $total += (0.2126 * (($colour >> 16) & 0xFF) + 0.7152 * (($colour >> 8) & 0xFF) + 0.0722 * ($colour & 0xFF)) / 255;
+                $total += (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
                 $counted++;
             }
         }
@@ -326,6 +336,13 @@ class Favicon
     }
 
     private function initialsPng(int $size): string
+    {
+        return function_exists('imagecreatetruecolor')
+            ? $this->initialsWithGd($size)
+            : $this->initialsWithImagick($size);
+    }
+
+    private function initialsWithGd(int $size): string
     {
         $initials = $this->initials();
 
@@ -360,9 +377,47 @@ class Favicon
         return (string) ob_get_clean();
     }
 
+    /**
+     * A server with Imagick and no GD. ImageMagick needs a font to draw
+     * letters with, so a common system one is used when it is there and
+     * ImageMagick's own default when it is not.
+     */
+    private function initialsWithImagick(int $size): string
+    {
+        $image = new Imagick;
+        $image->newImage($size, $size, new ImagickPixel($this->colour()));
+
+        $draw = new ImagickDraw;
+        $draw->setFillColor(new ImagickPixel('#ffffff'));
+        $draw->setFontSize($size * 0.45);
+        $draw->setGravity(Imagick::GRAVITY_CENTER);
+        $draw->setTextAntialias(true);
+
+        foreach (self::FONTS as $font) {
+            if (is_file($font)) {
+                $draw->setFont($font);
+
+                break;
+            }
+        }
+
+        $image->annotateImage($draw, 0, 0, 0, $this->initials());
+        $image->setImageFormat('png');
+
+        return $image->getImageBlob();
+    }
+
     /** A blank square, transparent unless a colour is given. */
     private function square(int $size, ?string $colour = null): string
     {
+        if (! function_exists('imagecreatetruecolor')) {
+            $image = new Imagick;
+            $image->newImage($size, $size, new ImagickPixel($colour ?? 'transparent'));
+            $image->setImageFormat('png');
+
+            return $image->getImageBlob();
+        }
+
         $image = imagecreatetruecolor($size, $size);
         imagealphablending($image, false);
         imagesavealpha($image, true);
@@ -378,6 +433,50 @@ class Favicon
         imagepng($image);
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * A PNG's size and a way to read its pixels, through GD or Imagick -
+     * whichever the server has. Each pixel is red, green and blue from 0
+     * to 255 and transparency from 0 (opaque) to 127, as GD counts it.
+     *
+     * @return array{0: int, 1: int, 2: Closure(int, int): array{0: int, 1: int, 2: int, 3: int}}|null
+     */
+    private function pixelsOf(string $png): ?array
+    {
+        if (function_exists('imagecreatefromstring')) {
+            $image = @imagecreatefromstring($png);
+
+            if ($image === false) {
+                return null;
+            }
+
+            imagepalettetotruecolor($image);
+
+            return [imagesx($image), imagesy($image), function (int $x, int $y) use ($image): array {
+                $colour = imagecolorat($image, $x, $y);
+
+                return [($colour >> 16) & 0xFF, ($colour >> 8) & 0xFF, $colour & 0xFF, ($colour >> 24) & 0x7F];
+            }];
+        }
+
+        if (! class_exists(Imagick::class)) {
+            return null;
+        }
+
+        $image = new Imagick;
+        $image->readImageBlob($png);
+
+        return [$image->getImageWidth(), $image->getImageHeight(), function (int $x, int $y) use ($image): array {
+            $colour = $image->getImagePixelColor($x, $y)->getColor(1);
+
+            return [
+                (int) round($colour['r'] * 255),
+                (int) round($colour['g'] * 255),
+                (int) round($colour['b'] * 255),
+                (int) round((1 - ($colour['a'] ?? 1)) * 127),
+            ];
+        }];
     }
 
     /** The logo's bytes, from the media library or the site's own files. */
@@ -458,17 +557,18 @@ class Favicon
      */
     public function looksBlank(string $png): bool
     {
-        $image = @imagecreatefromstring($png);
+        $pixels = $this->pixelsOf($png);
 
-        if ($image === false) {
+        if ($pixels === null) {
             return true;
         }
 
+        [$width, $height, $at] = $pixels;
         $first = null;
 
-        for ($x = 0; $x < imagesx($image); $x += 2) {
-            for ($y = 0; $y < imagesy($image); $y += 2) {
-                $colour = imagecolorat($image, $x, $y);
+        for ($x = 0; $x < $width; $x += 2) {
+            for ($y = 0; $y < $height; $y += 2) {
+                $colour = $at($x, $y);
                 $first ??= $colour;
 
                 if ($colour !== $first) {
@@ -491,12 +591,15 @@ class Favicon
     /** @return array<string, mixed> */
     public function describe(): array
     {
+        $error = null;
+
         try {
             $bytes = strlen($this->png(32));
             $drawn = true;
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
             $bytes = 0;
             $drawn = false;
+            $error = $exception->getMessage();
         }
 
         /* What was actually used, not what was available to try. */
@@ -510,6 +613,8 @@ class Favicon
             'bytes' => $bytes,
             /* A single flat colour means nothing legible was drawn. */
             'blank' => $drawn ? $this->looksBlank($this->png(32)) : true,
+            /* Why it was not drawn, so the command can say more than "check the driver". */
+            'error' => $error,
         ];
     }
 }

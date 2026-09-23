@@ -2,6 +2,12 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.14.5
+
+### Fixed
+
+- The favicon is drawn on a server that has Imagick but not PHP's GD extension. Reading the logo's colours, the blank tile behind it and the initials all called GD directly, so `gadya-cms:favicon --write` failed with "the icon could not be drawn" even though `gadya-cms:doctor` showed a working image driver. They now use Imagick when GD is missing, and the command says why a draw failed instead of only pointing at the doctor.
+
 ## 0.14.4
 
 ### Fixed
