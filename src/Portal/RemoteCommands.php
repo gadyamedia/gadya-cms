@@ -4,6 +4,7 @@ namespace Gadya\Cms\Portal;
 
 use Gadya\Cms\Portal\Commands\ComingSoonOff;
 use Gadya\Cms\Portal\Commands\ComingSoonOn;
+use Gadya\Cms\Portal\Commands\RequestContentChange;
 use Gadya\Cms\Portal\Commands\RunBackup;
 
 /**
@@ -26,5 +27,6 @@ final class RemoteCommands
         ComingSoonOn::class,
         ComingSoonOff::class,
         RunBackup::class,
+        RequestContentChange::class,
     ];
 }

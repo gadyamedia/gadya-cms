@@ -25,6 +25,7 @@ use Gadya\Cms\Filament\Pages\SiteStatus;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
 use Gadya\Cms\Filament\Resources\Activity\ActivityResource;
 use Gadya\Cms\Filament\Resources\BrokenLinks\BrokenLinkResource;
+use Gadya\Cms\Filament\Resources\ChangeRequests\ChangeRequestResource;
 use Gadya\Cms\Filament\Resources\Comments\CommentResource;
 use Gadya\Cms\Filament\Resources\Events\EventResource;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
@@ -41,6 +42,7 @@ use Gadya\Connect\Filament\Pages\GadyaSupport;
 use Gadya\Connect\Filament\Pages\GetHelp;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Schema;
 
 class GadyaCmsPlugin implements Plugin
 {
@@ -253,6 +255,12 @@ class GadyaCmsPlugin implements Plugin
         ));
     }
 
+    /** Whether the application can keep panel notifications at all. */
+    public static function hasNotificationsTable(): bool
+    {
+        return once(fn (): bool => rescue(fn (): bool => Schema::hasTable('notifications'), false, report: false));
+    }
+
     /** The installed gadya/cms release, e.g. "0.4.6", or null when Composer cannot say. */
     public static function packageVersion(): ?string
     {
@@ -353,6 +361,17 @@ class GadyaCmsPlugin implements Plugin
             $panel->unsavedChangesAlerts();
         }
 
+        /*
+         * The bell, where a change drafted from a portal request is
+         * announced. Decided when the panel is drawn rather than now, and
+         * only where the application has Laravel's notifications table -
+         * without it the bell could only fail. A panel that switched it on
+         * itself is left alone.
+         */
+        if (! $panel->hasDatabaseNotifications()) {
+            $panel->databaseNotifications(fn (): bool => static::hasNotificationsTable());
+        }
+
         if (class_exists(GadyaConnectPlugin::class)) {
             GadyaConnectPlugin::addHelpButton($panel);
         }
@@ -370,6 +389,7 @@ class GadyaCmsPlugin implements Plugin
                 PageResource::class,
                 MediaResource::class,
                 RevisionResource::class,
+                ChangeRequestResource::class,
                 $this->hasTeam() ? UserResource::class : null,
                 $this->hasBlog() ? PostResource::class : null,
                 $this->hasBlog() ? TermResource::class : null,

@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Support;
 
 use Gadya\Cms\Models\PageScore;
+use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Quality\Failures;
@@ -33,6 +34,7 @@ class PortalSummary
             'drift' => $this->drift(),
             'leads' => $this->drift->unansweredLeads(),
             'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
+            'change_requests' => rescue(fn (): array => app(ChangeRequests::class)->summary(), [], report: false),
         ];
     }
 

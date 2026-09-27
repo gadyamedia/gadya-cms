@@ -56,6 +56,7 @@ use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Post;
 use Gadya\Cms\Models\Redirect;
+use Gadya\Cms\Models\Revision;
 use Gadya\Cms\Models\Setting;
 use Gadya\Cms\Models\Subscriber;
 use Gadya\Cms\Models\Term;
@@ -64,6 +65,7 @@ use Gadya\Cms\Observers\InvalidatePublishedDocument;
 use Gadya\Cms\Observers\RecordActivity;
 use Gadya\Cms\Observers\ReportSubmissionStatus;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Portal\RemoteCommands;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
@@ -250,6 +252,12 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->tag(RemoteCommands::HANDLERS, RemoteCommands::TAG);
 
         FormSubmission::observe(ReportSubmissionStatus::class);
+
+        /*
+         * A publish settles every change the portal asked for: live, or
+         * undone by hand before it went out.
+         */
+        Revision::created(fn (Revision $revision) => rescue(fn () => app(ChangeRequests::class)->settleAfterPublish($revision), report: true));
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             if (! config('gadya-cms.portal.push_submissions', true)) {
