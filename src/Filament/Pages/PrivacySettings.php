@@ -48,7 +48,21 @@ class PrivacySettings extends Page
 
     public function mount(Consent $consent): void
     {
-        $this->form->fill($consent->draft());
+        $draft = $consent->draft();
+        $stored = $consent->storedDraft();
+
+        /*
+         * The switches as they stand; the words only as she wrote them, so
+         * a blank field keeps following the default (and its translation)
+         * instead of freezing today's English into the document.
+         */
+        $this->form->fill([
+            'banner_enabled' => $draft['banner_enabled'],
+            'honour_gpc' => $draft['honour_gpc'],
+            'policy_url' => $stored['policy_url'] ?? null,
+            'text' => (array) ($stored['text'] ?? []),
+            'categories' => (array) ($stored['categories'] ?? []),
+        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -73,13 +87,14 @@ class PrivacySettings extends Page
                                 ->validationMessages(['regex' => 'Start with / for a page on this site, or https:// for one elsewhere.']),
                         ]),
                     Section::make('What it says')
-                        ->schema([
-                            TextInput::make('heading')->required()->maxLength(80),
-                            Textarea::make('message')->required()->rows(3)->maxLength(600),
-                            Textarea::make('categories.necessary')->label('Necessary')->rows(2)->maxLength(300),
-                            Textarea::make('categories.analytics')->label('Analytics')->rows(2)->maxLength(300),
-                            Textarea::make('categories.marketing')->label('Marketing')->rows(2)->maxLength(300),
-                        ])
+                        ->description('Every word on the banner. Leave a box empty to keep the wording shown in it.')
+                        ->schema(static::textFields())
+                        ->columns(2)
+                        ->collapsible(),
+                    Section::make('The choices')
+                        ->description('What each kind of cookie is called, and what it is for.')
+                        ->schema(static::categoryFields())
+                        ->columns(2)
                         ->collapsible(),
                 ])
                     ->livewireSubmitHandler('save')
@@ -95,20 +110,80 @@ class PrivacySettings extends Page
     public function save(SiteContentRepository $repository): void
     {
         $data = $this->form->getState();
+        $written = fn (mixed $value): ?string => is_string($value) && trim($value) !== '' ? trim($value) : null;
+
+        $text = [];
+
+        foreach (array_keys(Consent::defaults()['text']) as $key) {
+            $text[$key] = $written($data['text'][$key] ?? null);
+        }
+
+        $categories = [];
+
+        foreach (Consent::categories() as $category) {
+            $categories[$category] = [
+                'name' => $written($data['categories'][$category]['name'] ?? null),
+                'description' => $written($data['categories'][$category]['description'] ?? null),
+            ];
+        }
 
         $repository->saveDraft([
             ...$repository->draft(),
             Consent::KEY => [
                 'banner_enabled' => (bool) ($data['banner_enabled'] ?? false),
                 'honour_gpc' => (bool) ($data['honour_gpc'] ?? true),
-                'policy_url' => filled($data['policy_url'] ?? null) ? (string) $data['policy_url'] : null,
-                'heading' => (string) ($data['heading'] ?? ''),
-                'message' => (string) ($data['message'] ?? ''),
-                'categories' => array_map('strval', array_intersect_key((array) ($data['categories'] ?? []), array_flip(Consent::categories()))),
+                'policy_url' => $written($data['policy_url'] ?? null),
+                'text' => array_filter($text),
+                'categories' => array_filter(array_map('array_filter', $categories)),
             ],
         ]);
 
         Notification::make()->success()->title('Saved to your draft')->body('Publish to change the banner on the site.')->send();
+    }
+
+    /**
+     * @return list<TextInput|Textarea>
+     */
+    protected static function textFields(): array
+    {
+        $defaults = Consent::defaults()['text'];
+        $labels = [
+            'heading' => 'Heading',
+            'message' => 'Message',
+            'accept' => '"Accept all" button',
+            'reject' => '"Reject all" button',
+            'choose' => '"Choose" button',
+            'save' => '"Save my choices" button',
+            'legend' => 'Above the choices',
+            'policy' => 'Privacy policy link',
+            'link' => 'Link that reopens the banner',
+            'gpc' => 'When the browser sends Global Privacy Control',
+        ];
+
+        $fields = [];
+
+        foreach ($labels as $key => $label) {
+            $fields[] = in_array($key, ['message', 'gpc'], true)
+                ? Textarea::make("text.{$key}")->label($label)->placeholder($defaults[$key])->rows(3)->maxLength(600)->columnSpanFull()
+                : TextInput::make("text.{$key}")->label($label)->placeholder($defaults[$key])->maxLength(120);
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @return list<TextInput|Textarea>
+     */
+    protected static function categoryFields(): array
+    {
+        $fields = [];
+
+        foreach (Consent::defaults()['categories'] as $category => $default) {
+            $fields[] = TextInput::make("categories.{$category}.name")->label(ucfirst($category).' - name')->placeholder($default['name'])->maxLength(60);
+            $fields[] = Textarea::make("categories.{$category}.description")->label(ucfirst($category).' - what it is for')->placeholder($default['description'])->rows(2)->maxLength(300);
+        }
+
+        return $fields;
     }
 
     /**

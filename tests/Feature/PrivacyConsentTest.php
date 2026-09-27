@@ -151,15 +151,32 @@ class PrivacyConsentTest extends TestCase
         $this->assertSame(1, AnalyticsEvent::query()->where('name', 'phone_click')->count());
     }
 
-    public function test_an_administrator_switches_it_on_and_words_it_and_publishing_makes_it_live(): void
+    public function test_an_administrator_switches_it_on_and_words_every_part_of_it(): void
     {
         Livewire::actingAs($this->administrator())
             ->test(PrivacySettings::class)
             ->assertFormSet(['banner_enabled' => false, 'honour_gpc' => true])
+            ->assertFormFieldExists('text.accept')
             ->fillForm([
                 'banner_enabled' => true,
                 'policy_url' => '/privacy-policy',
-                'heading' => 'Cookies at Mo’s Bagels',
+                'text' => [
+                    'heading' => 'Cookies at Mo’s Bagels',
+                    'message' => 'We bake bagels, not cookies. Mostly.',
+                    'accept' => 'Sure, all of it',
+                    'reject' => 'No thanks',
+                    'choose' => 'Let me pick',
+                    'save' => 'Keep these',
+                    'legend' => 'Pick what we may use',
+                    'policy' => 'How we look after your data',
+                    'link' => 'Cookie settings',
+                    'gpc' => 'Your browser asked us not to sell your data.',
+                ],
+                'categories' => [
+                    'necessary' => ['name' => 'Must-haves', 'description' => 'The oven has to be on.'],
+                    'analytics' => ['name' => 'Counting', 'description' => 'How many people look at the menu.'],
+                    'marketing' => ['name' => 'Ads', 'description' => 'Instagram and Google ads.'],
+                ],
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -170,8 +187,43 @@ class PrivacyConsentTest extends TestCase
         app(PublishSiteContent::class)->handle();
         app(SiteContentRepository::class)->flushPublishedCache();
 
-        $this->assertStringContainsString('Cookies at Mo’s Bagels', Blade::render('<x-gadya-cms::consent-banner />'));
+        $html = Blade::render('<x-gadya-cms::consent-banner /><x-gadya-cms::privacy-choices-link />');
+
+        foreach ([
+            'Cookies at Mo’s Bagels', 'We bake bagels, not cookies. Mostly.', '>Sure, all of it</button>', '>No thanks</button>',
+            '>Let me pick</button>', '>Keep these</button>', '>Pick what we may use</legend>', '>How we look after your data</a>',
+            'href="/privacy-policy" data-cms-consent-open>Cookie settings</a>', 'Your browser asked us not to sell your data.',
+            '>Must-haves</label>', 'The oven has to be on.', '>Counting</label>', 'How many people look at the menu.', '>Ads</label>', 'Instagram and Google ads.',
+        ] as $words) {
+            $this->assertStringContainsString($words, $html);
+        }
+
+        $this->assertStringNotContainsString('Accept all', $html);
         $this->assertSame(['banner_enabled' => true, 'honours_gpc' => true], app(PortalSummary::class)->build()['consent']);
+    }
+
+    public function test_a_blank_box_keeps_the_default_wording_and_its_translation(): void
+    {
+        Livewire::actingAs($this->administrator())
+            ->test(PrivacySettings::class)
+            ->fillForm(['banner_enabled' => true, 'text' => ['heading' => 'Cookies'], 'categories' => ['marketing' => ['name' => 'Ads']]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $stored = app(SiteContentRepository::class)->draft()[Consent::KEY];
+
+        $this->assertSame(['heading' => 'Cookies'], $stored['text'], 'Only what she wrote is kept, so the rest can follow a translation.');
+        $this->assertSame(['marketing' => ['name' => 'Ads']], $stored['categories']);
+
+        app()->setLocale('es');
+        app('translator')->addLines(['*.Reject all' => 'Rechazar todo'], 'es');
+
+        $settings = app(Consent::class)->draft();
+
+        $this->assertSame('Cookies', $settings['text']['heading']);
+        $this->assertSame('Rechazar todo', $settings['text']['reject']);
+        $this->assertSame('Ads', $settings['categories']['marketing']['name']);
+        $this->assertSame('Analytics', $settings['categories']['analytics']['name']);
     }
 
     public function test_a_policy_address_must_be_a_page_or_a_web_address(): void

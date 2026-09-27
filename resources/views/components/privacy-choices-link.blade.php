@@ -1,5 +1,6 @@
 @props([
-    'label' => 'Your privacy choices',
+    /* Leave out to use the wording written under Settings → Privacy choices. */
+    'label' => null,
 ])
 
 {{--
@@ -9,6 +10,7 @@
 --}}
 @php
     $settings = app(\Gadya\Cms\Privacy\Consent::class)->settings();
+    $label ??= $settings['text']['link'];
 @endphp
 
 @if ($settings['banner_enabled'])

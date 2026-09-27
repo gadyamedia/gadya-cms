@@ -17,9 +17,11 @@ use Illuminate\Http\Request;
  * is always a no to marketing: under the New Jersey Data Privacy Act it
  * is an opt-out of the sale of personal data and of targeted advertising.
  *
- * The settings are the site document's `privacy` key over the
- * `gadya-cms.privacy` config, so the wording is drafted and published like
- * any other words on the site.
+ * The settings and every word the banner says are the site document's
+ * `privacy` key - drafted, published and kept in revisions like any other
+ * words on the site, and ready to hold a second language - over the
+ * `gadya-cms.privacy` config for the switches and plain-English defaults
+ * through the translator for the words.
  */
 class Consent
 {
@@ -48,7 +50,7 @@ class Consent
     /**
      * The settings as the current request should see them.
      *
-     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, heading: string, message: string, categories: array<string, string>}
+     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, text: array<string, string>, categories: array<string, array{name: string, description: string}>}
      */
     public function settings(): array
     {
@@ -60,7 +62,7 @@ class Consent
     /**
      * The settings the live site is using, whoever is asking.
      *
-     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, heading: string, message: string, categories: array<string, string>}
+     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, text: array<string, string>, categories: array<string, array{name: string, description: string}>}
      */
     public function published(): array
     {
@@ -68,7 +70,7 @@ class Consent
     }
 
     /**
-     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, heading: string, message: string, categories: array<string, string>}
+     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, text: array<string, string>, categories: array<string, array{name: string, description: string}>}
      */
     public function draft(): array
     {
@@ -177,29 +179,92 @@ class Consent
     }
 
     /**
-     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, heading: string, message: string, categories: array<string, string>}
+     * The wording as the client wrote it in the draft - blanks left blank,
+     * so the admin screen shows the defaults as placeholders rather than
+     * saving them as if she had typed them.
+     *
+     * @return array<string, mixed>
+     */
+    public function storedDraft(): array
+    {
+        $stored = $this->repository->draft()[self::KEY] ?? null;
+
+        return is_array($stored) ? $stored : [];
+    }
+
+    /**
+     * Every word the banner and the link say, in plain English, through
+     * the translator: a site with lang/es.json gets its Spanish defaults,
+     * and anything the client wrote on the admin screen wins over both.
+     *
+     * @return array{text: array<string, string>, categories: array<string, array{name: string, description: string}>}
+     */
+    public static function defaults(): array
+    {
+        return [
+            'text' => [
+                'heading' => __('Your privacy choices'),
+                'message' => __('We use a few cookies to run this site. With your permission we would also like to count visits and measure our advertising. You can change your mind at any time from “Your privacy choices” at the foot of every page.'),
+                'accept' => __('Accept all'),
+                'reject' => __('Reject all'),
+                'choose' => __('Choose'),
+                'save' => __('Save my choices'),
+                'legend' => __('Choose what we may use'),
+                'policy' => __('Privacy policy'),
+                'link' => __('Your privacy choices'),
+                'gpc' => __('Your browser sends a Global Privacy Control signal, so marketing stays off.'),
+            ],
+            'categories' => [
+                self::NECESSARY => [
+                    'name' => __('Necessary'),
+                    'description' => __('Needed for the site to work, such as remembering these choices and keeping forms secure. Always on.'),
+                ],
+                self::ANALYTICS => [
+                    'name' => __('Analytics'),
+                    'description' => __('Helps us see which pages are useful, so we can improve them.'),
+                ],
+                self::MARKETING => [
+                    'name' => __('Marketing'),
+                    'description' => __('Lets advertising partners such as Google and Meta measure our ads and show you relevant ones. Turning this off opts you out of the sale of your data and targeted advertising.'),
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{banner_enabled: bool, honour_gpc: bool, cookie: string, cookie_days: int, policy_url: string|null, text: array<string, string>, categories: array<string, array{name: string, description: string}>}
      */
     private function merge(mixed $stored): array
     {
-        $defaults = (array) config('gadya-cms.privacy', []);
-        $stored = is_array($stored) ? array_filter($stored, fn ($value): bool => $value !== null && $value !== '') : [];
+        $config = (array) config('gadya-cms.privacy', []);
+        $stored = is_array($stored) ? $stored : [];
+        $defaults = static::defaults();
+        $written = fn (mixed $value): ?string => is_string($value) && trim($value) !== '' ? trim($value) : null;
+
+        $text = [];
+
+        foreach ($defaults['text'] as $key => $default) {
+            $text[$key] = $written($stored['text'][$key] ?? null) ?? $default;
+        }
 
         $categories = [];
 
-        foreach (self::categories() as $category) {
-            $categories[$category] = (string) (($stored['categories'][$category] ?? null) ?: ($defaults['categories'][$category] ?? ''));
+        foreach ($defaults['categories'] as $category => $default) {
+            $categories[$category] = [
+                'name' => $written($stored['categories'][$category]['name'] ?? null) ?? $default['name'],
+                'description' => $written($stored['categories'][$category]['description'] ?? null) ?? $default['description'],
+            ];
         }
 
-        $policy = $stored['policy_url'] ?? $defaults['policy_url'] ?? null;
+        $policy = $written($stored['policy_url'] ?? null) ?? $written($config['policy_url'] ?? null);
 
         return [
-            'banner_enabled' => (bool) ($stored['banner_enabled'] ?? $defaults['banner_enabled'] ?? false),
-            'honour_gpc' => (bool) ($stored['honour_gpc'] ?? $defaults['honour_gpc'] ?? true),
+            'banner_enabled' => (bool) ($stored['banner_enabled'] ?? $config['banner_enabled'] ?? false),
+            'honour_gpc' => (bool) ($stored['honour_gpc'] ?? $config['honour_gpc'] ?? true),
             'cookie' => self::cookieName(),
-            'cookie_days' => max(1, (int) ($defaults['cookie_days'] ?? 365)),
-            'policy_url' => is_string($policy) && $policy !== '' ? $policy : null,
-            'heading' => (string) ($stored['heading'] ?? $defaults['heading'] ?? 'Your privacy choices'),
-            'message' => (string) ($stored['message'] ?? $defaults['message'] ?? ''),
+            'cookie_days' => max(1, (int) ($config['cookie_days'] ?? 365)),
+            'policy_url' => $policy,
+            'text' => $text,
             'categories' => $categories,
         ];
     }

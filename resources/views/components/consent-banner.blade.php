@@ -1,17 +1,12 @@
-@props([
-    'accept' => 'Accept all',
-    'reject' => 'Reject all',
-    'customise' => 'Choose',
-    'saveChoices' => 'Save my choices',
-    'policyLabel' => 'Privacy policy',
-])
-
 {{--
     The privacy banner. Put it once in the layout, just before </body>. It
     renders nothing until it is switched on under Settings → Privacy
     choices. Not a modal: the page stays usable behind it, "Reject all"
     sits beside "Accept all" and weighs the same, and every control is a
     real button a keyboard reaches in order.
+
+    Every word it says is written by the client under Settings → Privacy
+    choices; for someone editing, the banner links there.
 
     Styles are deliberately light and live under :where(), so any rule the
     site writes for .cms-consent wins. The colours follow these custom
@@ -20,7 +15,13 @@
 --}}
 @php
     $settings = app(\Gadya\Cms\Privacy\Consent::class)->settings();
+    $text = $settings['text'];
+    $categories = $settings['categories'];
     $nonce = \Illuminate\Support\Facades\Vite::cspNonce();
+    $editor = app(\Gadya\Cms\Editor\EditContext::class);
+    $editUrl = $editor->isEnabled()
+        ? rescue(fn () => \Gadya\Cms\Filament\Pages\PrivacySettings::getUrl(panel: (string) config('gadya-cms.panel', 'admin')), null, report: false)
+        : null;
 @endphp
 
 @if ($settings['banner_enabled'])
@@ -43,45 +44,47 @@
     </style>
 
     <section class="cms-consent" id="privacy-choices" data-cms-consent-banner aria-labelledby="cms-consent-heading" hidden>
-        <h2 class="cms-consent__heading" id="cms-consent-heading" tabindex="-1" data-cms-consent-heading>{{ $settings['heading'] }}</h2>
+        <h2 class="cms-consent__heading" id="cms-consent-heading" tabindex="-1" data-cms-consent-heading>{{ $text['heading'] }}</h2>
         <p class="cms-consent__message">
-            {{ $settings['message'] }}
+            {{ $text['message'] }}
             @if ($settings['policy_url'])
-                <a class="cms-consent__policy" href="{{ $settings['policy_url'] }}">{{ $policyLabel }}</a>
+                <a class="cms-consent__policy" href="{{ $settings['policy_url'] }}">{{ $text['policy'] }}</a>
             @endif
         </p>
 
+        @include('gadya-cms::editor.admin-link', ['url' => $editUrl, 'label' => 'Change what the banner says in the admin'])
+
         <div class="cms-consent__actions">
-            <button type="button" class="cms-consent__button" data-cms-consent-accept>{{ $accept }}</button>
-            <button type="button" class="cms-consent__button" data-cms-consent-reject>{{ $reject }}</button>
-            <button type="button" class="cms-consent__button cms-consent__button--quiet" data-cms-consent-customise aria-expanded="false" aria-controls="cms-consent-choices">{{ $customise }}</button>
+            <button type="button" class="cms-consent__button" data-cms-consent-accept>{{ $text['accept'] }}</button>
+            <button type="button" class="cms-consent__button" data-cms-consent-reject>{{ $text['reject'] }}</button>
+            <button type="button" class="cms-consent__button cms-consent__button--quiet" data-cms-consent-customise aria-expanded="false" aria-controls="cms-consent-choices">{{ $text['choose'] }}</button>
         </div>
 
         <form class="cms-consent__choices" id="cms-consent-choices" data-cms-consent-choices hidden>
             <fieldset>
-                <legend class="cms-consent__legend">Choose what we may use</legend>
+                <legend class="cms-consent__legend">{{ $text['legend'] }}</legend>
 
                 <div class="cms-consent__choice">
                     <input type="checkbox" id="cms-consent-necessary" checked disabled aria-describedby="cms-consent-necessary-help">
-                    <label for="cms-consent-necessary">Necessary</label>
-                    <small id="cms-consent-necessary-help">{{ $settings['categories']['necessary'] }}</small>
+                    <label for="cms-consent-necessary">{{ $categories['necessary']['name'] }}</label>
+                    <small id="cms-consent-necessary-help">{{ $categories['necessary']['description'] }}</small>
                 </div>
 
                 <div class="cms-consent__choice">
                     <input type="checkbox" id="cms-consent-analytics" value="analytics" data-cms-consent-category="analytics" aria-describedby="cms-consent-analytics-help">
-                    <label for="cms-consent-analytics">Analytics</label>
-                    <small id="cms-consent-analytics-help">{{ $settings['categories']['analytics'] }}</small>
+                    <label for="cms-consent-analytics">{{ $categories['analytics']['name'] }}</label>
+                    <small id="cms-consent-analytics-help">{{ $categories['analytics']['description'] }}</small>
                 </div>
 
                 <div class="cms-consent__choice">
                     <input type="checkbox" id="cms-consent-marketing" value="marketing" data-cms-consent-category="marketing" aria-describedby="cms-consent-marketing-help cms-consent-gpc">
-                    <label for="cms-consent-marketing">Marketing</label>
-                    <small id="cms-consent-marketing-help">{{ $settings['categories']['marketing'] }}</small>
-                    <small id="cms-consent-gpc" data-cms-consent-gpc hidden>Your browser sends a Global Privacy Control signal, so marketing stays off.</small>
+                    <label for="cms-consent-marketing">{{ $categories['marketing']['name'] }}</label>
+                    <small id="cms-consent-marketing-help">{{ $categories['marketing']['description'] }}</small>
+                    <small id="cms-consent-gpc" data-cms-consent-gpc hidden>{{ $text['gpc'] }}</small>
                 </div>
             </fieldset>
 
-            <button type="submit" class="cms-consent__button">{{ $saveChoices }}</button>
+            <button type="submit" class="cms-consent__button">{{ $text['save'] }}</button>
         </form>
     </section>
 

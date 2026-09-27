@@ -635,8 +635,8 @@ return [
      * The privacy banner, for the New Jersey Data Privacy Act and anywhere
      * else a visitor must be able to say no. Off by default, so a site
      * changes nothing until it is switched on under Settings → Privacy
-     * choices (which also holds the wording and the policy link; these
-     * are the defaults that screen starts from).
+     * choices, where the client also writes every word it says (those are
+     * site content, drafted and published, with plain-English defaults).
      *
      * Third-party tags go inside <x-gadya-cms::consented-script> and stay
      * inert until the visitor allows their category. A Global Privacy
@@ -648,13 +648,6 @@ return [
         'cookie' => 'gadya_consent',
         'cookie_days' => 365,
         'policy_url' => null,
-        'heading' => 'Your privacy choices',
-        'message' => 'We use a few cookies to run this site. With your permission we would also like to count visits and measure our advertising. You can change your mind at any time from “Privacy choices” at the foot of every page.',
-        'categories' => [
-            'necessary' => 'Needed for the site to work, such as remembering these choices and keeping forms secure. Always on.',
-            'analytics' => 'Helps us see which pages are useful, so we can improve them.',
-            'marketing' => 'Lets advertising partners such as Google and Meta measure our ads and show you relevant ones. Turning this off opts you out of the sale of your data and targeted advertising.',
-        ],
     ],
 
     /*
