@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@cmsLang">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -110,6 +110,7 @@
                 @endif
             @endforeach
         </nav>
+        @cmsLanguageSwitcher
     </header>
 
     <main>@yield('content')</main>

@@ -132,3 +132,4 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/events-and-search.md` - the diary, the search box, the mailing list
 - `references/operations.md` - trash, activity, scheduled publish, coming soon, broken links, replies
 - `references/upgrading.md` - what each release asks of an application
+- `references/multilingual.md` - more than one language: /es/ addresses, the switcher, hreflang, editing and AI translation

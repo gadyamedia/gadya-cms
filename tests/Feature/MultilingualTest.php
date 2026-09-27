@@ -145,6 +145,16 @@ class MultilingualTest extends TestCase
             ->assertSee('Español (es): http://localhost/es', false);
     }
 
+    public function test_a_spanish_page_asked_for_as_markdown_is_answered_in_spanish(): void
+    {
+        $this->translateAndPublish('pages.about', ['title' => 'Sobre nosotros', 'heading' => 'Quiénes somos']);
+
+        $this->get('/es/about', ['Accept' => 'text/markdown'])
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/markdown; charset=utf-8')
+            ->assertSee('Quiénes somos');
+    }
+
     public function test_a_draft_translation_is_not_live_until_it_is_published(): void
     {
         app(Translations::class)->store('pages.about', 'es', ['heading' => 'Quiénes somos'], machine: false);

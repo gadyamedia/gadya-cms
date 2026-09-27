@@ -2,6 +2,15 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Sites in more than one language**, Spanish first. List the languages under `locales.enabled` and every page, article and event is also served under its prefix (`/es/about`) - in Spanish wherever it has been translated, in English wherever it has not, never blank. The application's routes need no change: the prefix becomes the request's base URL, so every link it builds stays in the visitor's language. `@cmsLang` for `<html lang>`, `<x-gadya-cms::language-switcher />`, `hreflang` alternates with `x-default`, `og:locale`, a sitemap with every language and its alternates, and a *Languages* section in `llms.txt`. Off by default; a one-language site is unchanged. Run `php artisan migrate` (one new table, `gadyacms_translations`). See `docs/multilingual.md`.
+- **Editing in another language.** On a Spanish page the live editor says so, saves the Spanish words, and links to the page in the other languages. Photos and structure stay shared.
+- **Translating with AI.** *Translate into Spanish* on pages, articles and events, *Translate this page* on the editor's toolbar, and *Translate the whole site* (queued, a few pieces per job) under the new **Settings → Languages**. Translations arrive as drafts marked for review and are held back from publishing until someone marks them reviewed. HTML, links, phone numbers, prices, the business's name and a glossary of words never to translate are protected, and a piece that comes back damaged keeps its original words. `TranslationWriter::fake()` in tests.
+- The portal check-in carries `locales` (`{default, enabled}`).
+
 ## 0.14.8
 
 ### Fixed
