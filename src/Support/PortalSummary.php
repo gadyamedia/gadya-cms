@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Support;
 
+use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Models\PageScore;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\Drift;
@@ -33,7 +34,20 @@ class PortalSummary
             'drift' => $this->drift(),
             'leads' => $this->drift->unansweredLeads(),
             'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
+            ...$this->hours(),
         ];
+    }
+
+    /**
+     * The opening hours, left out altogether when none are set.
+     *
+     * @return array{hours?: array<string, mixed>}
+     */
+    private function hours(): array
+    {
+        $hours = rescue(fn (): ?array => app(BusinessHours::class)->summary(), null, report: false);
+
+        return $hours === null ? [] : ['hours' => $hours];
     }
 
     /**

@@ -4,6 +4,7 @@ namespace Gadya\Cms\Seo;
 
 use Gadya\Cms\Brand\Favicon;
 use Gadya\Cms\Content\SiteImage;
+use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Models\Post;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -104,6 +105,8 @@ class SeoHead
             'address' => $organisation['address'] ?? null,
             'areaServed' => $organisation['area'] ?? null,
             'sameAs' => array_values(array_filter((array) ($organisation['same_as'] ?? []))) ?: null,
+            /* Weekly hours and the holidays still to come, from Opening hours. */
+            'openingHoursSpecification' => app(BusinessHours::class)->specification() ?: null,
         ], fn ($value): bool => $value !== null && $value !== []);
 
         /*

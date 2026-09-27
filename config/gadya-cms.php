@@ -476,6 +476,19 @@ return [
     ],
 
     /*
+     * The business's opening hours, edited under Appearance → Opening
+     * hours and published with everything else. The timezone is where the
+     * business is, not where the server is; it can be changed per site on
+     * that screen.
+     */
+    'hours' => [
+        'timezone' => 'America/New_York',
+
+        /* How far ahead the hours table lists holidays and special days. */
+        'upcoming_days' => 60,
+    ],
+
+    /*
      * The site's own search box, over the pages and the articles. What
      * people search for here - especially what they search for and do not
      * find - is counted like anything else a visitor does.
