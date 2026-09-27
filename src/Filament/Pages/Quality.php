@@ -10,6 +10,7 @@ use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\PortalBrain;
 use Gadya\Cms\Models\Fix;
+use Gadya\Cms\Models\Media;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\ApplyFix;
 use Gadya\Cms\Quality\Drift;
@@ -142,6 +143,15 @@ class Quality extends Page
                 ? url('/'.trim((string) config('gadya-cms.accessibility.path', 'accessibility-statement'), '/'))
                 : null,
         ];
+    }
+
+    /**
+     * Photos a screen reader can say nothing about - the one accessibility
+     * chore the client can clear herself, from Photos.
+     */
+    public function getPhotosMissingAltTextProperty(): int
+    {
+        return rescue(fn (): int => Media::query()->missingAltText()->count(), 0, report: false);
     }
 
     /** @return Collection<int, array<string, string>> */

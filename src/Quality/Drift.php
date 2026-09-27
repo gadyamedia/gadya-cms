@@ -142,9 +142,7 @@ class Drift
     /** @return array{key: string, urgency: string, says: string, does: string}|null */
     private function undescribedPhotos(): ?array
     {
-        $count = Media::query()
-            ->where(fn ($query) => $query->whereNull('alt_text')->orWhere('alt_text', ''))
-            ->count();
+        $count = Media::query()->missingAltText()->count();
 
         if ($count === 0) {
             return null;
@@ -153,7 +151,7 @@ class Drift
         return [
             'key' => 'undescribed-photos',
             'urgency' => 'later',
-            'says' => $count.' '.str('photo')->plural($count).' have no description, so a screen reader cannot say what they show.',
+            'says' => $count.' '.str('photo')->plural($count).($count === 1 ? ' has no description, so a screen reader cannot say what it shows.' : ' have no description, so a screen reader cannot say what they show.'),
             'does' => 'Settings → Speed & accessibility will write them for you.',
         ];
     }

@@ -31,7 +31,7 @@ class ApplyFix
      */
     public function describePhotos(int $limit = 25): array
     {
-        $missing = Media::query()->where(fn ($query) => $query->whereNull('alt_text')->orWhere('alt_text', ''))->get();
+        $missing = Media::query()->missingAltText()->get();
         $done = 0;
 
         foreach ($missing->take($limit) as $photo) {

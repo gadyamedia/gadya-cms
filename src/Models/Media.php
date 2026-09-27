@@ -38,6 +38,7 @@ class Media extends Model
         'height',
         'size',
         'alt_text',
+        'decorative',
         'folder',
         'tags',
         'uploaded_by',
@@ -49,6 +50,7 @@ class Media extends Model
     protected $attributes = [
         'disk' => 'public',
         'is_legacy' => false,
+        'decorative' => false,
         'status' => self::STATUS_READY,
     ];
 
@@ -59,6 +61,7 @@ class Media extends Model
     {
         return [
             'is_legacy' => 'boolean',
+            'decorative' => 'boolean',
             'tags' => 'array',
             'focal_x' => 'integer',
             'focal_y' => 'integer',
@@ -141,6 +144,20 @@ class Media extends Model
         }
 
         return $closest;
+    }
+
+    /**
+     * Photos a screen reader can say nothing about: no description, and
+     * not marked as decoration whose right description is none.
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeMissingAltText(Builder $query): Builder
+    {
+        return $query
+            ->where('decorative', false)
+            ->where(fn (Builder $query) => $query->whereNull('alt_text')->orWhere('alt_text', ''));
     }
 
     public function isReady(): bool

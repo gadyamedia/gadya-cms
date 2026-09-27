@@ -38,6 +38,18 @@
             </div>
         @endif
 
+        <div class="gadya-dash__card">
+            <p class="gadya-dash__title">Photo descriptions</p>
+            @if ($this->photosMissingAltText > 0)
+                <p class="gadya-dash__muted">
+                    <strong>{{ $this->photosMissingAltText }} {{ \Illuminate\Support\Str::plural('photo', $this->photosMissingAltText) }}</strong> {{ $this->photosMissingAltText === 1 ? 'has' : 'have' }} no description, so a screen reader cannot say what {{ $this->photosMissingAltText === 1 ? 'it shows' : 'they show' }}.
+                    In Photos, filter to "Needs a description", select them and choose "Write missing alt text with AI" - or describe them yourself.
+                </p>
+            @else
+                <p class="gadya-dash__muted">Every photo has a description, or is marked as decoration. Screen readers can say what each one shows.</p>
+            @endif
+        </div>
+
         @if ($this->accessibility['exists'])
             <div class="gadya-dash__card">
                 <p class="gadya-dash__title">Your accessibility record</p>
