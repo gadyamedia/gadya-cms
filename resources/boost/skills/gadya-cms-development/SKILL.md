@@ -89,7 +89,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 
 ## Configuration rules
 
-- Published config overrides package arrays wholesale: when you override `pages`, `navigation`, `analytics`, `users`, `seo`, `blog`, `forms`, copy every nested key.
+- Published config is merged over the package's defaults recursively, so a key the site leaves out keeps its default at any depth. Lists and the site-owned maps (`editable_fields`, `globals`, `users.roles`, `forms.forms`, `pages.types`, `pages.content_fields`, `navigation.menus`, `fonts.*`, `menus.dietary`, `seo.content_signals`) are the site's whole answer: set one and the package's entries are gone.
 - New editable paths → `editable_fields`. New page URL prefixes → a `ResolvesPagePaths` implementation in `pages.paths` and the slug in `pages.reserved_slugs` + `pages.route_excluded_slugs`.
 - Page edit-screen fields → `pages.content_fields` (`text`, `textarea`, `image`).
 - Plugin switches: `blog`, `ai`, `forms`, `redirects`, `search` (Google cards), `events`, `foodMenus` (off by default), `newsletter`, `team`, `analytics`, `brand`, `profile`, `unsavedChangesAlerts`, `navigationGroups`.

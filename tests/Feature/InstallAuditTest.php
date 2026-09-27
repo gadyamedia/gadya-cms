@@ -12,18 +12,37 @@ class InstallAuditTest extends TestCase
 {
     public function test_config_keys_a_release_added_are_reported_but_site_owned_maps_are_not(): void
     {
-        $config = config('gadya-cms');
-        unset($config['seo']['content_signals'], $config['events']);
-        $config['users']['roles'] = ['boss' => 'Boss'];
-        $config['fonts']['display'] = ['Archivo' => ['family' => 'Archivo', 'fallback' => 'sans-serif', 'bunny' => 'archivo', 'weights' => [400]]];
-        config(['gadya-cms' => $config]);
+        $published = require __DIR__.'/../../config/gadya-cms.php';
+        unset($published['seo']['content_signals'], $published['events'], $published['seo']['organization']['anchor']);
+        $published['users']['roles'] = ['boss' => 'Boss'];
+        $published['fonts']['display'] = ['Archivo' => ['family' => 'Archivo', 'fallback' => 'sans-serif', 'bunny' => 'archivo', 'weights' => [400]]];
+        $published['pages']['content_fields'] = ['heading' => ['label' => 'Heading', 'type' => 'text']];
 
-        $missing = app(InstallAudit::class)->missingConfigKeys();
+        $missing = app(InstallAudit::class)->missingConfigKeys($published);
 
         $this->assertContains('seo.content_signals', $missing);
         $this->assertContains('events', $missing);
+        $this->assertNotContains('seo.organization.anchor', $missing, 'seo.organization is the site\'s own.');
         $this->assertNotContains('users.roles.admin', $missing, 'Role names are the site\'s own, not missing keys.');
         $this->assertNotContains('fonts.display.Lobster', $missing, 'A site offers its own fonts; the package\'s list is only an example.');
+        $this->assertNotContains('pages.content_fields.cta', $missing, 'A site with its own content fields does not get the package\'s.');
+    }
+
+    public function test_config_keys_the_site_has_not_copied_are_informational_because_the_defaults_fill_them_in(): void
+    {
+        $published = require __DIR__.'/../../config/gadya-cms.php';
+        unset($published['portal'], $published['seo']['discovery']);
+        File::put(config_path('gadya-cms.php'), '<?php return '.var_export($published, true).';');
+
+        try {
+            $check = collect(app(InstallAudit::class)->checks())->firstWhere('label', 'Every key the package reads is in config/gadya-cms.php');
+        } finally {
+            File::delete(config_path('gadya-cms.php'));
+        }
+
+        $this->assertSame(InstallAudit::OPTIONAL, $check['status']);
+        $this->assertStringContainsString('take the package\'s defaults', $check['fix']);
+        $this->assertStringContainsString('portal, seo.discovery', $check['fix']);
     }
 
     public function test_it_finds_unscheduled_jobs_and_features_switched_off(): void

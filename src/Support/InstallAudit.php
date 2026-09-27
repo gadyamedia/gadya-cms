@@ -34,9 +34,8 @@ class InstallAudit
      * entries are examples, so a site without them is not missing anything.
      */
     private const FREE_FORM = [
-        'editable_fields', 'pages.types', 'pages.paths', 'navigation.menus', 'users.roles', 'globals',
-        'media.variants', 'forms.forms', 'seo.organization', 'analytics.events', 'maintenance',
-        'fonts.display', 'fonts.sans',
+        ...PackageConfig::SITE_OWNED,
+        'pages.paths', 'media.variants', 'seo.organization', 'analytics.events', 'maintenance',
     ];
 
     /** The jobs the package expects the scheduler to run. */
@@ -74,15 +73,19 @@ class InstallAudit
     }
 
     /**
-     * Dot paths the package's config has and the application's lacks.
+     * Dot paths the package's config has and the site's config/gadya-cms.php
+     * does not - which take the package's defaults (see PackageConfig).
      *
+     * @param  array<array-key, mixed>|null  $published  the site's file as written; read from config_path() when null
      * @return list<string>
      */
-    public function missingConfigKeys(): array
+    public function missingConfigKeys(?array $published = null): array
     {
         $defaults = require $this->packagePath('config/gadya-cms.php');
 
-        return $this->missingKeys($defaults, (array) config('gadya-cms', []), '');
+        $published ??= $this->files->exists(config_path('gadya-cms.php')) ? (array) require config_path('gadya-cms.php') : [];
+
+        return $this->missingKeys($defaults, $published, '');
     }
 
     /**
@@ -96,11 +99,16 @@ class InstallAudit
 
         $missing = $this->missingConfigKeys();
 
+        /*
+         * Informational: the package's defaults fill in whatever the file
+         * leaves out, at any depth, so nothing is broken by a missing key.
+         */
         $checks = [$this->check(
             'Config',
             'Every key the package reads is in config/gadya-cms.php',
             $missing === [],
-            'Copy these from vendor/gadya/cms/config/gadya-cms.php, with values for this site: '.implode(', ', $missing),
+            'These take the package\'s defaults, so nothing needs doing. To give one a value for this site, copy it from vendor/gadya/cms/config/gadya-cms.php: '.implode(', ', $missing),
+            optional: true,
         )];
 
         foreach ([

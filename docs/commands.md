@@ -52,7 +52,7 @@ Schedule::command('gadya-cms:prune-activity')->weekly();
 php artisan vendor:publish --tag=gadya-cms-config
 ```
 
-Every option in `config/gadya-cms.php` is documented in the file. Note that the package merges only top-level keys, so a published file must carry every nested key of any array it overrides (`pages`, `navigation`, `analytics`, `blog`, ...). When a release adds a nested key, [upgrading.md](upgrading.md) says so.
+Every option in `config/gadya-cms.php` is documented in the file. The published file is merged over the package's defaults all the way down, so it only needs the keys the site sets: a key a release adds, at any depth, takes its default until you copy it. Two kinds of value are the site's whole answer and never mixed with the defaults: lists (`locales.enabled => ['es']` is Spanish alone, not English and Spanish), and the maps a site fills in entry by entry - `editable_fields`, `globals`, `navigation.menus`, `pages.types`, `pages.content_fields`, `users.roles`, `forms.forms`, `fonts.display`, `fonts.sans`, `menus.dietary` and `seo.content_signals`.
 
 # Deploying
 
@@ -64,5 +64,7 @@ php artisan filament:assets
 php artisan optimize:clear
 npm run build
 ```
+
+After a deploy that brings a new release, `php artisan gadya:upgrade` does the first three and anything else the release needs on the server (see [Upgrading](upgrading.md)); the Gadya portal runs it for you in a rollout.
 
 And once: a queue worker (photos, articles, emails), `MAIL_*` for invitations, enquiries, replies and the digest, the scheduler running, and Reverb with `REVERB_*` (and websockets allowed through the CDN) for the live panel.

@@ -70,11 +70,13 @@ use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Portal\RemoteCommands;
 use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Support\Maintenance;
+use Gadya\Cms\Support\PackageConfig;
 use Gadya\Cms\Support\SiteContext;
 use Gadya\Connect\Portal\PortalClient;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
@@ -134,6 +136,32 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 AuditCommand::class,
                 PushSubmissionsCommand::class,
             ]);
+    }
+
+    /**
+     * The site's config/gadya-cms.php over the package's defaults, merged
+     * all the way down rather than only at the top: a key a release adds
+     * inside an array the site has published still has its default. See
+     * PackageConfig for what is never merged.
+     *
+     * @param  string  $path
+     * @param  string  $key
+     */
+    protected function mergeConfigFrom($path, $key): void
+    {
+        if ($key !== static::$name) {
+            parent::mergeConfigFrom($path, $key);
+
+            return;
+        }
+
+        if ($this->app instanceof CachesConfiguration && $this->app->configurationIsCached()) {
+            return;
+        }
+
+        $config = $this->app->make('config');
+
+        $config->set($key, PackageConfig::merge(require $path, (array) $config->get($key, [])));
     }
 
     public function packageRegistered(): void
