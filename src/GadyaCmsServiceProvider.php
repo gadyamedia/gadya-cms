@@ -64,6 +64,7 @@ use Gadya\Cms\Observers\InvalidatePublishedDocument;
 use Gadya\Cms\Observers\RecordActivity;
 use Gadya\Cms\Observers\ReportSubmissionStatus;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Portal\RemoteCommands;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
 use Gadya\Connect\Portal\PortalClient;
@@ -238,12 +239,16 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * The Gadya Media portal's side of the site: enquiries pushed as they
-     * arrive, with a sweep on the site's own scheduler for any the queue
-     * missed. Nothing here does anything until the site is paired.
+     * The Gadya Media portal's side of the site: the commands the portal
+     * may send (run by gadya/connect, found by their tag), and enquiries
+     * pushed as they arrive, with a sweep on the site's own scheduler for
+     * any the queue missed. Nothing here does anything until the site is
+     * paired.
      */
     private function registerPortal(): void
     {
+        $this->app->tag(RemoteCommands::HANDLERS, RemoteCommands::TAG);
+
         FormSubmission::observe(ReportSubmissionStatus::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
