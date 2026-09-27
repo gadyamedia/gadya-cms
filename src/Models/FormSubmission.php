@@ -28,7 +28,7 @@ class FormSubmission extends Model
     protected $table = 'gadyacms_form_submissions';
 
     /** @var list<string> */
-    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at', 'notes', 'follow_up_at', 'answered_at', 'pushed_at'];
+    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at', 'notes', 'follow_up_at', 'answered_at', 'pushed_at', 'consent'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -47,6 +47,7 @@ class FormSubmission extends Model
             'follow_up_at' => 'datetime',
             'answered_at' => 'datetime',
             'pushed_at' => 'datetime',
+            'consent' => 'array',
         ];
     }
 

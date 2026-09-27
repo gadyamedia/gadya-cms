@@ -32,6 +32,9 @@ class StoreFormSubmission
             'path' => Str::limit((string) ($request->input('_path') ?: $request->headers->get('referer')), 255, ''),
             'referrer_host' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST) ?: null,
             'country' => VisitorGeo::for($request)['country'],
+            'consent' => $form->name === CallbackForm::NAME && filter_var($kept['consent'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                ? CallbackForm::consentRecord($request)
+                : null,
             'created_at' => now(),
         ]);
 

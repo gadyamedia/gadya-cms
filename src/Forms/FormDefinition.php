@@ -30,7 +30,7 @@ final class FormDefinition
         $forms = (array) config('gadya-cms.forms.forms', []);
 
         if (! isset($forms[$name]) || ! is_array($forms[$name])) {
-            return null;
+            return $name === CallbackForm::NAME ? CallbackForm::definition() : null;
         }
 
         $form = $forms[$name];
