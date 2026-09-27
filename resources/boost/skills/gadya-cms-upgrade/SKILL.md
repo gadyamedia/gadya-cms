@@ -96,6 +96,9 @@ Each feature switch, and what else turning it on needs:
 | `->forms()` | on by default | every enquiry form posts through `@cmsForm('key')` plus `@cmsFormStatus('key')`, with the form defined under `forms.forms` | `forms.md` |
 | `->analytics()` / `analytics.enabled` | on | `data-analytics="…"` on the site's key buttons (booking, directions, CTA), with each name listed in `analytics.events` | `analytics.md` |
 | `->ai()` | on | nothing in code: the client enters the key under Settings → AI | `articles-and-ai.md` |
+| `->foodMenus()` | only on a restaurant, café or bakery | `<x-gadya-cms::menu menu="…" />` on the menu page in place of a hand-written menu (list the menus for the client to enter in the panel); `<x-gadya-cms::menu-specials />` where specials belong | `local-business.md` |
+| Opening hours | always on | `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />`, `<x-gadya-cms::todays-hours />` where the site shows hours, replacing hand-written ones; check `hours.timezone`; list "enter the hours under Appearance → Opening hours and publish" for the client | `local-business.md` |
+| Privacy choices / `privacy.banner_enabled` | only when the audit finds third-party trackers, or the client asks | wrap each tracker in `<x-gadya-cms::consented-script category="analytics|marketing">`; `<x-gadya-cms::consent-banner />` before `</body>`; `<x-gadya-cms::privacy-choices-link />` in the footer; list "switch on under Settings → Privacy choices and publish" for the person | `privacy.md` |
 | `->redirects()`, `->team()`, `->profile()`, `->unsavedChangesAlerts()`, `->brand()` | on | nothing | `roles-and-globals.md`, `media-and-team.md` |
 | `seo.sitemap`, `seo.robots`, `seo.llms`, `seo.markdown`, `seo.link_headers` | `true` | delete any static `public/robots.txt` or `public/sitemap.xml` | `seo.md`, `search-and-readiness.md` |
 | `blog.comments.enabled` | only if asked | `blog.comments.notify` addresses | `articles-and-ai.md` |

@@ -42,6 +42,14 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## 0.14.8 → next release: menus, opening hours, privacy choices
+
+`php artisan migrate` adds the `gadyacms_menus`, `gadyacms_menu_sections` and `gadyacms_menu_items` tables. Copy the new `menus`, `hours` and `privacy` keys into `config/gadya-cms.php`. Nothing on the public site changes until someone uses them:
+
+- **Opening hours** appears under Appearance for every site. Once they are filled in and published, add `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />` or `<x-gadya-cms::todays-hours />` where the site shows its hours, and replace hand-written hours in templates and JSON-LD. `@cmsSeo`'s business node picks them up by itself. Check `hours.timezone`.
+- **Food menus** is off: add `->foodMenus()` to the plugin on a restaurant, café or bakery, then `<x-gadya-cms::menu menu="..." />` in the menu page's template.
+- **Privacy choices** is off: on a site that loads Google Analytics, Ads or any pixel (`gadya-cms:audit` lists them), wrap each tag in `<x-gadya-cms::consented-script>`, add `<x-gadya-cms::consent-banner />` before `</body>` and `<x-gadya-cms::privacy-choices-link />` to the footer, then switch it on under Settings → Privacy choices and publish. See [Privacy choices](privacy.md).
+
 ## 0.12.0 → 0.13.0
 
 `php artisan migrate` adds `notes`, `follow_up_at` and `answered_at` to `gadyacms_form_submissions`. Nothing else is required. Tell the client that *Automatic replies* is now **Enquiry emails**, and that she can add who is told about new enquiries there.

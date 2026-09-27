@@ -30,6 +30,9 @@ It also counts its own visitors without Google or a cookie banner, keeps what pe
 | **Search & speed** | Search Console queries and landing pages, Lighthouse scores from PageSpeed Insights, and a readiness score for AI assistants - `llms.txt`, AI-crawler rules, JSON-LD, Markdown on request. |
 | **Moving a site** | One zip with everything, photos included; import in place or replace. |
 | **What's on** | Events that sort themselves by date, stay listed until they end, and publish a calendar a phone can subscribe to. |
+| **Menus** | A restaurant's menus: sections, sizes, prices in cents, dietary marks, specials, and sold-out switches that are live at once. `Menu` JSON-LD. |
+| **Opening hours** | One place for the week, late nights and holidays; an hours table, an "Open now" badge, and `openingHoursSpecification` for Google. |
+| **Privacy choices** | A consent banner for the New Jersey Data Privacy Act, Global Privacy Control honoured, and third-party tags that wait for a yes. Off until switched on. |
 | **Search** | The site's own search box - and a count of what people searched for and did not find. |
 | **Running it** | A trash with a thirty-day undo, duplicate anything, an activity log, a publish held until Friday at nine, coming-soon mode with a password link, and a broken-link list fixed with one click. |
 | **Look & feel** | Brand colours, a curated font list, the site's own logo in the panel. |
@@ -104,6 +107,8 @@ A whole sample site on http://127.0.0.1:8000, admin at `/admin` (admin@example.c
 - [Search Console, page speed and AI readiness](docs/search-and-readiness.md)
 - [Moving a site, and responsive photos](docs/transfer.md)
 - [Events, search and the mailing list](docs/events-and-search.md)
+- [Menus and opening hours](docs/local-business.md) - food menus, sold out, the hours table and the open-now badge
+- [Privacy choices](docs/privacy.md) - the consent banner, Global Privacy Control, tags that wait, what the CMS's own analytics stores
 - [Running a site: trash, activity, scheduling, coming soon, broken links](docs/operations.md)
 - [The demo site, and scaffolding a template](docs/demo.md)
 - [Commands, configuration and deploying](docs/commands.md)
@@ -122,6 +127,7 @@ GadyaCmsPlugin::make()
     ->forms(false)
     ->search(false)
     ->events(false)
+    ->foodMenus()
     ->newsletter(false)
     ->profile(false)
     ->navigationGroups(content: 'Website', appearance: 'Design');

@@ -2,6 +2,22 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Food menus.** A restaurant's menus, sections and items, in their own tables: prices in whole cents, sizes with their own prices, dietary and allergen marks (`menus.dietary`), a photo from the library, "weekdays until 11am" availability, specials, and a **sold out** switch that is live the moment the counter flips it - no Publish. Drag to order; **Everything back in** for the start of the day. `<x-gadya-cms::menu menu="breakfast" />` and `<x-gadya-cms::menu-specials />` render accessible, unstyled markup with `Menu` / `MenuSection` / `MenuItem` / `Offer` JSON-LD. Every menu, section, item and size carries a `key` that survives renames, for online ordering later. Off until `->foodMenus()` is on the plugin. See `docs/local-business.md`.
+- **Opening hours** under Appearance: the week (several sets of times a day, closed days, late nights past midnight), holidays and special days with a label, and the business's time zone - one place, published with everything else. `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />` ("Open now · closes at 3pm") and `<x-gadya-cms::todays-hours />`. `@cmsSeo`'s LocalBusiness node gains `openingHoursSpecification`, holidays included. `OpeningHours::toGoogleBusinessProfile()` gives the shape that API takes. Safe across the nights the clocks change.
+- **Privacy choices** for the New Jersey Data Privacy Act, off by default. `<x-gadya-cms::consent-banner />` (accept all, reject all, or choose among necessary, analytics and marketing; keyboard-friendly and not modal), `<x-gadya-cms::privacy-choices-link />` to reopen it, and `<x-gadya-cms::consented-script category="marketing">` to keep a third-party tag inert until it is allowed. Global Privacy Control - `Sec-GPC` and `navigator.globalPrivacyControl` - is always a no to marketing. The choice is one first-party cookie, `gadya_consent`. Every word on the banner is written under Settings → Privacy choices and published like other site content, with defaults through the translator. See `docs/privacy.md`.
+- The check-in's summary carries `hours` (left out until hours are set) and `consent` (`banner_enabled`, `honours_gpc`).
+- `gadya-cms:audit` flags Google Analytics, Google Ads, Meta, TikTok, LinkedIn, Pinterest, Snap, Clarity or Hotjar tags in the templates while the site does not ask first.
+- For someone with the live editor on, a menu, the hours and the banner link to the admin screen that changes them.
+
+### Changed
+
+- The CMS's own analytics stops counting a visitor who refuses analytics in the privacy banner: her page views are not recorded, and her phone taps and enquiries are counted without the daily identifier. Nothing changes for anyone else, or on a site without the banner. `docs/privacy.md` says exactly what is and is not stored.
+- A menu item's photo counts as in use, so it cannot be deleted from the library.
+
 ## 0.14.8
 
 ### Fixed

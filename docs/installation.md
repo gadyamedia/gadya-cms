@@ -97,6 +97,7 @@ GadyaCmsPlugin::make()
     ->forms(false)        // no enquiries inbox
     ->search(false)       // no Search Console, PageSpeed or readiness cards
     ->events(false)       // no diary or calendar feed
+    ->foodMenus()         // restaurant menus and sold-out switches (off unless asked for)
     ->newsletter(false)   // no mailing list
     ->profile(false)      // no profile page (you have your own)
     ->unsavedChangesAlerts(false)
