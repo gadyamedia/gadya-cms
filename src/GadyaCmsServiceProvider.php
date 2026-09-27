@@ -72,6 +72,7 @@ use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\PackageConfig;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Upgrade\UpgradeSteps;
 use Gadya\Connect\Portal\PortalClient;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -276,7 +277,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
     /**
      * The Gadya Media portal's side of the site: the commands the portal
-     * may send (run by gadya/connect, found by their tag), and enquiries
+     * may send and the upgrade steps (both run by gadya/connect, found by
+     * their tags), and enquiries
      * pushed as they arrive, with a sweep on the site's own scheduler for
      * any the queue missed. Nothing here does anything until the site is
      * paired.
@@ -284,6 +286,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     private function registerPortal(): void
     {
         $this->app->tag(RemoteCommands::HANDLERS, RemoteCommands::TAG);
+        $this->app->tag(UpgradeSteps::STEPS, UpgradeSteps::TAG);
 
         FormSubmission::observe(ReportSubmissionStatus::class);
 

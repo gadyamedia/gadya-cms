@@ -1,22 +1,43 @@
+# gadya-update-template: 2
+#
 # Updates the Gadya packages and puts the result in git.
 #
-# Run from the Gadya Media portal (Sites → Update), or by hand under the
-# Actions tab. A patch release that passes the tests goes straight to the
-# default branch; anything larger, or a failing test run, waits in a pull
-# request for a person.
+# Run from the Gadya Media portal (a rollout, or the site's Update button),
+# or by hand under the Actions tab. When the tests pass and the new version
+# is within `merge`, the update goes straight to the branch it ran on;
+# anything else waits in a pull request for a person.
+#
+# The first line is the template's number: the portal compares it with the
+# one gadya/cms ships and offers to refresh this file. Change anything below
+# it you need to; a refresh replaces the whole file.
 name: Gadya update
+run-name: Gadya update ${{ inputs.rollout_id }}
 
 on:
   workflow_dispatch:
     inputs:
       packages:
         description: Packages to update, space separated
+        type: string
         default: gadya/cms gadya/connect
       constraint:
-        description: Version constraint for the first package, e.g. ^0.6 (blank keeps composer.json as it is)
+        description: Version constraint for the first package, e.g. ^0.15 (blank keeps composer.json as it is)
+        type: string
+        default: ''
+      merge:
+        description: 'When the tests pass, push straight in for: patch (same minor), minor (same major; any 0.x), never (always a pull request)'
+        type: choice
+        options:
+          - patch
+          - minor
+          - never
+        default: patch
+      rollout_id:
+        description: The portal's rollout, so it can find this run (blank for a run by hand)
+        type: string
         default: ''
       always_pull_request:
-        description: Open a pull request even for a patch release
+        description: Open a pull request even for a patch release (older portals; the same as merge = never)
         type: boolean
         default: false
 
@@ -31,6 +52,15 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+
+    # Inputs reach the scripts as environment variables, never pasted into them.
+    env:
+      PACKAGES: ${{ inputs.packages }}
+      CONSTRAINT: ${{ inputs.constraint }}
+      MERGE: ${{ inputs.merge }}
+      ROLLOUT_ID: ${{ inputs.rollout_id }}
+      ALWAYS_PULL_REQUEST: ${{ inputs.always_pull_request }}
+      BRANCH: ${{ github.ref_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -55,38 +85,59 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist --no-progress
 
+      # The first package is the one whose version decides where the update
+      # goes (gadya/cms by default).
       - name: The version before
         id: before
-        run: echo "version=$(composer show gadya/cms --format=json | jq -r '.versions[0]' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+        run: |
+          first=$(echo "$PACKAGES" | awk '{print $1}')
+          echo "package=${first}" >> "$GITHUB_OUTPUT"
+          echo "version=$(composer show "$first" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Update
+        env:
+          PACKAGE: ${{ steps.before.outputs.package }}
         run: |
           set -euo pipefail
-          if [ -n "${{ inputs.constraint }}" ]; then
-            first=$(echo "${{ inputs.packages }}" | awk '{print $1}')
-            composer require "${first}:${{ inputs.constraint }}" -W --no-interaction --no-progress
+          if [ -n "$CONSTRAINT" ]; then
+            composer require "${PACKAGE}:${CONSTRAINT}" -W --no-interaction --no-progress
           fi
-          composer update ${{ inputs.packages }} -W --no-interaction --no-progress
+          # Word splitting is wanted here: one argument per package.
+          # shellcheck disable=SC2086
+          composer update $PACKAGES -W --no-interaction --no-progress
 
       - name: The version after
         id: after
-        run: echo "version=$(composer show gadya/cms --format=json | jq -r '.versions[0]' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+        env:
+          PACKAGE: ${{ steps.before.outputs.package }}
+        run: echo "version=$(composer show "$PACKAGE" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      # gadya:upgrade --phase=code comes with gadya/connect 0.6. A site on an
+      # older connect gets what this workflow did before it existed.
+      - name: Upgrade steps
+        id: upgrade
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          if php artisan help gadya:upgrade --no-interaction > /dev/null 2>&1; then
+            php artisan gadya:upgrade --phase=code --json --no-interaction > "$RUNNER_TEMP/gadya-upgrade.json"
+            status=$?
+            cat "$RUNNER_TEMP/gadya-upgrade.json"
+            exit $status
+          fi
+          echo "This site's gadya/connect has no gadya:upgrade yet; running the steps it used to."
+          php artisan migrate --force --no-interaction || true
+          php artisan filament:assets --no-interaction || true
 
       - name: Stop when nothing changed
         id: changed
         run: |
-          if git diff --quiet; then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "Already up to date."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Migrate and publish the panel's assets
-        if: steps.changed.outputs.changed == 'true'
-        run: |
-          php artisan migrate --force --no-interaction || true
-          php artisan filament:assets --no-interaction || true
 
       - name: Tests
         id: tests
@@ -94,51 +145,119 @@ jobs:
         continue-on-error: true
         run: php artisan test
 
+      # patch: the same major and minor. minor: the same major, so on 0.x any
+      # 0.x release. never: always a pull request. Straight in only when the
+      # tests and the upgrade steps passed.
       - name: Decide where this goes
-        if: steps.changed.outputs.changed == 'true'
         id: route
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          PACKAGE: ${{ steps.before.outputs.package }}
+          BEFORE: ${{ steps.before.outputs.version }}
+          AFTER: ${{ steps.after.outputs.version }}
+          TESTS: ${{ steps.tests.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
         run: |
           set -euo pipefail
-          before="${{ steps.before.outputs.version }}"
-          after="${{ steps.after.outputs.version }}"
-          # Same major and minor, and the tests passed: it can go straight in.
-          if [ "${{ steps.tests.outcome }}" = "success" ] \
-            && [ "${{ inputs.always_pull_request }}" != "true" ] \
-            && [ "$(echo "$before" | cut -d. -f1,2)" = "$(echo "$after" | cut -d. -f1,2)" ]; then
+          policy="${MERGE:-patch}"
+          if [ "$ALWAYS_PULL_REQUEST" = "true" ]; then
+            policy="never"
+          fi
+          within=false
+          if [ -n "$BEFORE" ] && [ -n "$AFTER" ]; then
+            case "$policy" in
+              patch) [ "$(echo "$BEFORE" | cut -d. -f1,2)" = "$(echo "$AFTER" | cut -d. -f1,2)" ] && within=true ;;
+              minor) [ "$(echo "$BEFORE" | cut -d. -f1)" = "$(echo "$AFTER" | cut -d. -f1)" ] && within=true ;;
+            esac
+          fi
+          if [ "$TESTS" = "success" ] && [ "$UPGRADE" = "success" ] && [ "$within" = "true" ]; then
             echo "merge=true" >> "$GITHUB_OUTPUT"
           else
             echo "merge=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "title=chore: gadya/cms ${before} → ${after}" >> "$GITHUB_OUTPUT"
+          echo "title=chore: ${PACKAGE} ${BEFORE:-none} → ${AFTER:-none}" >> "$GITHUB_OUTPUT"
 
-      - name: Commit
+      # The last line of the commit message (and the pull request) is for the
+      # portal to read:
+      #   Gadya-Update: before=0.14.8 after=0.15.0 tests=success merged=true rollout=12
+      - name: Commit, then push or open a pull request
+        id: publish
         if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ steps.before.outputs.package }}
+          BEFORE: ${{ steps.before.outputs.version }}
+          AFTER: ${{ steps.after.outputs.version }}
+          TESTS: ${{ steps.tests.outcome }}
+          UPGRADE: ${{ steps.upgrade.outcome }}
+          TITLE: ${{ steps.route.outputs.title }}
+          MERGE_DECISION: ${{ steps.route.outputs.merge }}
         run: |
           set -euo pipefail
+          tests=$([ "$TESTS" = "success" ] && echo success || echo failure)
+          trailer() { echo "Gadya-Update: before=${BEFORE:-none} after=${AFTER:-none} tests=${tests} merged=$1 rollout=${ROLLOUT_ID}"; }
+          body="Updated from the Gadya Media portal. Tests: ${tests}. Upgrade steps: ${UPGRADE}."
+
           git config user.name "Gadya Media"
           git config user.email "bot@gadya.media"
           git add -A
-          git commit -m "${{ steps.route.outputs.title }}" -m "Updated from the Gadya Media portal. Tests: ${{ steps.tests.outcome }}."
 
-      - name: Straight to ${{ github.ref_name }}
-        if: steps.changed.outputs.changed == 'true' && steps.route.outputs.merge == 'true'
-        run: git push origin HEAD:${{ github.ref_name }}
+          if [ "$MERGE_DECISION" = "true" ]; then
+            git commit -q -m "$TITLE" -m "$body" -m "$(trailer true)"
+            if git push origin "HEAD:${BRANCH}"; then
+              echo "merged=true" >> "$GITHUB_OUTPUT"
+              echo "trailer=$(trailer true)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "${BRANCH} moved on while this ran; opening a pull request instead."
+            git commit -q --amend -m "$TITLE" -m "$body" -m "$(trailer false)"
+          else
+            git commit -q -m "$TITLE" -m "$body" -m "$(trailer false)"
+          fi
 
-      - name: Or a pull request for a person to read
-        if: steps.changed.outputs.changed == 'true' && steps.route.outputs.merge != 'true'
+          head="chore/gadya-update-$(date +%Y%m%d%H%M%S)"
+          git push origin "HEAD:${head}"
+          url=$(gh pr create --head "$head" --base "$BRANCH" --title "$TITLE" \
+            --body "$(printf '%s\n\n- %s %s → %s\n- Tests: %s\n- Upgrade steps: %s\n\nRead `vendor/gadya/cms/CHANGELOG.md` for what changed, and `docs/upgrading.md` for anything a release asks of you.\n\n%s' \
+              "Updated from the Gadya Media portal." "$PACKAGE" "${BEFORE:-none}" "${AFTER:-none}" "$tests" "$UPGRADE" "$(trailer false)")")
+          echo "merged=false" >> "$GITHUB_OUTPUT"
+          echo "pull_request=${url}" >> "$GITHUB_OUTPUT"
+          echo "trailer=$(trailer false)" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
         env:
-          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ steps.before.outputs.version }}
+          AFTER: ${{ steps.after.outputs.version }}
+          CHANGED: ${{ steps.changed.outputs.changed }}
+          TESTS: ${{ steps.tests.outcome }}
+          TRAILER: ${{ steps.publish.outputs.trailer }}
+          PULL_REQUEST: ${{ steps.publish.outputs.pull_request }}
         run: |
-          set -euo pipefail
-          branch="chore/gadya-update-$(date +%Y%m%d%H%M%S)"
-          git push origin "HEAD:${branch}"
-          gh pr create --head "$branch" --base "${{ github.ref_name }}" \
-            --title "${{ steps.route.outputs.title }}" \
-            --body "$(printf 'Updated from the Gadya Media portal.\n\n- gadya/cms %s → %s\n- Tests: %s\n\nRead `vendor/gadya/cms/CHANGELOG.md` for what changed, and `docs/upgrading.md` for anything a release asks of you.' \
-              "${{ steps.before.outputs.version }}" "${{ steps.after.outputs.version }}" "${{ steps.tests.outcome }}")"
+          if [ -z "$TRAILER" ]; then
+            # Nothing was committed: nothing changed, or it stopped before the commit.
+            if [ "$CHANGED" = "false" ]; then tests=skipped; elif [ "$TESTS" = "success" ]; then tests=success; else tests=failure; fi
+            TRAILER="Gadya-Update: before=${BEFORE:-none} after=${AFTER:-none} tests=${tests} merged=false rollout=${ROLLOUT_ID}"
+          fi
+          {
+            echo "## Gadya update"
+            echo
+            if [ "$CHANGED" = "false" ]; then
+              echo "Already up to date: nothing to commit."
+            elif [ -n "$PULL_REQUEST" ]; then
+              echo "Waiting in a pull request: ${PULL_REQUEST}"
+            fi
+            if [ -s "$RUNNER_TEMP/gadya-upgrade.json" ]; then
+              echo
+              echo "Upgrade steps run: $(jq -r '[.ran[].key] | join(", ") | if . == "" then "none" else . end' "$RUNNER_TEMP/gadya-upgrade.json" 2>/dev/null)"
+              echo "Upgrade steps failed: $(jq -r '[.failed[] | "\(.key) (\(.error))"] | join(", ") | if . == "" then "none" else . end' "$RUNNER_TEMP/gadya-upgrade.json" 2>/dev/null)"
+            fi
+            echo
+            echo "$TRAILER"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Fail the run when the tests failed
-        if: steps.changed.outputs.changed == 'true' && steps.tests.outcome != 'success'
+      - name: Fail the run when the tests or the upgrade steps failed
+        if: steps.changed.outputs.changed == 'true' && (steps.tests.outcome != 'success' || steps.upgrade.outcome != 'success')
         run: |
-          echo "The update is waiting in a pull request because the tests failed."
+          echo "The update is waiting in a pull request: the tests or the upgrade steps failed."
           exit 1

@@ -9,6 +9,7 @@ use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Privacy\TrackerScan;
 use Gadya\Cms\Seo\AgentReadiness;
+use Gadya\Cms\Upgrade\WorkflowTemplate;
 use Gadya\Connect\Models\Connection;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Filesystem\Filesystem;
@@ -335,6 +336,15 @@ class InstallAudit
                 'A queue carries the email, not the visitor',
                 ! app(SharedSender::class)->enabled() || config('queue.default') !== 'sync',
                 'Email is sent through Gadya Media, and with QUEUE_CONNECTION=sync a visitor waits for the portal to answer before her form says thank you. Set QUEUE_CONNECTION=database, run php artisan queue:table and migrate, and run a worker.',
+            ),
+            $this->check(
+                'Install',
+                'The update workflow is the current template',
+                (WorkflowTemplate::installed() ?? 0) >= WorkflowTemplate::shipped(),
+                WorkflowTemplate::installed() === null
+                    ? 'php artisan gadya-cms:install publishes '.WorkflowTemplate::PATH.', which the Gadya portal runs to update the site.'
+                    : 'Refresh it from the Gadya portal, or copy vendor/gadya/cms/resources/github/gadya-update.yml over '.WorkflowTemplate::PATH.'.',
+                optional: true,
             ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
             $this->check('Install', 'AI readiness score is 80 or more (now '.$readiness.')', $readiness >= 80, 'php artisan gadya-cms:agent-ready lists what to fix; most are page descriptions to write in the panel.', optional: true),

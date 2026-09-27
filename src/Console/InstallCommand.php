@@ -6,6 +6,7 @@ use Filament\Facades\Filament;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Upgrade\WorkflowTemplate;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -125,7 +126,7 @@ class InstallCommand extends Command
      */
     private function publishUpdateWorkflow(): void
     {
-        $target = base_path('.github/workflows/gadya-update.yml');
+        $target = base_path(WorkflowTemplate::PATH);
 
         if (File::exists($target)) {
             $this->components->twoColumnDetail('Update workflow', 'already present');
@@ -134,7 +135,7 @@ class InstallCommand extends Command
         }
 
         File::ensureDirectoryExists(dirname($target));
-        File::copy(dirname(__DIR__, 2).'/resources/github/gadya-update.yml', $target);
+        File::copy(WorkflowTemplate::templatePath(), $target);
 
         $this->components->twoColumnDetail('Update workflow', 'published to .github/workflows/gadya-update.yml');
     }
