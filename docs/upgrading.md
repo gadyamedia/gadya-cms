@@ -2,15 +2,46 @@
 
 ## From the Gadya Media portal
 
-`gadya-cms:install` publishes `.github/workflows/gadya-update.yml`. **Sites → Update** in the portal runs it on the site's repository, where it:
+`gadya-cms:install` publishes `.github/workflows/gadya-update.yml`. The portal runs it on the site's repository - a site at a time from its Update button, or many in a **rollout**, canaries first and a few at a time - where it:
 
 1. updates the Gadya packages;
-2. runs `migrate`, `filament:assets` and the site's own test suite;
-3. commits the result to the default branch when it is a patch release and the tests passed, or opens a pull request when it is anything larger or the tests failed.
+2. runs `php artisan gadya:upgrade --phase=code`, the release's changes to the repository (below);
+3. runs the site's own test suite;
+4. commits the result, and pushes it to the branch it ran on when the tests passed and the new version is within the run's `merge` policy - `patch` (the same minor, the default), `minor` (the same major; on 0.x any 0.x) or `never` - or opens a pull request for a person otherwise.
 
-Nothing is changed on the server: the next deploy takes the new version from git, as it always does. Run it by hand from the repository's Actions tab if you'd rather, and tick *Open a pull request even for a patch release* to look at every change first.
+After the deploy, the portal sends the site `upgrade.finish`, which runs `php artisan gadya:upgrade` on the live server, and then watches the site's check-ins, health and errors for ten minutes before it calls the site done.
 
-A site that has no such workflow (installed before this version) gets it by running `php artisan gadya-cms:install` once, which leaves everything else alone.
+The first line of the workflow, `# gadya-update-template: 2`, says which template the repository has. GitHub does not let a workflow change workflows, so the portal refreshes the file itself when gadya/cms ships a newer one (it needs a token that may write workflows). A site with no such workflow (installed before it existed) gets it by running `php artisan gadya-cms:install` once, which leaves everything else alone. The template still works on a site whose gadya/connect has no `gadya:upgrade` yet: there it runs `migrate` and `filament:assets` as the first template did.
+
+Each run ends with a line the portal reads, in the commit message, the pull request and the run's summary:
+
+```
+Gadya-Update: before=0.14.8 after=0.15.0 tests=success merged=true rollout=12
+```
+
+## `gadya:upgrade`
+
+gadya/connect 0.6 runs the mechanical part of an upgrade as steps that are safe to run again - each checks whether it still has anything to do - so the same command is right after every release:
+
+```bash
+php artisan gadya:upgrade --phase=code   # in the repository, before the tests; commit what it changes
+php artisan gadya:upgrade                # on the server after the deploy (--phase=server)
+```
+
+`--dry-run` lists what would run; `--json` prints what ran, what had nothing to do and what failed. The steps:
+
+| Phase | Step | Does |
+| --- | --- | --- |
+| code | `cms.0.15.0.notifications-table` | Adds Laravel's notifications table migration (`make:notifications-table`) for the panel's bell, unless a migration or schema dump already creates it |
+| code | `cms.workflow-template` | Says when `.github/workflows/gadya-update.yml` is older than the template this release ships. It never writes it: the portal refreshes it, or copy `vendor/gadya/cms/resources/github/gadya-update.yml` over it |
+| code | `connect.boost-update` | `boost:update --discover`, where Boost is set up |
+| server | `connect.migrate` | `migrate --force`, first; if it fails nothing else runs |
+| server | `cms.storage-link` | `storage:link` when the photo library's public link is missing |
+| server | `cms.caches` | Forgets the CMS's cached site (every language), redirects, reviews and mail status |
+| server | `connect.optimize-clear` | `optimize:clear` |
+| server | `connect.filament-assets` | `filament:assets` |
+
+What is left for a person - business details in config, switching features on, templates - is still `gadya-cms:audit`'s list; the notes below say what each release asks.
 
 ## With an AI agent
 
@@ -26,7 +57,7 @@ The skill:
 
 1. Audits the site with `gadya-cms:audit`.
 2. Updates the package, reads the changelog and the notes below, and refreshes the skills.
-3. Works down the audit until nothing is left to do: copying config keys with the site's own values, running migrations, switching features on, scheduling jobs, and adding the Blade directives.
+3. Runs `gadya:upgrade` for the mechanical part, then works down the audit until nothing is left to do: switching features on, scheduling jobs, adding the Blade directives, and filling in this site's details.
 4. Runs the tests and commits on a branch without pushing.
 5. Lists what only a person can do: deploy, server cron, DNS, Search Console, API keys, and menu links.
 
@@ -36,22 +67,25 @@ It never touches content in the database.
 
 ```bash
 composer update gadya/cms -W      # or composer require gadya/cms:^0.N -W for a new minor
-php artisan migrate
-php artisan filament:assets
-php artisan boost:update --discover
+php artisan gadya:upgrade --phase=code
+php artisan gadya:upgrade         # migrate, the release's server steps, optimize:clear, filament:assets
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+On a site whose gadya/connect is older than 0.6 (no `gadya:upgrade`), run `migrate`, `filament:assets`, `optimize:clear` and `boost:update --discover` instead.
+
 ## Unreleased
 
-`php artisan migrate` adds `pushed_at` and `consent` to `gadyacms_form_submissions`, `decorative` to `gadyacms_media`, and creates `gadyacms_change_requests`. Copy the new `portal` key into `config/gadya-cms.php` (`gadya-cms:audit` lists it); until then the package's defaults apply, so nothing breaks in the meantime. For the notification bell that announces requested changes, the application needs Laravel's `notifications` table (`php artisan make:notifications-table`). Tell the client that a photo now needs a description, or to be marked as decoration, before it can be saved. See [The Gadya portal](portal.md).
+The published `config/gadya-cms.php` is now merged over the package's defaults at every depth, so a key a release adds - even inside an array the site has published - takes its default, and copying it is only needed to change it. `gadya-cms:audit` lists keys the file lacks as optional. Lists and the site-owned maps are still taken whole from the site; see [Configuration](commands.md#configuration). Refresh the update workflow to template 2 from the portal (or copy `vendor/gadya/cms/resources/github/gadya-update.yml` over `.github/workflows/gadya-update.yml`), and update gadya/connect to 0.6 for `gadya:upgrade`.
 
-`php artisan migrate` adds the `gadyacms_menus`, `gadyacms_menu_sections` and `gadyacms_menu_items` tables. Copy the new `menus`, `hours` and `privacy` keys into `config/gadya-cms.php`. Nothing on the public site changes until someone uses them:
+`php artisan migrate` adds `pushed_at` and `consent` to `gadyacms_form_submissions`, `decorative` to `gadyacms_media`, and creates `gadyacms_change_requests`. The new `portal` key takes its defaults until you copy it. For the notification bell that announces requested changes, the application needs Laravel's `notifications` table: `gadya:upgrade --phase=code` adds the migration (or `php artisan make:notifications-table`). Tell the client that a photo now needs a description, or to be marked as decoration, before it can be saved. See [The Gadya portal](portal.md).
+
+`php artisan migrate` adds the `gadyacms_menus`, `gadyacms_menu_sections` and `gadyacms_menu_items` tables. The new `menus`, `hours` and `privacy` keys take their defaults until you copy them into `config/gadya-cms.php`. Nothing on the public site changes until someone uses them:
 
 - **Opening hours** appears under Appearance for every site. Once they are filled in and published, add `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />` or `<x-gadya-cms::todays-hours />` where the site shows its hours, and replace hand-written hours in templates and JSON-LD. `@cmsSeo`'s business node picks them up by itself. Check `hours.timezone`.
 - **Food menus** is off: add `->foodMenus()` to the plugin on a restaurant, café or bakery, then `<x-gadya-cms::menu menu="..." />` in the menu page's template.
 - **Privacy choices** is off: on a site that loads Google Analytics, Ads or any pixel (`gadya-cms:audit` lists them), wrap each tag in `<x-gadya-cms::consented-script>`, add `<x-gadya-cms::consent-banner />` before `</body>` and `<x-gadya-cms::privacy-choices-link />` to the footer, then switch it on under Settings → Privacy choices and publish. See [Privacy choices](privacy.md).
-- **Languages** are off: the migration creates `gadyacms_translations`; copy the `locales` key, then list `es` under `locales.enabled` to serve Spanish at `/es/...`. See [Multilingual](multilingual.md).
+- **Languages** are off: the migration creates `gadyacms_translations`; add `locales.enabled => ['en', 'es']` to `config/gadya-cms.php` to serve Spanish at `/es/...` (a list is the site's whole answer, so keep `en` in it). See [Multilingual](multilingual.md).
 
 ## 0.12.0 → 0.13.0
 

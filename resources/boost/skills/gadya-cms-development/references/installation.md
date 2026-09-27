@@ -128,9 +128,8 @@ Photo processing, article writing and form emails are queued. Run a worker in pr
 
 ```bash
 composer update gadya/cms
-php artisan migrate
-php artisan filament:assets
-php artisan optimize:clear
+php artisan gadya:upgrade --phase=code   # in the repository; commit what it changes
+php artisan gadya:upgrade                # on the server after the deploy: migrate, the release's steps, clear the caches, filament:assets
 ```
 
 Then read [upgrading.md](upgrading.md) for anything a release asks of you.

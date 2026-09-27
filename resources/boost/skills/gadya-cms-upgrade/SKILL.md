@@ -45,25 +45,24 @@ On 0.x a minor release may break things, so `^0.4` never reaches 0.5:
 - **Same minor (0.4.3 → 0.4.9):** `composer update gadya/cms -W`
 - **New minor (0.4 → 0.5):** `composer require gadya/cms:^0.5 -W`
 
-Then:
+If `gadya/connect` is older than 0.6 (`php artisan help gadya:upgrade` fails), update it too: `composer update gadya/connect -W`.
+
+Then let the packages do the mechanical part. Each step checks whether it still has anything to do, so this is right after every release:
 
 ```bash
-php artisan migrate
-php artisan filament:assets
-php artisan optimize:clear
+php artisan gadya:upgrade --phase=code   # the release's changes to the repository, then boost:update --discover
+php artisan gadya:upgrade                # migrate, the release's server steps, optimize:clear, filament:assets
 ```
+
+Read what each prints. A `failed` step must be fixed before you go on; `cms.workflow-template` only reports - never edit `.github/workflows/gadya-update.yml` from its message unless the person asks; the portal refreshes it. On a connect without `gadya:upgrade`, run `php artisan migrate`, `php artisan filament:assets` and `php artisan optimize:clear` instead.
 
 ## 3. Read what changed
 
-Read `vendor/gadya/cms/CHANGELOG.md` from the old version up to the new one. Also read every section of `vendor/gadya/cms/docs/upgrading.md` between them. These are the breaking changes and the "add these keys" notes; apply each one. The published `config/gadya-cms.php` overrides the package's arrays wholesale (top-level merge only), so any key a release adds must be copied into it.
+Read `vendor/gadya/cms/CHANGELOG.md` from the old version up to the new one. Also read every section of `vendor/gadya/cms/docs/upgrading.md` between them. These are the breaking changes and the notes on what a person must do; apply each one. The published `config/gadya-cms.php` is merged over the package's defaults at every depth, so a key a release adds works without being copied. Lists (`locales.enabled`) and the site-owned maps (`editable_fields`, `globals`, `users.roles`, `forms.forms`, `pages.types`, `pages.content_fields`, `navigation.menus`, `fonts.*`, `menus.dietary`, `seo.content_signals`) are the site's whole answer, though: when a release adds an entry the site should have (a new editable path, a new role ability), add it there by hand.
 
 ## 4. Refresh the skills
 
-```bash
-php artisan boost:update --discover
-```
-
-`--discover` picks up skills a release added, including this one on a site that never had it. Check that `boost.json` then lists `gadya-cms-content`, `gadya-cms-development` and `gadya-cms-upgrade` under `skills`.
+`gadya:upgrade --phase=code` ran `php artisan boost:update --discover` where Boost is set up (run it yourself on an older connect). `--discover` picks up skills a release added, including this one on a site that never had it. Check that `boost.json` then lists `gadya-cms-content`, `gadya-cms-development` and `gadya-cms-upgrade` under `skills`.
 
 ## 5. Work down the audit
 
@@ -75,13 +74,13 @@ Each check has a `group`, `label`, `status` (`ok`, `todo`, `optional`) and a `fi
 
 ### Config
 
-- Copy every key in the "Every key the package reads" finding from `vendor/gadya/cms/config/gadya-cms.php` into `config/gadya-cms.php`, in the same place, with this site's values and the package's comment above it.
+- The "Every key the package reads" finding is optional: those keys already take the package's defaults. Copy one from `vendor/gadya/cms/config/gadya-cms.php` into `config/gadya-cms.php` (same place, the package's comment above it) only when this site needs a different value, or when asked to "turn everything on" for a switch that is off by default.
 - Fill `seo.site_name`, `seo.organization` (telephone, email, address, area, `same_as` social links) and `seo.domains` (every domain the business owns, the live one first; `dig NS domain` tells you if one is parked elsewhere). Also fill `seo.content_signals`.
 - Add every new editable path to `editable_fields`. The live editor refuses anything not listed.
 
 ### Database
 
-- Run `php artisan migrate`.
+- `gadya:upgrade` ran the migrations. If the audit still lists pending ones, run `php artisan migrate` and find out why.
 
 ### Features
 
@@ -118,7 +117,7 @@ Add each missing line from the audit to `routes/console.php`. They are idempoten
 
 ### Install
 
-- Run `php artisan filament:assets` whenever the stylesheet check fails.
+- Run `php artisan filament:assets` whenever the stylesheet check fails (the server phase of `gadya:upgrade` does it too).
 - Missing gates: define `manage-content` and `manage-users` as `docs/installation.md` shows.
 
 ## 6. Verify
@@ -145,7 +144,7 @@ Then tell the person, in this order:
 2. **Done:** what you switched on and wired up, and the audit before and after (to-do counts).
 3. **Their decisions:** any optional item you left off, and why.
 4. **After deploying,** things only a person can do:
-   - Make sure the deploy script runs `php artisan migrate --force` and `php artisan filament:assets`.
+   - After deploying, run `php artisan gadya:upgrade` on the server (on a site connected to the portal, a rollout sends `upgrade.finish`, which does the same). Otherwise make sure the deploy script runs `php artisan migrate --force` and `php artisan filament:assets`.
    - Make sure the cron runs `schedule:run` every minute.
    - **Pair the site with the Gadya portal** if the audit says it is not connected. Use the portal MCP's `connect-site-tool`, or ask the person for a code from **Sites → Connect a site**. Then run `php artisan gadya:connect <code>` on the live server after deploying.
    - Laravel Forge: delete the `location = /robots.txt` line in the site's nginx config if Settings → Get found says robots.txt answers 404.

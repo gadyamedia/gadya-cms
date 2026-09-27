@@ -30,6 +30,8 @@ A handler is a plain class with `type(): string` and `handle(array $payload): ar
 $this->app->tag([RestartTheBookingSync::class], 'gadya-connect.remote-commands');
 ```
 
+`upgrade.finish`, from gadya/connect itself, finishes an upgrade on the live site after the deploy - `php artisan gadya:upgrade`'s server phase, below in [Upgrading](upgrading.md).
+
 ## Changes the client asks for
 
 "Please change the opening times on the contact page", asked in the portal, arrives as `content.request` with the request's text and, optionally, the page's address. The site's AI - the client's own key when she has one under **Settings → AI**, Gadya's through the portal otherwise - reads the words on that page (or on every page that is not archived, and picks one) and proposes new wording for only the fields that need it. It may only touch fields the live editor may write (`editable_fields`), never photos.

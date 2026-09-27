@@ -22,9 +22,13 @@ All notable changes to `gadya/cms` are documented here.
 - The check-in's summary carries `hours` (left out until hours are set) and `consent` (`banner_enabled`, `honours_gpc`).
 - `gadya-cms:audit` flags Google Analytics, Google Ads, Meta, TikTok, LinkedIn, Pinterest, Snap, Clarity or Hotjar tags in the templates while the site does not ask first.
 - For someone with the live editor on, a menu, the hours and the banner link to the admin screen that changes them.
+- **Upgrade steps** for gadya/connect 0.6's `php artisan gadya:upgrade`, tagged `gadya-connect.upgrade-steps` (no dependency on that connect): in the repository, the notifications table migration for the panel's bell (`cms.0.15.0.notifications-table`) and a note when the update workflow is older than the one this release ships (`cms.workflow-template`, never written from CI); on the server, `storage:link` when the photo library's link is missing (`cms.storage-link`) and forgetting the CMS's own caches (`cms.caches`).
+- **Update workflow template 2** (`resources/github/gadya-update.yml`, first line `# gadya-update-template: 2`): a `merge` policy (`patch`, `minor` - any 0.x on 0.x - or `never`; `always_pull_request` still means `never`), a `rollout_id` in the run's name for the portal, `gadya:upgrade --phase=code` before the tests (skipped, with the old `migrate` and `filament:assets`, on a connect without it), a pull request instead when the branch moved on, and `Gadya-Update: before= after= tests= merged= rollout=` in the commit, the pull request and the run's summary. Inputs reach the scripts through the environment.
+- `gadya-cms:audit` says when the update workflow is missing or older than this release's (optional).
 
 ### Changed
 
+- **Published config is merged all the way down.** A key a release adds - at any depth, inside an array the site has published - takes the package's default instead of being missing. The site's values win; lists (`locales.enabled`, `media.variants`, ...) and the maps a site fills in entry by entry (`editable_fields`, `globals`, `users.roles`, `forms.forms`, `pages.types`, `pages.content_fields`, `navigation.menus`, `fonts.display`, `fonts.sans`, `menus.dietary`, `seo.content_signals`) are taken whole from the site and never mixed with the package's. `gadya-cms:audit` lists keys the file lacks as optional rather than to do.
 - The CMS's own analytics stops counting a visitor who refuses analytics in the privacy banner: her page views are not recorded, and her phone taps and enquiries are counted without the daily identifier. Nothing changes for anyone else, or on a site without the banner. `docs/privacy.md` says exactly what is and is not stored.
 - A menu item's photo counts as in use, so it cannot be deleted from the library.
 
@@ -34,7 +38,7 @@ All notable changes to `gadya/cms` are documented here.
 
 ### Upgrading
 
-Run `php artisan migrate` and copy the new `portal`, `locales`, `menus`, `hours` and `privacy` keys into `config/gadya-cms.php`. See [Upgrading](docs/upgrading.md).
+Update gadya/connect to 0.6 alongside, then run `php artisan gadya:upgrade --phase=code` (commit what it adds) and, after the deploy, `php artisan gadya:upgrade` on the server - it migrates, among the rest. The new `portal`, `locales`, `menus`, `hours` and `privacy` keys work without being copied; copy one into `config/gadya-cms.php` only to change it. Refresh `.github/workflows/gadya-update.yml` to template 2 from the portal. See [Upgrading](docs/upgrading.md).
 
 ## 0.14.8
 
