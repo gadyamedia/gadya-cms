@@ -4,6 +4,7 @@ namespace Gadya\Cms\Seo;
 
 use Gadya\Cms\Brand\Favicon;
 use Gadya\Cms\Content\SiteImage;
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\Post;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -30,7 +31,30 @@ class SeoHead
             'structured' => $this->structuredData($subject, $canonical),
             /* Drawn from the logo, and empty on a site with its own icon. */
             'icons' => rescue(fn (): array => app(Favicon::class)->tags(), [], report: false),
+            'alternates' => $this->alternates(),
+            'locale' => app(Locales::class)->isMultilingual() ? str_replace('-', '_', app(Locales::class)->current()) : null,
         ]);
+    }
+
+    /**
+     * The same page in each of the site's languages, for `hreflang`, with
+     * the default language as the answer for everyone else. Empty on a
+     * site with one language.
+     *
+     * @return array<string, string>
+     */
+    public function alternates(): array
+    {
+        $locales = app(Locales::class);
+
+        if (! $locales->isMultilingual()) {
+            return [];
+        }
+
+        $links = $locales->alternates(request()->getPathInfo());
+        $links['x-default'] = $links[$locales->default()];
+
+        return $links;
     }
 
     /**
@@ -140,7 +164,8 @@ class SeoHead
     {
         $anchor = trim((string) config('gadya-cms.seo.organization.anchor', 'organization'), '#') ?: 'organization';
 
-        return url('/').'#'.$anchor;
+        /* The same business in every language, so one id wherever it is named. */
+        return rtrim(app(Locales::class)->root(), '/').'#'.$anchor;
     }
 
     /**

@@ -250,3 +250,34 @@
 .gadya-cms-toolbar--preview {
     border-top-color: var(--gadya-cms-accent, #f0e56c);
 }
+
+/* The language being edited, and the way to the others. */
+.gadya-cms-toolbar__language {
+    margin-inline-start: 0.35rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.gadya-cms-toolbar__languages {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.gadya-cms-toolbar__language-current {
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+}
+
+.gadya-cms-toolbar__review {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    background: #fef3c7;
+    color: #78350f;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.875rem;
+}

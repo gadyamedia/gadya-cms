@@ -14,7 +14,7 @@ class SeoController extends Controller
     public function sitemap(SitemapEntries $entries): Response
     {
         return response()
-            ->view('gadya-cms::seo.sitemap', ['entries' => $entries->all()])
+            ->view('gadya-cms::seo.sitemap', ['entries' => $entries->localised()])
             ->header('Content-Type', 'application/xml; charset=utf-8')
             ->header('Cache-Control', 'public, max-age=3600');
     }

@@ -46,6 +46,7 @@ use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
 use Gadya\Cms\Http\Middleware\RecordMissingUrls;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
+use Gadya\Cms\Localisation\LocalisationServiceProvider;
 use Gadya\Cms\Mail\BrandsOutgoingMail;
 use Gadya\Cms\Mail\PortalTransport;
 use Gadya\Cms\Mail\SharedSender;
@@ -138,6 +139,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(Options::class);
         $this->app->scoped(AiSettings::class);
         $this->app->scoped(SharedSender::class);
+
+        $this->app->register(LocalisationServiceProvider::class);
     }
 
     public function packageBooted(): void

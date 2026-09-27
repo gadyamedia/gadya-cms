@@ -4,6 +4,7 @@ namespace Gadya\Cms\Content;
 
 use DateTimeInterface;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\Page;
 use Illuminate\Support\Carbon;
 
@@ -30,7 +31,10 @@ class PageRegistry
         /** @var list<string> $slugs */
         $slugs = config('gadya-cms.pages.reserved_slugs', []);
 
-        return $slugs;
+        /* A page called "es" would be hidden behind the Spanish site. */
+        $locales = app(Locales::class);
+
+        return $locales->isMultilingual() ? array_values(array_unique([...$slugs, ...$locales->enabled()])) : $slugs;
     }
 
     /**

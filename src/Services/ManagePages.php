@@ -4,6 +4,7 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Page;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -133,6 +134,8 @@ class ManagePages
         $document['nav'] = $this->rewriteNav($document['nav'] ?? [], $slug, $newSlug);
 
         $this->repository->saveDraft($document);
+
+        app(Translations::class)->rename('pages.'.$slug, 'pages.'.$newSlug);
     }
 
     public function setInNavigation(string $slug, bool $inNavigation, string $label): void
