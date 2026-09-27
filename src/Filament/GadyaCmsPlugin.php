@@ -28,6 +28,8 @@ use Gadya\Cms\Filament\Resources\BrokenLinks\BrokenLinkResource;
 use Gadya\Cms\Filament\Resources\Comments\CommentResource;
 use Gadya\Cms\Filament\Resources\Events\EventResource;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
+use Gadya\Cms\Filament\Resources\MenuItems\MenuItemResource;
+use Gadya\Cms\Filament\Resources\Menus\MenuResource;
 use Gadya\Cms\Filament\Resources\Pages\PageResource;
 use Gadya\Cms\Filament\Resources\Posts\PostResource;
 use Gadya\Cms\Filament\Resources\Redirects\RedirectResource;
@@ -63,6 +65,8 @@ class GadyaCmsPlugin implements Plugin
     protected bool $hasNewsletter = true;
 
     protected bool $hasEvents = true;
+
+    protected bool $hasFoodMenus = false;
 
     protected bool $hasProfile = true;
 
@@ -274,6 +278,22 @@ class GadyaCmsPlugin implements Plugin
         return $this->hasEvents;
     }
 
+    /**
+     * A restaurant's menus, with sold-out switches for the counter. Off by
+     * default: a salon or a plumber has no use for it.
+     */
+    public function foodMenus(bool $condition = true): static
+    {
+        $this->hasFoodMenus = $condition;
+
+        return $this;
+    }
+
+    public function hasFoodMenus(): bool
+    {
+        return $this->hasFoodMenus;
+    }
+
     /** The mailing list, its sign-up box and its export. */
     public function newsletter(bool $condition = true): static
     {
@@ -375,6 +395,8 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasBlog() ? TermResource::class : null,
                 $this->hasBlog() ? CommentResource::class : null,
                 $this->hasEvents() ? EventResource::class : null,
+                $this->hasFoodMenus() ? MenuResource::class : null,
+                $this->hasFoodMenus() ? MenuItemResource::class : null,
                 $this->hasRedirects() ? RedirectResource::class : null,
                 $this->hasRedirects() ? BrokenLinkResource::class : null,
                 config('gadya-cms.activity.enabled', true) ? ActivityResource::class : null,

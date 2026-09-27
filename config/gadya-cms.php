@@ -447,6 +447,35 @@ return [
     ],
 
     /*
+     * A restaurant's menus: sections, items, prices in whole cents, sizes,
+     * dietary marks, specials and a sold-out switch. Rendered with
+     * <x-gadya-cms::menu menu="lunch" />. Switch the panel screen on with
+     * ->foodMenus() on the plugin.
+     */
+    'menus' => [
+        'currency' => 'USD',
+        'currency_symbol' => '$',
+
+        /*
+         * The marks an item can carry. `short` is what sits beside the
+         * item, `label` what a screen reader and the key say, and `schema`
+         * the schema.org diet it is told to search engines as - allergen
+         * warnings have none.
+         */
+        'dietary' => [
+            'vegetarian' => ['label' => 'Vegetarian', 'short' => 'V', 'schema' => 'https://schema.org/VegetarianDiet'],
+            'vegan' => ['label' => 'Vegan', 'short' => 'VG', 'schema' => 'https://schema.org/VeganDiet'],
+            'gluten-free' => ['label' => 'Gluten-free', 'short' => 'GF', 'schema' => 'https://schema.org/GlutenFreeDiet'],
+            'dairy-free' => ['label' => 'Dairy-free', 'short' => 'DF', 'schema' => null],
+            'halal' => ['label' => 'Halal', 'short' => 'H', 'schema' => 'https://schema.org/HalalDiet'],
+            'kosher' => ['label' => 'Kosher', 'short' => 'K', 'schema' => 'https://schema.org/KosherDiet'],
+            'spicy' => ['label' => 'Spicy', 'short' => 'Hot', 'schema' => null],
+            'contains-nuts' => ['label' => 'Contains nuts', 'short' => 'N', 'schema' => null],
+            'contains-shellfish' => ['label' => 'Contains shellfish', 'short' => 'SF', 'schema' => null],
+        ],
+    ],
+
+    /*
      * The site's own search box, over the pages and the articles. What
      * people search for here - especially what they search for and do not
      * find - is counted like anything else a visitor does.

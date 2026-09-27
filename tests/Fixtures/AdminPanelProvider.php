@@ -26,7 +26,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->passwordReset()
-            ->plugins([GadyaCmsPlugin::make()])
+            ->plugins([GadyaCmsPlugin::make()->foodMenus()])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
