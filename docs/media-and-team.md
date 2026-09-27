@@ -7,7 +7,8 @@ The document stores the filename, never a URL, so a photo can be re-processed or
 - **Folders and tags** - a folder is a label on the row (nothing moves on disk); filter by it, or move several photos at once.
 - **Used on** - every page and article a photo appears on, from both the draft and the live document.
 - **Deleting** - a photo still in use is never deleted, singly or in bulk; the panel says where it is.
-- **Describe** - alt text, for screen readers and image search, and **Describe with AI**, which looks at the photograph and writes the first draft. A picture that is only decoration is given an empty description on purpose, which is the correct answer for a divider or a texture.
+- **Describe** - alt text, for screen readers and image search, and **Describe with AI**, which looks at the photograph and writes the first draft. Every photo needs a description, on upload and whenever it is edited, unless it is marked **decoration** - a divider, a texture - whose right description is none: it is saved empty on purpose, and screen readers skip it. AI marks decoration it recognises as such.
+- **Write missing alt text with AI** - select photos (the **Needs a description** filter finds them) and they are described in the background, ten at a time, with `AltTextWriter` on the client's own key or Gadya's through the portal. Decoration and photos already described are left alone. An upload can be described the same way: **Describe them for me with AI** is on by default when AI is available. **Settings → Speed & accessibility** says how many photos still need one.
 - **Keep this part in view** - where a template that crops the photo should stay centred, chosen in words (top, left, middle) because that is how the complaint arrives. Render it with `@siteFocus`:
 
 ```blade

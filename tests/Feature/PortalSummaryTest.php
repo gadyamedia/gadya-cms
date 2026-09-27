@@ -8,6 +8,7 @@ use Gadya\Cms\Quality\Visibility;
 use Gadya\Cms\Support\PortalSummary;
 use Gadya\Cms\Tests\TestCase;
 use Gadya\Connect\Models\Connection;
+use Gadya\Connect\Report\ReportBuilder;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -61,7 +62,7 @@ class PortalSummaryTest extends TestCase
          */
         $this->publishDocument();
 
-        $report = app(\Gadya\Connect\Report\ReportBuilder::class)->build();
+        $report = app(ReportBuilder::class)->build();
 
         foreach (['leads', 'backups', 'drift'] as $section) {
             $this->assertArrayHasKey($section, $report, "The check-in must carry {$section}; is gadya/connect held below 0.5?");

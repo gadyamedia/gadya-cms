@@ -65,6 +65,10 @@ Opening an enquiry marks it read; the navigation badge counts the rest. An enqui
 
 Enquiries can be deleted, and downloaded as CSV with one column per field plus the notes and dates.
 
+## The portal, and call-backs
+
+On a site paired with the Gadya Media portal, every submission is also sent there the moment it arrives, and opening or answering it here tells the portal too. `<x-gadya-cms::call-back />` is a ready-made "Speak with our team" button posting to a built-in `callback` form that keeps the visitor's consent to be rung. See [The Gadya portal](portal.md).
+
 ## A form of the site's own
 
 A form written as a Livewire component, or any other way, can still keep its enquiries in the inbox and send the same emails. Validate as usual, then hand the result over:

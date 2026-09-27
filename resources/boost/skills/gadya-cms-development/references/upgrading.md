@@ -42,6 +42,10 @@ php artisan boost:update --discover
 php artisan gadya-cms:audit       # then fix each "!" it lists
 ```
 
+## Unreleased
+
+`php artisan migrate` adds `pushed_at` and `consent` to `gadyacms_form_submissions`, `decorative` to `gadyacms_media`, and creates `gadyacms_change_requests`. Copy the new `portal` key into `config/gadya-cms.php` (`gadya-cms:audit` lists it); until then the package's defaults apply, so nothing breaks in the meantime. For the notification bell that announces requested changes, the application needs Laravel's `notifications` table (`php artisan make:notifications-table`). Tell the client that a photo now needs a description, or to be marked as decoration, before it can be saved. See [The Gadya portal](portal.md).
+
 ## 0.12.0 → 0.13.0
 
 `php artisan migrate` adds `notes`, `follow_up_at` and `answered_at` to `gadyacms_form_submissions`. Nothing else is required. Tell the client that *Automatic replies* is now **Enquiry emails**, and that she can add who is told about new enquiries there.

@@ -2,6 +2,25 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Enquiries reach the Gadya portal as they arrive.** Each submission is pushed on the queue after it is saved, and opening or answering one in **Enquiries** tells the portal, so it stops chasing it. `gadya-cms:push-submissions`, scheduled every five minutes by the package on a paired site, sends anything the queue missed from the last week. The visitor's submission never waits on or fails because of the portal. Off with `GADYA_CMS_PUSH_SUBMISSIONS=false`.
+- **Commands the portal can send**: `coming_soon.on`, `coming_soon.off`, `backup.run` and `content.request`, as plain classes tagged `gadya-connect.remote-commands` for gadya/connect to run.
+- **Requested changes.** A change the client asks for in the portal is drafted by the site's AI (the new `ChangeWriter` agent on her own key, or Gadya's through the portal) into the draft only - never published - with a preview link and a notification in the panel's bell. **Content → Requested changes** lists them and discards one; publishing settles it. The check-in reports them under `change_requests`.
+- **`<x-gadya-cms::call-back />`**: a "Speak with our team" button opening an accessible dialog for a name and a number, posted to a built-in `callback` form. The visitor's consent - the exact words, when, and from where - is kept and sent to the portal with `callback_requested`.
+- **`<x-gadya-cms::reviews />`**: the business's Google reviews from the portal, cached for twelve hours, four stars and up by default, credited to Google with a link to leave one. Renders nothing when there is nothing to show.
+- **Photos need a description, or to be marked as decoration.** Required on upload and edit; a new `decorative` flag says the empty description is deliberate. **Write missing alt text with AI** describes selected photos in the background, and **Speed & accessibility** shows how many still need one.
+
+### Fixed
+
+- The drift finding for a single undescribed photo says "1 photo has", not "1 photo have".
+
+### Upgrading
+
+Run `php artisan migrate` and copy the new `portal` key into `config/gadya-cms.php`. See [Upgrading](docs/upgrading.md).
+
 ## 0.14.8
 
 ### Fixed
