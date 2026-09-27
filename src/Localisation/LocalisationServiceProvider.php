@@ -26,6 +26,8 @@ class LocalisationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadRoutesFrom(__DIR__.'/../../routes/locales.php');
+
         /*
          * First of all the global middleware, so everything after it - the
          * redirects, the coming-soon notice, the router - sees the path

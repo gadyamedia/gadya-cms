@@ -22,6 +22,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
+use Gadya\Cms\Filament\Actions\TranslateAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Events\Pages\CreateEvent;
 use Gadya\Cms\Filament\Resources\Events\Pages\EditEvent;
@@ -180,6 +181,7 @@ class EventResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                TranslateAction::make(),
                 Action::make('view')
                     ->label('View')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)

@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Tests\Feature;
 
+use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\PublicDocument;
 use Gadya\Cms\Content\SiteContentRepository;
@@ -185,6 +186,22 @@ class MultilingualTest extends TestCase
             ->assertSee('in Español', false);
 
         $this->withSession([EditContext::SESSION_KEY => false])->get('/es/about')->assertDontSee('Quiénes somos');
+    }
+
+    public function test_the_toolbar_on_a_machine_translated_page_asks_for_a_review(): void
+    {
+        app(AiSettings::class)->save(['provider' => 'anthropic', 'model' => 'claude-sonnet-5', 'key' => 'sk-ant-123']);
+        app(Translations::class)->store('pages.about', 'es', ['heading' => 'Quiénes somos'], machine: true);
+
+        $this->actingAs($this->editor())
+            ->withSession([EditContext::SESSION_KEY => true])
+            ->get('/es/about')
+            ->assertOk()
+            ->assertSee('Quiénes somos')
+            ->assertSee('Machine translated')
+            ->assertSee('action="http://localhost/es/cms/translations/review"', false)
+            ->assertSee('Translate again into Spanish')
+            ->assertSee('<a class="gadya-cms-link" href="http://localhost/about" hreflang="en" lang="en">English</a>', false);
     }
 
     public function test_a_photo_changed_on_a_spanish_page_changes_it_in_every_language(): void

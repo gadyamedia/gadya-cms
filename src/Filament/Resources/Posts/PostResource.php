@@ -27,6 +27,7 @@ use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Blog\ArticleRequest;
 use Gadya\Cms\Blog\BlogRepository;
+use Gadya\Cms\Filament\Actions\TranslateAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Posts\Pages\CreatePost;
 use Gadya\Cms\Filament\Resources\Posts\Pages\EditPost;
@@ -263,6 +264,7 @@ class PostResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                TranslateAction::make(),
                 static::duplicateAction(),
                 DeleteAction::make(),
             ])
