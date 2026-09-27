@@ -390,6 +390,41 @@ return [
     ],
 
     /*
+     * What the site shares with the Gadya Media portal over the link
+     * gadya/connect keeps. Nothing here does anything on a site that is
+     * not paired.
+     *
+     * `push_submissions` sends each enquiry to the portal the moment it
+     * arrives, so an unanswered one is noticed there within minutes rather
+     * than at the next check-in. The visitor never waits on it.
+     *
+     * `callback` is the "Speak with our team" button,
+     * <x-gadya-cms::call-back />. `consent_text` is shown beside an
+     * unticked box and sent to the portal word for word as the record of
+     * what the visitor agreed to; `{{ business }}` becomes the brand name.
+     *
+     * `reviews` is <x-gadya-cms::reviews />: the Google reviews the portal
+     * holds for the business, fetched at most every `cache_hours`.
+     */
+    'portal' => [
+        'push_submissions' => env('GADYA_CMS_PUSH_SUBMISSIONS', true),
+        'callback' => [
+            'label' => 'Call back',
+            'button' => 'Speak with our team',
+            'heading' => 'We will call you back',
+            'intro' => 'Leave your number and we will ring you as soon as we can.',
+            'consent_text' => 'I agree to {{ business }} calling me back about my enquiry on the number above. The call may be made by an automated AI assistant, and I can ask not to be called again at any time.',
+            'success' => 'Thank you. We will call you shortly.',
+            'notify' => [],
+        ],
+        'reviews' => [
+            'min_rating' => 4,
+            'limit' => 6,
+            'cache_hours' => 12,
+        ],
+    ],
+
+    /*
      * The email the site sends. A client who has not set up a mail service
      * of her own sends through Gadya Media: the message is handed to the
      * portal over the link gadya/connect already keeps, and the portal

@@ -8,6 +8,7 @@ use Gadya\Cms\Models\AnalyticsEvent;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Notifications\FormAutoReply;
 use Gadya\Cms\Notifications\FormSubmitted;
+use Gadya\Cms\Portal\SubmissionPush;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -59,6 +60,12 @@ class StoreFormSubmission
         if ($form->notify !== []) {
             rescue(fn () => Notification::route('mail', $form->notify)->notify(new FormSubmitted($submission, $form)), report: true);
         }
+
+        /*
+         * To the Gadya Media portal, queued and rescued: the visitor has
+         * already been answered as far as she is concerned.
+         */
+        rescue(fn () => app(SubmissionPush::class)->queue($submission), report: false);
 
         return $submission;
     }

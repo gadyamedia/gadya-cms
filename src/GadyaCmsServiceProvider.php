@@ -28,6 +28,7 @@ use Gadya\Cms\Console\PruneActivityCommand;
 use Gadya\Cms\Console\PruneAnalyticsCommand;
 use Gadya\Cms\Console\PruneTrashCommand;
 use Gadya\Cms\Console\PublishDueCommand;
+use Gadya\Cms\Console\PushSubmissionsCommand;
 use Gadya\Cms\Console\ResetPasswordCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Console\SendDriftDigestCommand;
@@ -50,6 +51,7 @@ use Gadya\Cms\Mail\BrandsOutgoingMail;
 use Gadya\Cms\Mail\PortalTransport;
 use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Models\Event as EventModel;
+use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Post;
@@ -60,12 +62,14 @@ use Gadya\Cms\Models\Term;
 use Gadya\Cms\Observers\FlushRedirectMap;
 use Gadya\Cms\Observers\InvalidatePublishedDocument;
 use Gadya\Cms\Observers\RecordActivity;
+use Gadya\Cms\Observers\ReportSubmissionStatus;
 use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
 use Gadya\Connect\Portal\PortalClient;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
@@ -123,6 +127,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 PublishDueCommand::class,
                 CheckLinksCommand::class,
                 AuditCommand::class,
+                PushSubmissionsCommand::class,
             ]);
     }
 
@@ -229,6 +234,28 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);
 
+        $this->registerPortal();
+    }
+
+    /**
+     * The Gadya Media portal's side of the site: enquiries pushed as they
+     * arrive, with a sweep on the site's own scheduler for any the queue
+     * missed. Nothing here does anything until the site is paired.
+     */
+    private function registerPortal(): void
+    {
+        FormSubmission::observe(ReportSubmissionStatus::class);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            if (! config('gadya-cms.portal.push_submissions', true)) {
+                return;
+            }
+
+            $schedule->command('gadya-cms:push-submissions')
+                ->everyFiveMinutes()
+                ->withoutOverlapping(10)
+                ->runInBackground();
+        });
     }
 
     /**
