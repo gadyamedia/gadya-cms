@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Analytics;
 
+use Gadya\Cms\Privacy\Consent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,16 @@ class VisitorFingerprint
 {
     public static function hash(Request $request): string
     {
+        /*
+         * Someone who refused analytics in the privacy banner is still
+         * counted when she taps the phone number or sends a form, but
+         * as nobody in particular: a fresh random value every time, which
+         * cannot be matched to anything else she does.
+         */
+        if (app(Consent::class)->refuses(Consent::ANALYTICS, $request)) {
+            return bin2hex(random_bytes(32));
+        }
+
         return hash_hmac(
             'sha256',
             $request->ip().'|'.$request->userAgent().'|'.now()->toDateString(),

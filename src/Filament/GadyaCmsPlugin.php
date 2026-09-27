@@ -19,6 +19,7 @@ use Gadya\Cms\Filament\Pages\GetFound;
 use Gadya\Cms\Filament\Pages\Globals;
 use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\OpeningHoursSettings;
+use Gadya\Cms\Filament\Pages\PrivacySettings;
 use Gadya\Cms\Filament\Pages\Quality;
 use Gadya\Cms\Filament\Pages\SearchSettings;
 use Gadya\Cms\Filament\Pages\SiteDetails;
@@ -417,6 +418,7 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasSearch() ? Quality::class : null,
                 GetFound::class,
                 SiteStatus::class,
+                PrivacySettings::class,
                 $this->hasForms() ? Emails::class : null,
                 $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
                 ...static::connectPages(),

@@ -4,6 +4,7 @@ namespace Gadya\Cms\Support;
 
 use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Models\PageScore;
+use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Quality\Failures;
@@ -35,6 +36,7 @@ class PortalSummary
             'leads' => $this->drift->unansweredLeads(),
             'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
             ...$this->hours(),
+            'consent' => app(Consent::class)->summary(),
         ];
     }
 

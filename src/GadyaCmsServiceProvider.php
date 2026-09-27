@@ -61,6 +61,7 @@ use Gadya\Cms\Observers\FlushRedirectMap;
 use Gadya\Cms\Observers\InvalidatePublishedDocument;
 use Gadya\Cms\Observers\RecordActivity;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\SiteContext;
 use Gadya\Connect\Portal\PortalClient;
@@ -222,6 +223,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          * so a shared link keeps working, and excused from decryption.
          */
         EncryptCookies::except(Maintenance::COOKIE);
+        /* The privacy choice is written by the banner in the browser, so it cannot be encrypted. */
+        EncryptCookies::except(Consent::cookieName());
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', ComingSoon::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', AdvertiseDiscovery::class);
         $this->app->make(Kernel::class)->pushMiddleware(RecordMissingUrls::class);
