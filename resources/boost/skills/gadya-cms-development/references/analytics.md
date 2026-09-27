@@ -6,6 +6,7 @@ The dashboard shows where visitors came from and what they did, counted on your 
 - **Country and town come from the CDN's request headers** (Cloudflare's `CF-IPCountry`, `cf-region`, `cf-ipcity`) where one sits in front of the site. Nothing is looked up.
 - **Editors and bots are not counted**, nor are the panel, the editor, and anything in `gadya-cms.analytics.skip_prefixes`.
 - Anything older than `retention_days` is pruned by `gadya-cms:prune-analytics`.
+- **A visitor who refuses analytics in the privacy banner is not counted**: her page views are not recorded, and anything else she does is counted without the daily identifier. See *The CMS's own analytics* in [Privacy choices](privacy.md) for exactly what is and is not stored.
 
 ## Events
 

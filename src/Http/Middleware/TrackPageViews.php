@@ -7,6 +7,7 @@ use Gadya\Cms\Analytics\VisitorFingerprint;
 use Gadya\Cms\Analytics\VisitorGeo;
 use Gadya\Cms\Events\PageViewed;
 use Gadya\Cms\Models\PageView;
+use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -105,6 +106,11 @@ class TrackPageViews
         }
 
         if ($request->expectsJson() || VisitorFingerprint::isBot($request)) {
+            return false;
+        }
+
+        /* Someone who said no to analytics in the privacy banner is not counted. */
+        if (app(Consent::class)->refuses(Consent::ANALYTICS, $request)) {
             return false;
         }
 

@@ -23,6 +23,8 @@ In the panel, every page and article has an **In search results** section: a pre
 
 Drafts and scheduled articles are always `noindex`.
 
+The structured data names the business (`seo.organization`) on every page. Once **Opening hours** are set, that node also carries `openingHoursSpecification`, holidays included - see [Menus and opening hours](local-business.md). Each published food menu describes itself as `Menu` JSON-LD where it is shown.
+
 ## Sitemap and robots
 
 `/sitemap.xml` lists every visible page (not hidden, not scheduled for later, not `noindex`) and every live article. `/robots.txt` disallows the panel and the editor and points at the sitemap.

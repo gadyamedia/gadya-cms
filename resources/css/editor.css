@@ -281,3 +281,16 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.875rem;
 }
+
+/*
+ * Where to change something the page cannot edit in place - a menu, the
+ * opening hours - shown beside it for an editor only.
+ */
+.gadya-cms-admin-link {
+    display: inline-block;
+    margin: 0.5rem 0;
+    padding: 0.25rem 0.75rem;
+    border: 1px dashed currentColor;
+    border-radius: 999px;
+    font-size: 0.875rem;
+}

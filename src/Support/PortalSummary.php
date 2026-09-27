@@ -2,9 +2,11 @@
 
 namespace Gadya\Cms\Support;
 
+use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\PageScore;
 use Gadya\Cms\Portal\ChangeRequests;
+use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Quality\Failures;
@@ -37,7 +39,21 @@ class PortalSummary
             'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
             'change_requests' => rescue(fn (): array => app(ChangeRequests::class)->summary(), [], report: false),
             'locales' => app(Locales::class)->summary(),
+            ...$this->hours(),
+            'consent' => app(Consent::class)->summary(),
         ];
+    }
+
+    /**
+     * The opening hours, left out altogether when none are set.
+     *
+     * @return array{hours?: array<string, mixed>}
+     */
+    private function hours(): array
+    {
+        $hours = rescue(fn (): ?array => app(BusinessHours::class)->summary(), null, report: false);
+
+        return $hours === null ? [] : ['hours' => $hours];
     }
 
     /**

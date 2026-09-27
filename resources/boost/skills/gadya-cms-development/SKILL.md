@@ -33,6 +33,9 @@ To upgrade the package or switch on features a site has not taken up, use the `g
 | `Content\PageTypes` | `fieldsFor($type)`, `sectionTypesFor()`, `label()`, `creatable()` - fields differ per page type |
 | `Content\SiteBlocks` | saved sections: `options()`, `section($key)`, `save($label, $section)` |
 | `Events\EventCalendar` | `upcoming()`, `past()`, `findLive()`, `ics()`, `structuredData()` |
+| `Menus\FoodMenus` / `Menus\Price` | `find($slug)`, `featured()`, `structuredData($menu)`; prices are integer cents |
+| `Hours\BusinessHours` / `Hours\OpeningHours` | `current()`, `isOpenAt()`, `status()`, `rangesOn($date)`, `specification()`, `toGoogleBusinessProfile()` |
+| `Privacy\Consent` | `allows($category, $request)`, `refuses()`, `choice()`; wrap third-party tags in `<x-gadya-cms::consented-script>` |
 | `Search\SiteSearch` | `for($query)` over published pages and live articles |
 | `Activity\Activity` | `record($event, $subject)`, `describe($event)` - the who-changed-what log |
 | `Services\SchedulePublish` | `schedule($at)`, `isPending()`, `publishIfDue()` |
@@ -76,6 +79,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - `@editableFor($path)` once, then `@editable($field, 'text'|'multiline'|'image')` on elements; `@editableGlobal('phone')` for top-level keys.
 - Array indexes go into paths (`sections.{$index}.title`); `PublicDocument` preserves keys for that reason - never `array_values()` a card list before rendering.
 - Images: store filenames, render with `@siteImage($ref, $width)`, `srcset="@siteSrcset($ref)"`, `style="@siteFocus($ref)"` when cropped; `@siteThumbnail($ref)` for lists.
+- Components: `<x-gadya-cms::menu menu="lunch" />`, `<x-gadya-cms::menu-specials />`, `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />`, `<x-gadya-cms::todays-hours />`, `<x-gadya-cms::consent-banner />`, `<x-gadya-cms::privacy-choices-link />`, `<x-gadya-cms::consented-script>`. Menus and hours are not editable in place; for an editor they carry a link to their admin screen.
 - Other directives: `@cmsSearchForm`, `@cmsNewsletterForm`, `@cmsForm('contact')`, `@cmsFormStatus('contact')`, `@cmsSeo($page)`, `@cmsToolbar`, `@gadyaBuiltBy` (the Gadya Media badge, last in the footer, in the site's ink). All take an optional array of overrides.
 - Globals (announcement, phone, footer): `@editableGlobal('footer.tagline', 'multiline')`, listed in `gadya-cms.globals`.
 - New page type: `php artisan gadya-cms:make:page-template pages/types/name` first, then adjust.
@@ -88,7 +92,8 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - Published config overrides package arrays wholesale: when you override `pages`, `navigation`, `analytics`, `users`, `seo`, `blog`, `forms`, copy every nested key.
 - New editable paths → `editable_fields`. New page URL prefixes → a `ResolvesPagePaths` implementation in `pages.paths` and the slug in `pages.reserved_slugs` + `pages.route_excluded_slugs`.
 - Page edit-screen fields → `pages.content_fields` (`text`, `textarea`, `image`).
-- Plugin switches: `blog`, `ai`, `forms`, `redirects`, `search` (Google cards), `events`, `newsletter`, `team`, `analytics`, `brand`, `profile`, `unsavedChangesAlerts`, `navigationGroups`.
+- Plugin switches: `blog`, `ai`, `forms`, `redirects`, `search` (Google cards), `events`, `foodMenus` (off by default), `newsletter`, `team`, `analytics`, `brand`, `profile`, `unsavedChangesAlerts`, `navigationGroups`.
+- Never paste a third-party tracker (gtag, Meta pixel, ...) as a bare `<script>`: wrap it in `<x-gadya-cms::consented-script category="analytics|marketing">` and put `<x-gadya-cms::consent-banner />` and `<x-gadya-cms::privacy-choices-link />` in the layout. `gadya-cms:audit` flags a bare one.
 - Pages are soft-deleted: `Page::query()` hides the trash, `withTrashed()` shows it, `restoreToDraft()` brings one back editable. A slug a trashed page holds is restored and overwritten rather than colliding.
 - Menus: the main one is `nav` in the document and in the form; more are configured under `navigation.menus` and read with `NavigationTree::forMenu($document, 'footer')`.
 - Route parameters reach a controller method **by position, not by name** - never use `->defaults()` to pass a second value to a shared action; give each route its own method.
@@ -131,6 +136,8 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/search-and-readiness.md` - Search Console, PageSpeed, the AI-readiness checks, the Get found page (live checks, DNS per domain, Forge robots.txt 404)
 - `references/demo.md` - the demo site and the template generator
 - `references/events-and-search.md` - the diary, the search box, the mailing list
+- `references/local-business.md` - food menus (`<x-gadya-cms::menu>`, sold out, `Menu` JSON-LD) and opening hours (`<x-gadya-cms::opening-hours>`, `open-status`, `todays-hours`, `OpeningHours`)
+- `references/privacy.md` - the consent banner, `<x-gadya-cms::consented-script>`, Global Privacy Control, what the CMS's analytics stores
 - `references/operations.md` - trash, activity, scheduled publish, coming soon, broken links, replies
 - `references/upgrading.md` - what each release asks of an application
 - `references/multilingual.md` - more than one language: /es/ addresses, the switcher, hreflang, editing and AI translation

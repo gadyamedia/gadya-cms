@@ -6,6 +6,8 @@ use Filament\Facades\Filament;
 use Gadya\Cms\Brand\Favicon;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Mail\SharedSender;
+use Gadya\Cms\Privacy\Consent;
+use Gadya\Cms\Privacy\TrackerScan;
 use Gadya\Cms\Seo\AgentReadiness;
 use Gadya\Connect\Models\Connection;
 use Illuminate\Console\Scheduling\Schedule;
@@ -280,7 +282,18 @@ class InstallAudit
             $this->check('Templates', '@gadyaBuiltBy at the end of the footer', str_contains($views, '@gadyaBuiltBy'), str_contains($views, '<gadya-built-by') ? 'Replace the hand-pasted <gadya-built-by> script and tag with @gadyaBuiltBy; it matches the site\'s ink by itself.' : 'Add @gadyaBuiltBy as the last thing in the footer (bottom right).'),
             $this->check('Templates', '@cmsSearchForm somewhere on the site', str_contains($views, '@cmsSearchForm'), 'Add @cmsSearchForm to the header or footer.', optional: true),
             $this->check('Templates', '@cmsNewsletterForm somewhere on the site', str_contains($views, '@cmsNewsletterForm'), 'Add @cmsNewsletterForm to the footer.', optional: true),
+            $this->trackersCheck($views),
         ];
+    }
+
+    /**
+     * @return array{group: string, label: string, status: string, fix: string}
+     */
+    private function trackersCheck(string $views): array
+    {
+        $scan = TrackerScan::check($views, rescue(fn (): bool => app(Consent::class)->published()['banner_enabled'], false, report: false));
+
+        return $this->check('Templates', 'Third-party trackers wait for the visitor\'s consent', $scan['passed'], $scan['fix']);
     }
 
     /**

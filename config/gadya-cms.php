@@ -506,6 +506,48 @@ return [
     ],
 
     /*
+     * A restaurant's menus: sections, items, prices in whole cents, sizes,
+     * dietary marks, specials and a sold-out switch. Rendered with
+     * <x-gadya-cms::menu menu="lunch" />. Switch the panel screen on with
+     * ->foodMenus() on the plugin.
+     */
+    'menus' => [
+        'currency' => 'USD',
+        'currency_symbol' => '$',
+
+        /*
+         * The marks an item can carry. `short` is what sits beside the
+         * item, `label` what a screen reader and the key say, and `schema`
+         * the schema.org diet it is told to search engines as - allergen
+         * warnings have none.
+         */
+        'dietary' => [
+            'vegetarian' => ['label' => 'Vegetarian', 'short' => 'V', 'schema' => 'https://schema.org/VegetarianDiet'],
+            'vegan' => ['label' => 'Vegan', 'short' => 'VG', 'schema' => 'https://schema.org/VeganDiet'],
+            'gluten-free' => ['label' => 'Gluten-free', 'short' => 'GF', 'schema' => 'https://schema.org/GlutenFreeDiet'],
+            'dairy-free' => ['label' => 'Dairy-free', 'short' => 'DF', 'schema' => null],
+            'halal' => ['label' => 'Halal', 'short' => 'H', 'schema' => 'https://schema.org/HalalDiet'],
+            'kosher' => ['label' => 'Kosher', 'short' => 'K', 'schema' => 'https://schema.org/KosherDiet'],
+            'spicy' => ['label' => 'Spicy', 'short' => 'Hot', 'schema' => null],
+            'contains-nuts' => ['label' => 'Contains nuts', 'short' => 'N', 'schema' => null],
+            'contains-shellfish' => ['label' => 'Contains shellfish', 'short' => 'SF', 'schema' => null],
+        ],
+    ],
+
+    /*
+     * The business's opening hours, edited under Appearance → Opening
+     * hours and published with everything else. The timezone is where the
+     * business is, not where the server is; it can be changed per site on
+     * that screen.
+     */
+    'hours' => [
+        'timezone' => 'America/New_York',
+
+        /* How far ahead the hours table lists holidays and special days. */
+        'upcoming_days' => 60,
+    ],
+
+    /*
      * The site's own search box, over the pages and the articles. What
      * people search for here - especially what they search for and do not
      * find - is counted like anything else a visitor does.
@@ -646,6 +688,25 @@ return [
         'statement' => true,
         'path' => 'accessibility-statement',
         'pledge' => 'If any part of this site gets in your way, tell us and we will put it right. We answer within two working days.',
+    ],
+
+    /*
+     * The privacy banner, for the New Jersey Data Privacy Act and anywhere
+     * else a visitor must be able to say no. Off by default, so a site
+     * changes nothing until it is switched on under Settings → Privacy
+     * choices, where the client also writes every word it says (those are
+     * site content, drafted and published, with plain-English defaults).
+     *
+     * Third-party tags go inside <x-gadya-cms::consented-script> and stay
+     * inert until the visitor allows their category. A Global Privacy
+     * Control signal always counts as "no" to marketing.
+     */
+    'privacy' => [
+        'banner_enabled' => false,
+        'honour_gpc' => true,
+        'cookie' => 'gadya_consent',
+        'cookie_days' => 365,
+        'policy_url' => null,
     ],
 
     /*

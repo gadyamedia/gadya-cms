@@ -16,12 +16,12 @@ Roles stay your application's own strings; the package only needs to know what e
 
 | Ability | Unlocks |
 | --- | --- |
-| `content` | Pages, the menu, Look & feel, Everywhere, Locations, the live editor |
+| `content` | Pages, the menu, Look & feel, Everywhere, Locations, Opening hours, Food menus and sold out, the live editor |
 | `articles` | Articles and Write with AI |
 | `photos` | The photo library |
 | `enquiries` | The enquiries inbox |
 | `publish` | Publish changes (panel and toolbar), revision history |
-| `settings` | Redirects, AI settings, Search & speed |
+| `settings` | Redirects, AI settings, Search & speed, Privacy choices |
 
 A role given as a plain label (`'editor' => 'Editor'`) keeps the 0.2 behaviour: everything but `settings` and the team. The administrator role always has everything; the team screen is still guarded by your `manage-users` gate.
 

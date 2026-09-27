@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Content;
 
+use Gadya\Cms\Models\MenuItem;
 use Gadya\Cms\Models\Post;
 use Illuminate\Database\QueryException;
 
@@ -67,6 +68,10 @@ class MediaUsage
             $map[$filename] = $titles;
         }
 
+        foreach ($this->menuItemsUsingImages() as $filename => $names) {
+            $map[$filename] = [...($map[$filename] ?? []), ...$names];
+        }
+
         foreach ([$this->repository->draft(), $this->repository->published()] as $document) {
             foreach ($document['pages'] ?? [] as $slug => $page) {
                 if (! is_array($page)) {
@@ -102,6 +107,28 @@ class MediaUsage
 
         foreach ($posts as $post) {
             $map[(string) $post->image][] = 'Article: '.$post->title;
+        }
+
+        return $map;
+    }
+
+    /**
+     * A menu item's photo is in use for as long as the item is on a menu.
+     *
+     * @return array<string, list<string>>
+     */
+    private function menuItemsUsingImages(): array
+    {
+        $map = [];
+
+        try {
+            $items = MenuItem::query()->whereNotNull('image')->get(['image', 'name']);
+        } catch (QueryException) {
+            return [];
+        }
+
+        foreach ($items as $item) {
+            $map[(string) $item->image][] = 'Menu item: '.$item->name;
         }
 
         return $map;
