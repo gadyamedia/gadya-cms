@@ -54,6 +54,27 @@ class DriftTest extends TestCase
         $this->assertSame(1, app(Drift::class)->unansweredLeads()['count']);
     }
 
+    public function test_the_portal_is_told_how_many_enquiries_wait_and_how_long_the_oldest_has(): void
+    {
+        /*
+         * The portal's lead chaser reads exactly these two keys from the
+         * check-in; renaming either silently stops the nudges.
+         */
+        $this->publishDocument();
+
+        foreach ([30, 5] as $hoursAgo) {
+            FormSubmission::query()->create([
+                'site_id' => 1,
+                'form' => 'contact',
+                'data' => ['name' => 'Ada'],
+                'status' => FormSubmission::STATUS_NEW,
+                'created_at' => now()->subHours($hoursAgo),
+            ]);
+        }
+
+        $this->assertSame(['count' => 2, 'oldest_hours' => 30], app(Drift::class)->unansweredLeads());
+    }
+
     public function test_a_blog_nobody_has_touched_for_months_reads_as_a_closed_business(): void
     {
         $this->publishDocument();
