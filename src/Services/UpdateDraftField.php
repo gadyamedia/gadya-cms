@@ -4,6 +4,8 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Content\EditableFields;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Locales;
+use Gadya\Cms\Localisation\Translations;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -29,6 +31,18 @@ class UpdateDraftField
 
         if (Arr::has($document, $path) && ! is_scalar(Arr::get($document, $path))) {
             throw new RuntimeException("The path [{$path}] does not hold a scalar value.");
+        }
+
+        /*
+         * In another language the words go into its translation; the
+         * photos, which every language shares, still go into the page.
+         */
+        $locales = app(Locales::class);
+
+        if ($locales->isTranslating() && $this->fields->typeFor($path) !== 'image') {
+            app(Translations::class)->writeField($document, $path, $value, $locales->current());
+
+            return;
         }
 
         Arr::set($document, $path, $value);

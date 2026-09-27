@@ -231,6 +231,30 @@ return [
     ],
 
     /*
+     * The languages the public site speaks. Off by default: with one
+     * language the site behaves exactly as it always did. Add a code to
+     * `enabled` and every page is also served under /{code}/, with any
+     * words not yet translated shown in the default language rather than
+     * left blank. See docs/multilingual.md.
+     */
+    'locales' => [
+        'default' => 'en',
+        'enabled' => ['en'],
+
+        /* What each language is called in the switcher, in its own words. */
+        'names' => ['en' => 'English', 'es' => 'Español'],
+
+        /* Words and names the translator must leave exactly as written. */
+        'glossary' => [],
+
+        /* Parts of the site document that are never translated. */
+        'untranslated_keys' => ['theme', 'redirects', 'locations', 'blocks'],
+
+        /* How many pages or articles one background translation job takes. */
+        'chunk' => 5,
+    ],
+
+    /*
      * The curated type choices offered on the Look & Feel screen. Keeping
      * the list short is the point: the client cannot make the site
      * unreadable, and every option is a font the site already loads well.

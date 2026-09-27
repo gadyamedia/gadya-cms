@@ -35,6 +35,7 @@ use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Editor\EditingLock;
 use Gadya\Cms\Editor\PreviewLink;
+use Gadya\Cms\Filament\Actions\TranslateAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Pages\Pages\CreatePage;
 use Gadya\Cms\Filament\Resources\Pages\Pages\EditPage;
@@ -213,6 +214,7 @@ class PageResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                TranslateAction::make(),
                 static::duplicateAction(),
                 static::renameAction(),
                 static::editLiveAction(),

@@ -3,6 +3,7 @@
 namespace Workbench\Database\Seeders;
 
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Comment;
 use Gadya\Cms\Models\Event;
 use Gadya\Cms\Models\FormSubmission;
@@ -28,6 +29,22 @@ use Workbench\App\Models\User;
  */
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * The home page and the announcement in Spanish, so /es shows both a
+     * translation and the English it falls back to.
+     */
+    private function spanish(): void
+    {
+        $translations = app(Translations::class);
+
+        $translations->store('announcement', 'es', 'Reservando fiestas de verano en todo Springfield', machine: false);
+        $translations->store('pages.home', 'es', [
+            'heading' => 'Fiestas de las que sus hijos hablarán durante años',
+            'cta' => 'Consultar una fecha',
+            'description' => 'Nosotros traemos el castillo inflable, los juegos, la pintura facial y la calma. Usted trae al cumpleañero.',
+        ], machine: false);
+    }
+
     public function run(): void
     {
         $siteId = app(SiteContext::class)->id();
@@ -40,6 +57,7 @@ class DatabaseSeeder extends Seeder
 
         $repository = app(SiteContentRepository::class);
         $repository->saveDraft($repository->defaults());
+        $this->spanish();
         app(PublishSiteContent::class)->handle(User::query()->first(), 'Demo site');
 
         $this->articles($siteId);

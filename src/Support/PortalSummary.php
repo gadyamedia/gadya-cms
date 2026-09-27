@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Support;
 
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\PageScore;
 use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Quality\AccessibilityRecord;
@@ -35,6 +36,7 @@ class PortalSummary
             'leads' => $this->drift->unansweredLeads(),
             'backups' => [...$this->backups->state(), 'drill' => $this->drill->last()],
             'change_requests' => rescue(fn (): array => app(ChangeRequests::class)->summary(), [], report: false),
+            'locales' => app(Locales::class)->summary(),
         ];
     }
 

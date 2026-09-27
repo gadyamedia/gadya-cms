@@ -3,12 +3,20 @@
     $holder = $lock->holder();
     $heldByOther = $holder !== null && auth()->check() && ! $lock->isHeldBy(auth()->user());
     $panelUrl = \Filament\Facades\Filament::getPanel(config('gadya-cms.panel', 'admin'))->getUrl();
+    $locales = app(\Gadya\Cms\Localisation\Locales::class);
+    $multilingual = $locales->isMultilingual();
 @endphp
 
-<div class="gadya-cms-toolbar" data-cms-toolbar data-cms-prefix="{{ config('gadya-cms.editor.prefix', 'cms') }}">
+<div class="gadya-cms-toolbar" data-cms-toolbar data-cms-prefix="{{ config('gadya-cms.editor.prefix', 'cms') }}"@if ($multilingual) data-cms-base="{{ $locales->prefix($locales->current()) }}" data-cms-locale="{{ $locales->current() }}"@endif>
     <div class="gadya-cms-toolbar__inner">
-        <p class="gadya-cms-toolbar__label">Editing draft</p>
+        <p class="gadya-cms-toolbar__label">Editing draft
+            @if ($multilingual)<span class="gadya-cms-toolbar__language">in {{ $locales->name($locales->current()) }}</span>@endif
+        </p>
         <p class="gadya-cms-toolbar__status" data-cms-status aria-live="polite">All changes saved</p>
+
+        @if ($multilingual)
+            @include('gadya-cms::editor.languages')
+        @endif
 
         @if ($heldByOther)
             <p class="gadya-cms-error">{{ $holder }} is editing right now</p>

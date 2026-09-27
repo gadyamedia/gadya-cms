@@ -3,6 +3,8 @@
 namespace Gadya\Cms\Content;
 
 use Gadya\Cms\Editor\EditContext;
+use Gadya\Cms\Localisation\Locales;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Setting;
 use Gadya\Cms\Support\SiteContext;
@@ -57,11 +59,47 @@ class SiteContentRepository
     }
 
     /**
+     * The document to draw this request with: the draft or the live site,
+     * in the language the request is in.
+     *
      * @return array<string, mixed>
      */
     public function forRequest(): array
     {
-        return app(EditContext::class)->showsDraft() ? $this->draft() : $this->published();
+        $locale = app(Locales::class)->current();
+
+        return app(EditContext::class)->showsDraft() ? $this->draftIn($locale) : $this->publishedIn($locale);
+    }
+
+    /**
+     * The live document in a language, with anything not translated yet in
+     * the default language. Cached until the next publish, like the
+     * original. Never saved back: it is for drawing pages only.
+     *
+     * @return array<string, mixed>
+     */
+    public function publishedIn(string $locale): array
+    {
+        if ($locale === app(Locales::class)->default()) {
+            return $this->published();
+        }
+
+        return Cache::rememberForever(self::CACHE_KEY.'.'.$locale, fn (): array => app(Translations::class)->translate($this->published(), $locale));
+    }
+
+    /**
+     * The draft in a language, for an editor working in it. Never saved
+     * back either: edits in a language go through Translations.
+     *
+     * @return array<string, mixed>
+     */
+    public function draftIn(string $locale): array
+    {
+        if ($locale === app(Locales::class)->default()) {
+            return $this->draft();
+        }
+
+        return app(Translations::class)->translate($this->draft(), $locale, draft: true);
     }
 
     /**
@@ -98,6 +136,10 @@ class SiteContentRepository
     public function flushPublishedCache(): void
     {
         Cache::forget(self::CACHE_KEY);
+
+        foreach (app(Locales::class)->additional() as $locale) {
+            Cache::forget(self::CACHE_KEY.'.'.$locale);
+        }
     }
 
     /**

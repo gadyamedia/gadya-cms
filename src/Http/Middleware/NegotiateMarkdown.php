@@ -6,6 +6,7 @@ use Closure;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\PublicDocument;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Seo\Markdown;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +32,7 @@ class NegotiateMarkdown
             return $next($request);
         }
 
-        $document = $this->public->from($this->repository->published());
+        $document = $this->public->from($this->repository->publishedIn(app(Locales::class)->current()));
 
         foreach ($document['pages'] ?? [] as $slug => $page) {
             if (! is_array($page) || $this->registry->isHidden($page)) {

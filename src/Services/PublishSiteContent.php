@@ -4,6 +4,7 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Activity\Activity;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Revision;
 use Gadya\Cms\Models\Setting;
@@ -43,6 +44,8 @@ class PublishSiteContent
             Setting::query()->where('site_id', $siteId)->eachById(function (Setting $setting): void {
                 $setting->forceFill(['published' => $setting->draft])->save();
             });
+
+            app(Translations::class)->publish();
 
             $revision = Revision::query()->create([
                 'site_id' => $siteId,

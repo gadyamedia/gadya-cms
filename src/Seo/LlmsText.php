@@ -6,6 +6,7 @@ use Gadya\Cms\Blog\BlogRepository;
 use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Localisation\Locales;
 
 /**
  * The site as an AI assistant would like to read it: one short file
@@ -67,6 +68,21 @@ class LlmsText
                 foreach ($posts as $post) {
                     $lines[] = '- ['.$post->title.']('.url($post->publicPath()).')'.(filled($post->excerpt) ? ': '.trim((string) $post->excerpt) : '');
                 }
+            }
+        }
+
+        /*
+         * The list above is the default language. A reader who wants
+         * another finds the same pages under its prefix.
+         */
+        $locales = app(Locales::class);
+
+        if ($locales->isMultilingual()) {
+            $lines[] = '';
+            $lines[] = '## Languages';
+
+            foreach ($locales->enabled() as $locale) {
+                $lines[] = '- '.$locales->name($locale).' ('.$locale.'): '.$locales->url('/', $locale).($locale === $locales->default() ? ' - the addresses above' : ' - the same addresses under '.$locales->prefix($locale).'/');
             }
         }
 

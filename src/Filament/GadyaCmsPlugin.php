@@ -17,6 +17,7 @@ use Gadya\Cms\Filament\Pages\Dashboard;
 use Gadya\Cms\Filament\Pages\Emails;
 use Gadya\Cms\Filament\Pages\GetFound;
 use Gadya\Cms\Filament\Pages\Globals;
+use Gadya\Cms\Filament\Pages\Languages;
 use Gadya\Cms\Filament\Pages\Navigation;
 use Gadya\Cms\Filament\Pages\Quality;
 use Gadya\Cms\Filament\Pages\SearchSettings;
@@ -409,6 +410,7 @@ class GadyaCmsPlugin implements Plugin
                 SiteDetails::class,
                 Navigation::class,
                 $this->hasAi() ? AiSettings::class : null,
+                Languages::class,
                 $this->hasSearch() ? SearchSettings::class : null,
                 $this->hasSearch() ? Quality::class : null,
                 GetFound::class,

@@ -8,6 +8,7 @@ use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Events\EventCalendar;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Quality\AccessibilityRecord;
 use Illuminate\Support\Carbon;
 
@@ -47,6 +48,43 @@ class SitemapEntries
         private readonly BlogRepository $blog,
         private readonly EventCalendar $events,
     ) {}
+
+    /**
+     * Every address in every language the site speaks, each carrying the
+     * others as alternates. On a site with one language, exactly all().
+     *
+     * @return list<array{loc: string, lastmod: string|null, priority: string, alternates?: array<string, string>}>
+     */
+    public function localised(): array
+    {
+        $entries = $this->all();
+        $locales = app(Locales::class);
+
+        if (! $locales->isMultilingual()) {
+            return $entries;
+        }
+
+        $localised = [];
+
+        foreach ($entries as $entry) {
+            $path = $locales->pathOf($entry['loc']);
+
+            if ($path === null) {
+                $localised[] = $entry;
+
+                continue;
+            }
+
+            $alternates = $locales->alternates($path);
+            $alternates['x-default'] = $alternates[$locales->default()];
+
+            foreach ($locales->enabled() as $locale) {
+                $localised[] = [...$entry, 'loc' => $alternates[$locale], 'alternates' => $alternates];
+            }
+        }
+
+        return $localised;
+    }
 
     /**
      * @return list<array{loc: string, lastmod: string|null, priority: string}>

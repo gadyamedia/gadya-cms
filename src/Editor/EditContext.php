@@ -4,6 +4,7 @@ namespace Gadya\Cms\Editor;
 
 use Gadya\Cms\Content\EditableFields;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Localisation\Locales;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
@@ -77,6 +78,12 @@ class EditContext
         $this->basePath = $basePath;
     }
 
+    /** The document path the page's `@editable` calls hang off, e.g. `pages.about`. */
+    public function basePath(): ?string
+    {
+        return $this->basePath;
+    }
+
     public function attributes(string $field, string $type = 'text'): HtmlString
     {
         if (! $this->enabled || $this->basePath === null) {
@@ -117,6 +124,6 @@ class EditContext
      */
     private function draft(): array
     {
-        return $this->draft ??= app(SiteContentRepository::class)->draft();
+        return $this->draft ??= app(SiteContentRepository::class)->draftIn(app(Locales::class)->current());
     }
 }

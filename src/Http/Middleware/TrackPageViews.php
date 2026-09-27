@@ -48,7 +48,7 @@ class TrackPageViews
 
             $view = PageView::create([
                 'site_id' => app(SiteContext::class)->id(),
-                'path' => Str::limit(Str::start($request->path(), '/'), 255, ''),
+                'path' => Str::limit($this->path($request), 255, ''),
                 'route_name' => $request->route()?->getName(),
                 'visitor_hash' => VisitorFingerprint::hash($request),
                 'referrer_host' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST) ?: null,
@@ -76,6 +76,22 @@ class TrackPageViews
         }, report: false);
 
         return $response;
+    }
+
+    /**
+     * The address as the visitor asked for it: /es/about counts as itself,
+     * not as the English /about the router saw.
+     */
+    private function path(Request $request): string
+    {
+        $path = Str::start($request->path(), '/');
+        $prefix = (string) $request->attributes->get(LocaliseRequest::ATTRIBUTE, '');
+
+        if ($prefix === '') {
+            return $path;
+        }
+
+        return $path === '/' ? $prefix : $prefix.$path;
     }
 
     private function shouldTrack(Request $request, Response $response): bool
