@@ -39,6 +39,8 @@ use Gadya\Cms\Content\SlugPagePaths;
 use Gadya\Cms\Contracts\ResolvesPagePaths;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
+use Gadya\Cms\Forms\Builder\FieldTypes;
+use Gadya\Cms\Forms\Builder\FormRenderer;
 use Gadya\Cms\Http\Middleware\AdvertiseDiscovery;
 use Gadya\Cms\Http\Middleware\ComingSoon;
 use Gadya\Cms\Http\Middleware\HandleRedirects;
@@ -177,6 +179,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(Options::class);
         $this->app->scoped(AiSettings::class);
         $this->app->scoped(SharedSender::class);
+        $this->app->singleton(FieldTypes::class);
+        $this->app->scoped(FormRenderer::class);
 
         $this->app->register(LocalisationServiceProvider::class);
     }
@@ -210,6 +214,10 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
 
         if (config('gadya-cms.newsletter.enabled', true)) {
             $this->loadRoutesFrom(__DIR__.'/../routes/newsletter.php');
+        }
+
+        if (config('gadya-cms.forms.builder.enabled', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/forms.php');
         }
 
         $this->publishes([
@@ -372,6 +380,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
             return "<?php echo view('gadya-cms::forms.newsletter', array_merge(['label' => (string) config('gadya-cms.newsletter.label', 'Get our news by email'), 'button' => (string) config('gadya-cms.newsletter.button', 'Sign up'), 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')], (array) ({$expression})))->render(); ?>";
         });
         Blade::directive('cmsForm', fn (string $expression): string => "<?php echo view('gadya-cms::forms.fields', ['form' => {$expression}, 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')])->render(); ?>");
+        Blade::directive('cmsFormEmbed', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Forms\\Builder\\FormRenderer::class)->render({$expression}); ?>");
         Blade::directive('cmsFormStatus', fn (string $expression): string => "<?php echo view('gadya-cms::forms.status', ['form' => {$expression}])->render(); ?>");
         Blade::directive('gadyaBuiltBy', function (string $expression): string {
             $expression = trim($expression) === '' ? '[]' : $expression;
@@ -476,7 +485,14 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         RateLimiter::for('gadya-cms-inline', fn (Request $request): Limit => Limit::perMinute(120)
             ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
 
-        RateLimiter::for('gadya-cms-forms', fn (Request $request): Limit => Limit::perMinute(6)->by($request->ip()));
+        /*
+         * Checking one step of a long form is not sending it: those get a
+         * bucket of their own, so a five-step form cannot run out of
+         * tries before its last page.
+         */
+        RateLimiter::for('gadya-cms-forms', fn (Request $request): Limit => $request->filled('_validate_step')
+            ? Limit::perMinute(60)->by('step|'.$request->ip())
+            : Limit::perMinute(6)->by($request->ip()));
 
         RateLimiter::for('gadya-cms-events', fn (Request $request): Limit => Limit::perMinute(60)->by($request->ip()));
     }

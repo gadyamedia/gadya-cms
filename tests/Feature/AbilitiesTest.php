@@ -35,11 +35,23 @@ class AbilitiesTest extends TestCase
         $this->assertSame([], $abilities->forRole('customer'));
     }
 
+    public function test_whoever_may_edit_the_pages_may_build_the_forms_on_them(): void
+    {
+        config(['gadya-cms.users.roles.marketer' => ['label' => 'Marketer', 'abilities' => ['forms']]]);
+        config(['gadya-cms.users.roles.receptionist' => ['label' => 'Receptionist', 'abilities' => ['enquiries']]]);
+        $abilities = app(Abilities::class);
+
+        $this->assertContains('forms', $abilities->forRole('editor'), 'Editing content brings building forms with it.');
+        $this->assertSame(['forms'], $abilities->forRole('marketer'), 'Forms alone, without the pages.');
+        $this->assertSame(['enquiries'], $abilities->forRole('receptionist'), 'Reading enquiries is not building forms.');
+        $this->assertNotContains('forms', $abilities->forRole('contributor'));
+    }
+
     public function test_a_role_configured_as_a_plain_label_keeps_the_old_everything_but_the_team(): void
     {
         config(['gadya-cms.users.roles.helper' => 'Helper']);
 
-        $this->assertSame(['content', 'articles', 'photos', 'enquiries', 'publish'], app(Abilities::class)->forRole('helper'));
+        $this->assertSame(['content', 'articles', 'photos', 'enquiries', 'publish', 'forms'], app(Abilities::class)->forRole('helper'));
         $this->assertSame('Helper', Abilities::roleLabels()['helper']);
     }
 

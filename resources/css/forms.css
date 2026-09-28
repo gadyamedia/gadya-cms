@@ -1,0 +1,75 @@
+/*
+ * The default look of a built form. Optional (forms.builder.styles, or per
+ * form), and every rule sits under :where() so it has no weight at all:
+ * anything the site's own stylesheet says about .cms-bform wins.
+ * Colours come from Look & feel through --cms-form-accent and
+ * --cms-form-ink.
+ */
+:where(.cms-bform) { --cms-form-radius: .5rem; --cms-form-line: color-mix(in srgb, var(--cms-form-ink, #111827) 25%, transparent); --cms-form-danger: #b91c1c; color: var(--cms-form-ink, #111827); max-width: 42rem; }
+:where(.cms-bform) :where(*, *::before, *::after) { box-sizing: border-box; }
+:where(.cms-bform__title) { margin: 0 0 .5rem; }
+:where(.cms-bform__form) { display: grid; gap: 1rem; }
+:where(.cms-bform__fields) { display: flex; flex-wrap: wrap; gap: 1rem; }
+:where(.cms-bform__field) { flex: 1 1 100%; min-width: 0; }
+:where(.cms-bform__field--half) { flex: 1 1 calc(50% - .5rem); }
+@media (max-width: 36rem) { :where(.cms-bform__field--half) { flex-basis: 100%; } }
+:where(.cms-bform__field[hidden], .cms-bform__step[hidden], .cms-bform [hidden]) { display: none !important; }
+:where(.cms-bform__step) { border: 0; margin: 0; padding: 0; min-width: 0; }
+:where(.cms-bform__legend) { font-size: 1.25rem; font-weight: 700; padding: 0; margin-bottom: .75rem; }
+:where(.cms-bform__group) { border: 0; margin: 0; padding: 0; min-width: 0; }
+:where(.cms-bform__label) { display: block; font-weight: 600; margin-bottom: .35rem; padding: 0; }
+:where(.cms-bform__sublabel) { display: block; font-size: .875rem; margin-bottom: .25rem; }
+:where(.cms-bform__help, .cms-bform__note) { margin: 0 0 .4rem; font-size: .9rem; opacity: .8; }
+:where(.cms-bform__required) { color: var(--cms-form-danger); }
+:where(.cms-bform__sr) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+:where(.cms-bform__input, .cms-bform__textarea, .cms-bform__select, .cms-bform__file) { display: block; width: 100%; font: inherit; color: inherit; background: #fff; border: 1px solid var(--cms-form-line); border-radius: var(--cms-form-radius); padding: .65rem .8rem; min-height: 2.75rem; }
+:where(.cms-bform__input, .cms-bform__textarea, .cms-bform__select, .cms-bform__range, .cms-bform__choice input, .cms-bform__canvas):focus-visible { outline: 3px solid var(--cms-form-accent, #1d4ed8); outline-offset: 2px; }
+:where(.cms-bform__field--invalid) :where(.cms-bform__input, .cms-bform__textarea, .cms-bform__select) { border-color: var(--cms-form-danger); }
+:where(.cms-bform__error) { color: var(--cms-form-danger); font-weight: 600; margin: .35rem 0 0; }
+:where(.cms-bform__choices) { display: grid; gap: .5rem; }
+:where(.cms-bform__choices--inline) { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+:where(.cms-bform__choice) { display: flex; align-items: flex-start; gap: .6rem; }
+:where(.cms-bform__choice input) { width: 1.25rem; height: 1.25rem; margin: .15rem 0 0; accent-color: var(--cms-form-accent, #1d4ed8); flex: none; }
+:where(.cms-bform__parts) { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+:where(.cms-bform__part--full) { grid-column: 1 / -1; }
+:where(.cms-bform__affix) { display: flex; align-items: stretch; }
+:where(.cms-bform__prefix) { display: flex; align-items: center; padding: 0 .75rem; border: 1px solid var(--cms-form-line); border-right: 0; border-radius: var(--cms-form-radius) 0 0 var(--cms-form-radius); }
+:where(.cms-bform__affix .cms-bform__input) { border-radius: 0 var(--cms-form-radius) var(--cms-form-radius) 0; }
+:where(.cms-bform__stars) { display: flex; gap: .25rem; }
+:where(.cms-bform__star-input) { position: absolute; opacity: 0; width: 1px; height: 1px; }
+:where(.cms-bform__star) { font-size: 2rem; line-height: 1; cursor: pointer; color: var(--cms-form-line); padding: .15rem; border-radius: .25rem; }
+:where(.cms-bform__stars:has(.cms-bform__star-input:checked)) :where(.cms-bform__star) { color: var(--cms-form-accent, #1d4ed8); }
+:where(.cms-bform__star-input:checked ~ .cms-bform__star-input + .cms-bform__star) { color: var(--cms-form-line); }
+:where(.cms-bform__star-input:focus-visible + .cms-bform__star) { outline: 3px solid var(--cms-form-accent, #1d4ed8); }
+:where(.cms-bform__scale) { display: flex; flex-wrap: wrap; gap: .35rem; }
+:where(.cms-bform__scale-point) { position: relative; }
+:where(.cms-bform__scale-point input) { position: absolute; opacity: 0; inset: 0; }
+:where(.cms-bform__scale-point label) { display: grid; place-items: center; min-width: 2.75rem; height: 2.75rem; border: 1px solid var(--cms-form-line); border-radius: var(--cms-form-radius); cursor: pointer; }
+:where(.cms-bform__scale-point input:checked + label) { background: var(--cms-form-accent, #1d4ed8); color: #fff; border-color: transparent; }
+:where(.cms-bform__scale-point input:focus-visible + label) { outline: 3px solid var(--cms-form-accent, #1d4ed8); outline-offset: 2px; }
+:where(.cms-bform__scale-ends) { display: flex; justify-content: space-between; font-size: .85rem; margin: .35rem 0 0; }
+:where(.cms-bform__slider) { display: flex; align-items: center; gap: .75rem; }
+:where(.cms-bform__range) { flex: 1; accent-color: var(--cms-form-accent, #1d4ed8); }
+:where(.cms-bform__canvas) { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; border: 1px dashed var(--cms-form-line); border-radius: var(--cms-form-radius); background: #fff; touch-action: none; }
+:where(.cms-bform__progress-text) { margin: 0 0 .35rem; font-weight: 600; }
+:where(.cms-bform__bar) { height: .5rem; border-radius: 999px; background: color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 15%, transparent); overflow: hidden; }
+:where(.cms-bform__bar-fill) { display: block; height: 100%; background: var(--cms-form-accent, #1d4ed8); transition: width .2s ease; }
+@media (prefers-reduced-motion: reduce) { :where(.cms-bform__bar-fill) { transition: none; } }
+:where(.cms-bform__actions) { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+:where(.cms-bform__submit, .cms-bform__next, .cms-bform__back, .cms-bform__later-send, .cms-bform__clear, .cms-bform__restart) { font: inherit; font-weight: 700; min-height: 2.75rem; padding: .6rem 1.4rem; border-radius: 999px; cursor: pointer; border: 2px solid var(--cms-form-accent, #1d4ed8); }
+:where(.cms-bform__submit, .cms-bform__next, .cms-bform__later-send) { background: var(--cms-form-accent, #1d4ed8); color: #fff; }
+:where(.cms-bform__back, .cms-bform__clear, .cms-bform__restart) { background: transparent; color: inherit; }
+:where(.cms-bform__submit, .cms-bform__next, .cms-bform__back, .cms-bform__later-send, .cms-bform__clear, .cms-bform__restart):focus-visible { outline: 3px solid var(--cms-form-ink, #111827); outline-offset: 2px; }
+:where(.cms-bform__submit[disabled], .cms-bform__next[disabled]) { opacity: .6; cursor: progress; }
+:where(.cms-bform__summary) { border: 2px solid var(--cms-form-danger); border-radius: var(--cms-form-radius); padding: .75rem 1rem; }
+:where(.cms-bform__summary-title) { margin: 0 0 .35rem; font-weight: 700; }
+:where(.cms-bform__summary a) { color: var(--cms-form-danger); }
+:where(.cms-bform__success, .cms-bform__saved, .cms-bform__restored) { border-left: 4px solid var(--cms-form-accent, #1d4ed8); padding: .75rem 1rem; background: color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 8%, transparent); border-radius: var(--cms-form-radius); }
+:where(.cms-bform__later) { font-size: .95rem; }
+:where(.cms-bform__later summary) { cursor: pointer; text-decoration: underline; }
+:where(.cms-bform__later[open]) { display: grid; gap: .5rem; }
+:where(.cms-bform__divider) { border: 0; border-top: 1px solid var(--cms-form-line); margin: .5rem 0; }
+:where(.cms-bform__heading) { margin: .5rem 0 0; }
+:where(.cms-bform__popup-dialog) { border: 0; border-radius: 1rem; padding: 1.5rem; width: min(40rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; }
+:where(.cms-bform__popup-dialog)::backdrop { background: rgb(0 0 0 / .5); }
+:where(.cms-bform__popup-close) { float: right; font: inherit; background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; min-width: 2.75rem; min-height: 2.75rem; }

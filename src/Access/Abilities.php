@@ -28,12 +28,15 @@ class Abilities
 
     public const SETTINGS = 'settings';
 
+    /** Build, change and place the site's own forms. */
+    public const FORMS = 'forms';
+
     /**
      * @return list<string>
      */
     public static function all(): array
     {
-        return [self::CONTENT, self::ARTICLES, self::PHOTOS, self::ENQUIRIES, self::PUBLISH, self::SETTINGS];
+        return [self::CONTENT, self::ARTICLES, self::PHOTOS, self::ENQUIRIES, self::PUBLISH, self::SETTINGS, self::FORMS];
     }
 
     /**
@@ -48,6 +51,7 @@ class Abilities
             self::ENQUIRIES => 'Read enquiries',
             self::PUBLISH => 'Publish changes to the live site',
             self::SETTINGS => 'Change redirects and AI settings',
+            self::FORMS => 'Build and change forms',
         ];
     }
 
@@ -77,6 +81,16 @@ class Abilities
         }
 
         $abilities = (array) ($definition['abilities'] ?? []);
+
+        /*
+         * Forms arrived after roles were written down, and a form is
+         * something the client places on a page: whoever may edit the
+         * pages may build the forms on them. `forms` alone is for someone
+         * who should build forms but never touch a page.
+         */
+        if (in_array(self::CONTENT, $abilities, true)) {
+            $abilities[] = self::FORMS;
+        }
 
         return in_array('*', $abilities, true)
             ? static::all()

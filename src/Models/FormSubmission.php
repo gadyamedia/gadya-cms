@@ -28,7 +28,7 @@ class FormSubmission extends Model
     protected $table = 'gadyacms_form_submissions';
 
     /** @var list<string> */
-    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at', 'notes', 'follow_up_at', 'answered_at', 'pushed_at', 'consent'];
+    protected $fillable = ['site_id', 'form', 'data', 'path', 'referrer_host', 'country', 'status', 'read_at', 'created_at', 'notes', 'follow_up_at', 'answered_at', 'pushed_at', 'consent', 'form_id', 'form_version', 'files', 'meta'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -48,6 +48,8 @@ class FormSubmission extends Model
             'answered_at' => 'datetime',
             'pushed_at' => 'datetime',
             'consent' => 'array',
+            'files' => 'array',
+            'meta' => 'array',
         ];
     }
 
@@ -55,6 +57,68 @@ class FormSubmission extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * The builder form it came through, when it came through one.
+     *
+     * @return BelongsTo<Form, $this>
+     */
+    public function builderForm(): BelongsTo
+    {
+        return $this->belongsTo(Form::class, 'form_id');
+    }
+
+    /**
+     * What kind of question each answer came from, as a builder form
+     * recorded it - so the sender's name and email can be found on a form
+     * whose questions are called anything. Empty for a configured form.
+     *
+     * @return array<string, string>
+     */
+    public function fieldTypes(): array
+    {
+        $types = ($this->meta ?? [])['types'] ?? [];
+
+        return is_array($types) ? array_filter($types, 'is_string') : [];
+    }
+
+    /**
+     * The first answer to a question of one of these kinds.
+     *
+     * @param  list<string>  $types
+     */
+    public function answerOfType(array $types): ?string
+    {
+        foreach ($this->fieldTypes() as $key => $type) {
+            $value = ($this->data ?? [])[$key] ?? null;
+
+            if (in_array($type, $types, true) && is_scalar($value) && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The questions' own words for each answer, where the form recorded
+     * them; otherwise the field's name, tidied.
+     *
+     * @return array<string, string>
+     */
+    public function fieldLabels(): array
+    {
+        $labels = ($this->meta ?? [])['labels'] ?? [];
+        $known = is_array($labels) ? array_filter($labels, 'is_string') : [];
+
+        $all = [];
+
+        foreach (array_keys($this->data ?? []) as $key) {
+            $all[(string) $key] = $known[$key] ?? Str::headline((string) $key);
+        }
+
+        return $all;
     }
 
     /**
@@ -89,10 +153,22 @@ class FormSubmission extends Model
     {
         $data = $this->data ?? [];
 
+        $name = $this->answerOfType(['name']);
+
+        if ($name !== null) {
+            return $name;
+        }
+
         foreach (['name', 'full_name', 'first_name', 'email'] as $key) {
             if (! empty($data[$key]) && is_string($data[$key])) {
                 return $data[$key];
             }
+        }
+
+        $email = $this->answerOfType(['email']);
+
+        if ($email !== null) {
+            return $email;
         }
 
         $first = collect($data)->first(fn ($value): bool => is_string($value) && $value !== '');

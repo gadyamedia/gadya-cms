@@ -411,6 +411,62 @@ return [
                 'analytics_event' => 'lead_form_submit',
             ],
         ],
+
+        /*
+         * Forms the client builds in the panel (Content → Forms), placed on
+         * a page as a "Form" section, with [form:slug] in longer text, or
+         * with <x-gadya-cms::form form="slug" />. They post to the same
+         * address as the forms above and land in the same inbox; a built
+         * form with the slug of a configured one takes its place once it
+         * is published. See docs/forms.md.
+         */
+        'builder' => [
+            'enabled' => true,
+
+            /* The shareable page for each form: /forms/{slug}. */
+            'path' => 'forms',
+
+            /*
+             * The layout that page is drawn in. Null uses the package's own
+             * plain page; name the site's layout (it must yield `content`
+             * and is given `$page` and `$site`, as the blog's is) to wear
+             * the site's header and footer.
+             */
+            'layout' => null,
+
+            /* Offer "Form" among the section kinds on every page. */
+            'sections' => true,
+
+            /* The small default stylesheet, coloured from Look & feel. */
+            'styles' => true,
+
+            /* A form sent sooner than this after it was drawn is a bot's. */
+            'min_seconds' => 3,
+
+            /* How long an "email me a link to finish later" link works. */
+            'resume_days' => 7,
+
+            'max_steps' => 12,
+            'max_fields' => 100,
+
+            /*
+             * Where uploads are kept. Never on a public disk: null keeps
+             * them on the photo library's disk when that is a cloud disk
+             * (stored private), and on the `local` disk otherwise. They are
+             * only ever opened through signed links in the admin.
+             */
+            'uploads' => [
+                'disk' => null,
+                'directory' => 'form-uploads',
+                'max_kb' => 20480,
+            ],
+
+            /* How often a webhook is tried before it is marked failed. */
+            'webhooks' => [
+                'tries' => 5,
+                'timeout' => 10,
+            ],
+        ],
     ],
 
     /*

@@ -4,6 +4,7 @@ namespace Gadya\Cms\Http\Controllers;
 
 use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Forms\StoreFormSubmission;
+use Gadya\Cms\Models\Form;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,17 @@ class FormSubmissionController extends Controller
 {
     public function store(Request $request, string $form, StoreFormSubmission $store): JsonResponse|RedirectResponse
     {
+        /*
+         * A published builder form answers to its slug first, so a form
+         * converted from the configuration takes over from it - same
+         * address, same inbox - the moment it is published.
+         */
+        $built = config('gadya-cms.forms.builder.enabled', true) ? Form::findLive($form) : null;
+
+        if ($built !== null) {
+            return app(BuilderFormController::class)->store($request, $built);
+        }
+
         $definition = FormDefinition::find($form);
 
         abort_if($definition === null, 404);
