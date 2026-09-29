@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreContactRequest;
+use App\Mail\NewLeadMail;
+use App\Models\Lead;
+use App\Support\Locales;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Mail;
+
+class ContactController extends Controller
+{
+    public function __invoke(StoreContactRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $site = $request->is('avant/*') ? 'avant' : 'studio';
+
+        $lead = Lead::create([
+            'site' => $site,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'preferred_location' => $data['location'] ?? null,
+            'service_interest' => $data['service_interest'] ?? null,
+            'message' => $data['message'],
+            'source_path' => $request->path(),
+            'attribution' => array_filter([
+                'utm_source' => $request->session()->get('utm_source'),
+                'utm_medium' => $request->session()->get('utm_medium'),
+                'utm_campaign' => $request->session()->get('utm_campaign'),
+            ]),
+            'privacy_consented_at' => now(),
+            'privacy_policy_version' => config('seo.privacy_policy_version'),
+        ]);
+
+        if ($recipient = config('services.lead_notifications.email')) {
+            Mail::to($recipient)->queue(new NewLeadMail($lead));
+        }
+
+        if ($site === 'avant') {
+            return redirect()
+                ->route('avant.contact')
+                ->with('status', 'Thanks — your request is in. The clinic will reach out within one business day.');
+        }
+
+        return redirect()
+            ->to(Locales::route('contact'))
+            ->with('status', __('pages.contact.success'));
+    }
+}

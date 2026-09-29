@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Data\LocalizedSiteContent;
+use Illuminate\View\View;
+
+/**
+ * Serves the standalone public pages in whichever locale the route resolved to.
+ */
+class PageController extends Controller
+{
+    public function contact(): View
+    {
+        return view('pages.contact', [
+            'locations' => LocalizedSiteContent::locations(),
+            'services' => LocalizedSiteContent::services(),
+        ]);
+    }
+
+    public function privacy(): View
+    {
+        return view('pages.privacy');
+    }
+}

@@ -5,6 +5,7 @@ namespace Gadya\Cms\Forms\Builder;
 use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Localisation\Locales;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
 
 /**
@@ -18,6 +19,9 @@ use Illuminate\Support\Facades\Lang;
  */
 class LangFiles
 {
+    /** @var array<string, array<string, string>> */
+    private array $indexes = [];
+
     public function __construct(
         private readonly Filesystem $files,
         private readonly Locales $locales,
@@ -77,6 +81,84 @@ class LangFiles
         }
 
         return $words;
+    }
+
+    /**
+     * The keys whose words, in the default language, are these words - a
+     * required mark and spacing aside - so a label written out in the
+     * template ("Name *") can be given the translations of the same words
+     * in the lang files (`pages.contact.name`).
+     *
+     * @return list<string>
+     */
+    public function keysFor(string $text): array
+    {
+        [$wanted] = LabelText::strip(html_entity_decode($text, ENT_QUOTES | ENT_HTML5));
+
+        if ($wanted === '') {
+            return [];
+        }
+
+        $locale = $this->locales()[0] ?? null;
+
+        if ($locale === null || FormLocale::normalise($locale) !== $this->locales->default()) {
+            return [];
+        }
+
+        $keys = [];
+
+        foreach ($this->index($locale) as $key => $value) {
+            if (LabelText::strip($value)[0] === $wanted) {
+                $keys[] = $key;
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Every string in one language's lang files, by its key: `group.key`
+     * for the PHP files, the key itself for JSON.
+     *
+     * @return array<string, string>
+     */
+    public function index(string $locale): array
+    {
+        if (isset($this->indexes[$locale])) {
+            return $this->indexes[$locale];
+        }
+
+        $strings = [];
+        $directory = lang_path($locale);
+
+        if ($this->files->isDirectory($directory)) {
+            foreach ($this->files->files($directory) as $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+
+                $group = $file->getBasename('.php');
+                $values = Lang::get($group, [], $locale, false);
+
+                foreach (is_array($values) ? Arr::dot($values) : [] as $key => $value) {
+                    if (is_string($value) && trim($value) !== '') {
+                        $strings[$group.'.'.$key] = $value;
+                    }
+                }
+            }
+        }
+
+        $json = lang_path($locale.'.json');
+
+        if ($this->files->exists($json)) {
+            foreach ((array) json_decode((string) $this->files->get($json), true) as $key => $value) {
+                if (is_string($value) && trim($value) !== '') {
+                    $strings[(string) $key] = $value;
+                }
+            }
+        }
+
+        return $this->indexes[$locale] = $strings;
     }
 
     /**

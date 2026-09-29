@@ -3,6 +3,8 @@
 namespace Gadya\Cms\Forms\Builder;
 
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Forms\FormLocale;
+use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\Form;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
@@ -50,7 +52,7 @@ class FormScanner
         }
 
         foreach ($this->bladeFiles($views) as $path) {
-            foreach ($this->formsIn((string) $this->files->get($path)) as $form) {
+            foreach ($this->formsIn((string) $this->files->get($path), $path, $app) as $form) {
                 $name = $form['name'];
                 $slug = Str::slug($name ?? Str::before(basename($path), '.blade.php').'-form');
 
@@ -63,6 +65,8 @@ class FormScanner
                     'config' => $name !== null && isset(FormDefinition::configLabels()[$name]) ? ['label' => FormDefinition::configLabels()[$name]] : null,
                     'builder' => ($built[$name ?? $slug] ?? null) !== null,
                     'suggested_slug' => $slug,
+                    'analytics' => $form['analytics'],
+                    'unmapped' => $form['unmapped'],
                     ...($name === null ? $this->handler($form, $app) : []),
                 ];
             }
@@ -118,7 +122,7 @@ class FormScanner
         }
 
         $fields = array_keys((array) ($form['fields'] ?? []));
-        $analysis = $reader->read($resolved['file'], $resolved['class'], $resolved['method'], $fields);
+        $analysis = $reader->read($resolved['file'], $resolved['class'], $resolved['method'], $fields, $resolved['route'] ?? ($action['url'] ?? null));
         $suggestion = $reader->suggest($analysis, $fields);
 
         return [
@@ -158,22 +162,30 @@ class FormScanner
 
     /**
      * The `<form>`s in one template, with the package form each posts to
-     * (when it does) and the fields found in it.
+     * (when it does), the fields found in it, and where it posts.
      *
-     * @return list<array{name: string|null, line: int, fields: array<string, array<string, mixed>>}>
+     * Choices drawn in a `@foreach` are written out in every language the
+     * site has, when what they loop over can be worked out; the path of
+     * the template lets the page's controller be read for that.
+     *
+     * @return list<array{name: string|null, line: int, fields: array<string, array<string, mixed>>, action: array<string, string>|null, submit: array{text?: string, key?: string}|null, analytics: array{event: string, source: string}|null, unmapped: list<array{field: string, note: string}>}>
      */
-    public function formsIn(string $source): array
+    public function formsIn(string $source, ?string $path = null, ?string $app = null): array
     {
         preg_match_all('/<form\b[^>]*>.*?<\/form>/is', $source, $matches, PREG_OFFSET_CAPTURE);
         $forms = [];
 
         foreach ($matches[0] as [$markup, $offset]) {
+            [$fields, $unmapped] = $this->fieldsWithLoops($markup, $source, $path, $app);
+
             $forms[] = [
                 'name' => $this->packageFormName($markup),
                 'line' => substr_count(substr($source, 0, $offset), "\n") + 1,
-                'fields' => $this->fieldsIn($markup),
+                'fields' => $fields,
                 'action' => $this->actionOf($markup),
                 'submit' => $this->submitOf($markup),
+                'analytics' => $this->analyticsOf($markup, $source),
+                'unmapped' => $unmapped,
             ];
         }
 
@@ -181,7 +193,68 @@ class FormScanner
     }
 
     /**
-     * Where a form posts, when it is not to the package: a named route,
+     * The fields of one form, with the choices its loops draw in every
+     * language, and a note for each loop that could not be worked out.
+     *
+     * @return array{0: array<string, array<string, mixed>>, 1: list<array{field: string, note: string}>}
+     */
+    private function fieldsWithLoops(string $markup, string $source, ?string $path, ?string $app): array
+    {
+        $app ??= rescue(fn (): string => app_path(), null, report: false);
+        $locales = rescue(fn (): array => app(LangFiles::class)->locales(), [], report: false);
+        $default = rescue(fn (): string => app(Locales::class)->default(), 'en', report: false);
+        $locales = $locales === [] ? [$default] : $locales;
+        $directories = $app === null ? [] : [$app, dirname($app).'/routes'];
+
+        $loops = app(BladeLoops::class)->expand($markup, $source, $path, $locales, $directories);
+        $expanded = $loops['markup'];
+        $first = (string) array_key_first($expanded);
+        $fields = $this->fieldsIn($expanded[$first]);
+        $unmapped = [];
+
+        /* Each other language's words for choices the loops wrote out as plain text. */
+        foreach (array_slice($expanded, 1, null, true) as $locale => $other) {
+            foreach ($this->fieldsIn($other) as $name => $field) {
+                foreach ($field['options'] ?? [] as $option) {
+                    foreach ($fields[$name]['options'] ?? [] as $index => $own) {
+                        if ($own['key'] === $option['key'] && ! isset($own['label_key']) && isset($option['label']) && $option['label'] !== $own['label']) {
+                            $fields[$name]['options'][$index]['labels'][FormLocale::normalise($locale) ?? $locale] = $option['label'];
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($fields as $name => $field) {
+            foreach ($field['options'] ?? [] as $index => $option) {
+                if (isset($option['labels'])) {
+                    $fields[$name]['options'][$index]['labels'] = [FormLocale::normalise($first) ?? $first => $option['label'], ...$option['labels']];
+                }
+            }
+        }
+
+        $file = $path === null ? 'the template' : $this->relative($path);
+
+        foreach ($loops['unresolved'] as $loop) {
+            foreach ($loop['fields'] as $name) {
+                if (! isset($fields[$name])) {
+                    continue;
+                }
+
+                $fields[$name]['options_from'] = $loop['expression'];
+                $unmapped[] = [
+                    'field' => $name,
+                    'note' => 'options come from '.$loop['expression'].' in '.$file.'; fill them in'.(($fields[$name]['options'] ?? []) === [] ? '' : ' (the choices written out in the template are kept)').'.',
+                ];
+            }
+        }
+
+        return [$fields, $unmapped];
+    }
+
+    /**
+     * Where a form posts, when it is not to the package: a named route
+     * (`route()`, or a helper of the site's own such as `locale_route()`),
      * a controller action, or an address.
      *
      * @return array{route?: string, controller?: string, url?: string}|null
@@ -198,16 +271,26 @@ class FormScanner
             return null;
         }
 
-        if (preg_match('/route\(\s*[\'"]([^\'"]+)[\'"]/', $action, $match) === 1) {
+        if (preg_match('/(?<![\w>:])(?:\w*_)?route\(\s*[\'"]([^\'"]+)[\'"]/i', $action, $match) === 1
+            || preg_match('/(?:::|->)(?:\w*R|r)oute\(\s*[\'"]([^\'"]+)[\'"]/', $action, $match) === 1) {
             return ['route' => $match[1]];
         }
 
-        if (preg_match('/action\(\s*\[\s*\\?([\w\\]+)::class\s*,\s*[\'"](\w+)[\'"]/', $action, $match) === 1) {
+        if (preg_match('/action\(\s*\[\s*\\\\?([\w\\\\]+)::class\s*,\s*[\'"](\w+)[\'"]/', $action, $match) === 1) {
             return ['controller' => $match[1].'@'.$match[2]];
         }
 
-        if (preg_match('/action\(\s*[\'"]([\w\\]+@\w+)[\'"]/', $action, $match) === 1) {
+        /* An invokable controller: action(ContactController::class) or action([ContactController::class]). */
+        if (preg_match('/action\(\s*\[?\s*\\\\?([\w\\\\]+)::class\s*\]?\s*[,)]/', $action, $match) === 1) {
+            return ['controller' => $match[1].'@__invoke'];
+        }
+
+        if (preg_match('/action\(\s*[\'"]([\w\\\\]+@\w+)[\'"]/', $action, $match) === 1) {
             return ['controller' => $match[1]];
+        }
+
+        if (preg_match('/action\(\s*[\'"]([\w\\\\]+)[\'"]/', $action, $match) === 1) {
+            return ['controller' => $match[1].'@__invoke'];
         }
 
         if (preg_match('/url\(\s*[\'"]([^\'"]+)[\'"]/', $action, $match) === 1) {
@@ -224,20 +307,81 @@ class FormScanner
      */
     private function submitOf(string $markup): ?array
     {
-        preg_match_all('/<button\b([^>]*)>(.*?)<\/button>/is', $markup, $buttons, PREG_SET_ORDER);
+        preg_match_all('/<button\b([^>]*)>(.*?)<\/button>|<input\b([^>]*\btype\s*=\s*["\']submit["\'][^>]*)>/is', $markup, $buttons, PREG_SET_ORDER);
 
         foreach ($buttons as $button) {
+            if (($button[3] ?? '') !== '') {
+                $value = $this->attributes($button[3])['value'] ?? '';
+                $key = LangFiles::keyIn($value);
+
+                return array_filter(['text' => $key === null && $value !== '' && ! str_contains($value, '{{') ? $value : null, 'key' => $key]) ?: null;
+            }
+
             $type = strtolower($this->attributes($button[1])['type'] ?? 'submit');
 
             if ($type !== 'submit') {
                 continue;
             }
 
-            $inner = trim((string) preg_replace('/<[^>]*>/s', ' ', $button[2]));
-            $key = LangFiles::keyIn($inner);
-            $text = trim(html_entity_decode(strip_tags((string) preg_replace('/\{\{.*?\}\}|\{!!.*?!!\}|@\w+(\(.*?\))?/s', '', $inner))));
+            $words = LabelText::parse($button[2]);
+            $keys = array_column($words['parts'], 'key');
+            $text = LabelText::plain($words['parts']);
 
-            return array_filter(['text' => $key === null && $text !== '' ? $text : null, 'key' => $key]) ?: null;
+            return array_filter(['text' => $keys === [] ? $text : null, 'key' => count($keys) === 1 && $text === null ? $keys[0] : null]) ?: null;
+        }
+
+        return null;
+    }
+
+    /**
+     * The analytics event the old form sent: from a data attribute on the
+     * form or its send button, or a `gtag('event', ...)` /
+     * `dataLayer.push({event: ...})` in the template's script.
+     *
+     * @return array{event: string, source: string}|null
+     */
+    public function analyticsOf(string $markup, string $template = ''): ?array
+    {
+        $attributes = ['data-analytics-event', 'data-event', 'data-gtm-event', 'data-ga-event', 'data-track', 'data-analytics'];
+        $places = [];
+
+        if (preg_match('/<form\b([^>]*)>/is', $markup, $form) === 1) {
+            $places['the <form>'] = $this->attributes($form[1]);
+        }
+
+        preg_match_all('/<button\b([^>]*)>|<input\b([^>]*\btype\s*=\s*["\']submit["\'][^>]*)>/is', $markup, $buttons, PREG_SET_ORDER);
+
+        foreach ($buttons as $button) {
+            $found = $this->attributes(($button[2] ?? '') !== '' ? $button[2] : $button[1]);
+
+            if (strtolower($found['type'] ?? 'submit') === 'submit') {
+                $places['the send button'] = $found;
+
+                break;
+            }
+        }
+
+        foreach ($places as $place => $found) {
+            foreach ($attributes as $attribute) {
+                $value = trim((string) ($found[$attribute] ?? ''));
+
+                if ($value !== '' && preg_match('/^[\w.:-]+$/', $value) === 1) {
+                    return ['event' => $value, 'source' => $attribute.' on '.$place];
+                }
+            }
+        }
+
+        foreach ([
+            '/\bgtag\(\s*[\'"]event[\'"]\s*,\s*[\'"]([\w.:-]+)[\'"]/' => 'gtag(\'event\') in the template\'s script',
+            '/dataLayer\.push\(\s*\{[^}]*?[\'"]?event[\'"]?\s*:\s*[\'"]([\w.:-]+)[\'"]/s' => 'dataLayer.push() in the template\'s script',
+        ] as $pattern => $source) {
+            preg_match_all($pattern, $template, $events);
+
+            foreach ($events[1] as $event) {
+                if (! in_array($event, ['page_view', 'gtm.js', 'js', 'config'], true)) {
+                    return ['event' => $event, 'source' => $source];
+                }
+            }
         }
 
         return null;
@@ -247,16 +391,20 @@ class FormScanner
      * What the markup says about each field: its kind, its label, whether
      * it must be answered, and its choices.
      *
+     * A label is only ever the words of its `<label>` (by `for`, or
+     * wrapped around the control), a group's `<legend>`, or an
+     * `aria-label` - never the control's choices or the markup beside it.
+     *
      * @return array<string, array<string, mixed>>
      */
     public function fieldsIn(string $markup): array
     {
         $labels = $this->labels($markup);
-        $labelKeys = $this->labels($markup, keys: true);
+        $legends = $this->legends($markup);
         $honeypot = (string) config('gadya-cms.forms.honeypot', 'website');
         $fields = [];
 
-        preg_match_all('/<select\b([^>]*)>(.*?)<\/select>|<(input|textarea)\b([^>]*)>/is', $markup, $found, PREG_SET_ORDER);
+        preg_match_all('/<select\b('.LabelText::ATTRIBUTES.')>(.*?)<\/select>|<(input|textarea)\b('.LabelText::ATTRIBUTES.')>/is', $markup, $found, PREG_SET_ORDER);
 
         foreach ($found as $one) {
             /* As [whole, element, attributes, the options of a select]. */
@@ -278,9 +426,9 @@ class FormScanner
                 continue;
             }
 
-            $label = $labels[$attributes['id'] ?? ''] ?? $labels['name:'.$rawName] ?? null;
-            $labelKey = $labelKeys[$attributes['id'] ?? ''] ?? $labelKeys['name:'.$rawName] ?? null;
+            $label = $labels[$attributes['id'] ?? ''] ?? $labels['name:'.$rawName.'#'.($attributes['value'] ?? '')] ?? $labels['name:'.$rawName] ?? null;
             $field = $fields[$name] ?? ['type' => null, 'label' => null, 'required' => false, 'options' => []];
+            $group = $type === 'radio' || ($type === 'checkbox' && str_ends_with($rawName, '[]'));
 
             /*
              * Words written as `{{ __('contact.name') }}` are noted by their
@@ -296,9 +444,17 @@ class FormScanner
             $field['placeholder'] ??= $placeholder;
             $field['placeholder_key'] ??= $placeholderKey;
 
-            if ($type !== 'radio' && $type !== 'checkbox') {
-                $field['label'] ??= $label ?? ($labelKey === null ? ($placeholder ?? $aria) : null);
-                $field['label_key'] ??= $labelKey ?? ($label === null ? ($placeholderKey ?? $ariaKey) : null);
+            if (! $group) {
+                if ($label !== null && ($field['label'] ?? null) === null && ($field['label_key'] ?? null) === null && ! isset($field['label_parts'])) {
+                    $field = [...$field, ...$this->labelHint($label)];
+                }
+
+                $field['label'] ??= ($field['label_key'] ?? null) === null && ! isset($field['label_parts']) ? ($placeholder ?? $aria) : null;
+                $field['label_key'] ??= ($field['label'] ?? null) === null && ! isset($field['label_parts']) ? ($placeholderKey ?? $ariaKey) : null;
+                $field['required'] = $field['required'] || ($label['required'] ?? false);
+            } elseif (isset($legends[$name]) && ($field['label'] ?? null) === null && ($field['label_key'] ?? null) === null) {
+                $field = [...$field, ...$this->labelHint($legends[$name])];
+                $field['required'] = $field['required'] || $legends[$name]['required'];
             }
 
             $field['type'] = match (true) {
@@ -321,39 +477,77 @@ class FormScanner
             };
 
             if ($tag[1] === 'select' && isset($tag[3])) {
-                preg_match_all('/<option\b([^>]*)>(.*?)<\/option>/is', $tag[3], $options, PREG_SET_ORDER);
+                preg_match_all('/<option\b('.LabelText::ATTRIBUTES.')>(.*?)<\/option>/is', $tag[3], $options, PREG_SET_ORDER);
 
                 foreach ($options as $option) {
-                    $value = $this->attributes($option[1])['value'] ?? trim(strip_tags($option[2]));
-                    $optionKey = LangFiles::keyIn($option[2]);
+                    $words = LabelText::parse($option[2]);
+                    $keys = array_column($words['parts'], 'key');
+                    $optionKey = count($keys) === 1 && LabelText::plain($words['parts']) === null ? $keys[0] : null;
+                    $text = LabelText::plain($words['parts']);
+                    $value = $this->attributes($option[1])['value'] ?? $text;
 
-                    if (is_string($value) && $value !== '' && ! str_contains($value, '{{')) {
+                    /* The empty first choice ("Choose one", "Not sure yet") is the dropdown's placeholder. */
+                    if ($value === '' || $value === null) {
+                        $field['placeholder'] ??= $optionKey === null ? $text : null;
+                        $field['placeholder_key'] ??= $optionKey;
+
+                        continue;
+                    }
+
+                    if (is_string($value) && ! str_contains($value, '{{') && ! str_contains($value, '{!!')) {
                         $field['options'][] = array_filter([
                             'key' => $value,
-                            'label' => $optionKey !== null ? Str::headline($value) : trim(html_entity_decode(strip_tags($option[2]))),
+                            'label' => $optionKey !== null || $text === null ? Str::headline($value) : $text,
                             'label_key' => $optionKey,
                         ]);
                     }
                 }
             }
 
-            if ($type === 'radio' || ($type === 'checkbox' && str_ends_with($rawName, '[]'))) {
+            if ($group) {
                 $value = (string) ($attributes['value'] ?? '');
 
                 if ($value !== '' && ! str_contains($value, '{{')) {
-                    $field['options'][] = array_filter(['key' => $value, 'label' => $label ?? Str::headline($value), 'label_key' => $labelKey]);
+                    $hint = $label === null ? [] : $this->labelHint($label);
+                    $field['options'][] = array_filter([
+                        'key' => $value,
+                        'label' => $hint['label'] ?? Str::headline($value),
+                        'label_key' => $hint['label_key'] ?? null,
+                    ]);
                 }
             }
 
-            if ($field['type'] === 'checkbox') {
-                $field['label'] ??= $label;
-                $field['label_key'] ??= $labelKey;
+            if ($field['type'] === 'checkbox' && $label !== null && ($field['label'] ?? null) === null && ($field['label_key'] ?? null) === null && ! isset($field['label_parts'])) {
+                $field = [...$field, ...$this->labelHint($label)];
+                $field['required'] = $field['required'] || $label['required'];
             }
 
             $fields[$name] = array_filter($field, fn ($value): bool => $value !== null && $value !== []) + ['required' => false];
         }
 
         return $fields;
+    }
+
+    /**
+     * A parsed label as a field's hint: its plain words, its one lang key,
+     * or - for words mixing keys and text, such as a consent sentence with
+     * a link in it - its parts, for the converter to put together in every
+     * language; and the links in it.
+     *
+     * @param  array{parts: list<array{text?: string, key?: string}>, required: bool, links: list<string>}  $label
+     * @return array<string, mixed>
+     */
+    private function labelHint(array $label): array
+    {
+        $keys = array_column($label['parts'], 'key');
+        $text = LabelText::plain($label['parts']);
+
+        return array_filter([
+            'label' => $keys === [] ? $text : null,
+            'label_key' => count($keys) === 1 && $text === null ? $keys[0] : null,
+            'label_parts' => count($label['parts']) > 1 ? $label['parts'] : null,
+            'links' => $label['links'] === [] ? null : $label['links'],
+        ], fn ($value): bool => $value !== null);
     }
 
     private function packageFormName(string $markup): ?string
@@ -372,41 +566,86 @@ class FormScanner
     }
 
     /**
-     * Labels by the id of what they label, and for a field wrapped inside
-     * its own label.
+     * Labels by the id of what they label, by the name of a control wrapped
+     * inside one (and by name and value, for one choice of a group), each
+     * as its words' parts: never the control, its choices or the markup
+     * beside it.
      *
-     * @return array<string, string>
+     * @return array<string, array{parts: list<array{text?: string, key?: string}>, required: bool, links: list<string>}>
      */
-    private function labels(string $markup, bool $keys = false): array
+    private function labels(string $markup): array
     {
         $labels = [];
 
-        preg_match_all('/<label\b([^>]*)>(.*?)<\/label>/is', $markup, $matches, PREG_SET_ORDER);
+        preg_match_all('/<label\b('.LabelText::ATTRIBUTES.')>(.*?)<\/label>/is', $markup, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
-            $text = $keys
-                ? (string) LangFiles::keyIn(trim((string) preg_replace('/<[^>]*>/s', ' ', $match[2])))
-                : trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string) preg_replace('/\{\{.*?\}\}|\{!!.*?!!\}|@\w+(\(.*?\))?/s', '', $match[2])))));
+            $label = LabelText::parse($match[2]);
             $for = $this->attributes($match[1])['for'] ?? null;
 
-            if ($text === '') {
+            if ($label['parts'] === []) {
                 continue;
             }
 
             if (is_string($for) && $for !== '') {
-                $labels[$for] = $text;
+                $labels[$for] = $label;
             }
 
-            if (preg_match('/<(?:input|select|textarea)\b[^>]*\bid=["\']([^"\']+)["\']/i', $match[2], $inner) === 1) {
-                $labels[$inner[1]] = $text;
-            }
+            preg_match_all('/<(?:input|select|textarea)\b('.LabelText::ATTRIBUTES.')>/is', $match[2], $controls, PREG_SET_ORDER);
 
-            if (preg_match('/<(?:input|select|textarea)\b[^>]*\bname=["\']([^"\']+)["\']/i', $match[2], $inner) === 1) {
-                $labels['name:'.$inner[1]] = $text;
+            foreach ($controls as $control) {
+                $attributes = $this->attributes($control[1]);
+
+                if (isset($attributes['id']) && $attributes['id'] !== '') {
+                    $labels[$attributes['id']] ??= $label;
+                }
+
+                if (isset($attributes['name']) && $attributes['name'] !== '') {
+                    $labels['name:'.$attributes['name'].'#'.($attributes['value'] ?? '')] ??= $label;
+                    $labels['name:'.$attributes['name']] ??= $label;
+                }
             }
         }
 
         return $labels;
+    }
+
+    /**
+     * A `<fieldset>`'s `<legend>` (or a group's `aria-label`) by the name
+     * of each control inside it: the question a group of choices asks.
+     *
+     * @return array<string, array{parts: list<array{text?: string, key?: string}>, required: bool, links: list<string>}>
+     */
+    private function legends(string $markup): array
+    {
+        $legends = [];
+
+        preg_match_all('/<fieldset\b('.LabelText::ATTRIBUTES.')>(.*?)<\/fieldset>|<(?:div|ul|p)\b([^>]*\brole\s*=\s*["\'](?:radio)?group["\'][^>]*)>(.*?)<\/(?:div|ul|p)>/is', $markup, $groups, PREG_SET_ORDER);
+
+        foreach ($groups as $group) {
+            $inside = ($group[2] ?? '') !== '' ? $group[2] : ($group[4] ?? '');
+            $attributes = $this->attributes(($group[1] ?? '') !== '' ? $group[1] : ($group[3] ?? ''));
+
+            if (preg_match('/<legend\b[^>]*>(.*?)<\/legend>/is', $inside, $legend) === 1) {
+                $words = LabelText::parse($legend[1]);
+            } elseif (isset($attributes['aria-label'])) {
+                $words = LabelText::parse($attributes['aria-label']);
+            } else {
+                continue;
+            }
+
+            if ($words['parts'] === []) {
+                continue;
+            }
+
+            preg_match_all('/<(?:input|select|textarea)\b[^>]*\bname\s*=\s*["\']([^"\'{]+)["\']/i', $inside, $names);
+
+            foreach ($names[1] as $name) {
+                $legends[(string) preg_replace('/\[\]$/', '', $name)] ??= $words;
+            }
+        }
+
+        return $legends;
     }
 
     /**

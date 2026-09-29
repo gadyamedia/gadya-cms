@@ -1,0 +1,16 @@
+<?php
+
+if (! function_exists('locale_route')) {
+    /**
+     * Build a URL for a public page in the active locale (trimmed: the
+     * real helper picks the `localized.{locale}.` route for ru and uk).
+     *
+     * @param  array<string, mixed>|string  $parameters
+     */
+    function locale_route(string $name, array|string $parameters = [], ?string $locale = null): string
+    {
+        $locale ??= app()->getLocale();
+
+        return route(in_array($locale, ['ru', 'uk'], true) && app('router')->has("localized.{$locale}.{$name}") ? "localized.{$locale}.{$name}" : $name, $parameters);
+    }
+}

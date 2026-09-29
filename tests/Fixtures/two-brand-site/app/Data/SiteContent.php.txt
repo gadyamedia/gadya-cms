@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Data;
+
+/**
+ * The site's structured content in English (trimmed and anonymised).
+ */
+class SiteContent
+{
+    /** @return array<int, array<string, mixed>> */
+    public static function locations(): array
+    {
+        return [
+            [
+                'slug' => 'northtown-nj',
+                'label' => 'New Jersey',
+                'name' => 'Northtown Studio',
+                'street' => '1 Example Road, Suite 100',
+                'locality' => 'Northtown',
+                'state' => 'NJ',
+                'postal' => '00001',
+                'phone' => '(555) 010-0001',
+                'phone_e164' => '+15550100001',
+            ],
+            [
+                'slug' => 'southside-ny',
+                'label' => 'New York',
+                'name' => 'Southside Studio',
+                'street' => '2 Example Avenue',
+                'locality' => 'Southside',
+                'state' => 'NY',
+                'postal' => '00002',
+                'phone' => '(555) 010-0002',
+                'phone_e164' => '+15550100002',
+            ],
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public static function services(): array
+    {
+        return [
+            ['slug' => 'deep-tissue-massage', 'number' => '01', 'name' => 'Deep Tissue Massage'],
+            ['slug' => 'sports-massage', 'number' => '02', 'name' => 'Sports Massage'],
+            ['slug' => 'prenatal-massage', 'number' => '03', 'name' => 'Prenatal Massage'],
+        ];
+    }
+}

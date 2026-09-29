@@ -67,6 +67,18 @@ class ScanFormsCommand extends Command
                 }
             }
 
+            if (is_array($form['analytics'] ?? null)) {
+                $this->components->twoColumnDetail('  <fg=gray>analytics event</>', $form['analytics']['event'].' ('.$form['analytics']['source'].')');
+            }
+
+            if (($form['handler']['notify']['emails'] ?? []) !== []) {
+                $this->components->twoColumnDetail('  <fg=gray>staff emails</>', implode(', ', $form['handler']['notify']['emails']).' (from '.implode(', ', $form['handler']['notify']['from']).')');
+            }
+
+            foreach ($form['unmapped'] ?? [] as $item) {
+                $this->components->warn('"'.$item['field'].'": '.$item['note']);
+            }
+
             $destination = $form['suggested_destination'] ?? null;
 
             if (is_array($destination)) {

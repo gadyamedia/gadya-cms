@@ -45,18 +45,25 @@ class ControllerReader
     public function __construct(
         private readonly Filesystem $files,
         private readonly Router $router,
+        private readonly RoutesFile $routesFile,
+        private readonly TemplateValues $values,
     ) {}
 
     /**
-     * The controller action a form's `action` leads to.
+     * The controller action a form's `action` leads to: through the running
+     * router first (by the route's name, which also finds a route whose
+     * address is worked out in code), then by reading `routes/*.php`. An
+     * invokable controller - `ContactController::class`, a class name in a
+     * string, `[ContactController::class]` - is its `__invoke`.
      *
      * @param  array{route?: string, controller?: string, url?: string}  $action
-     * @return array{route: string|null, action: string, class: string, method: string, file: string|null}|null
+     * @return array{route: string|null, action: string, class: string, method: string, file: string|null, found_by?: string}|null
      */
     public function resolve(array $action, ?string $app = null): ?array
     {
         $route = null;
         $name = null;
+        $foundBy = 'router';
 
         if (isset($action['route'])) {
             $routes = $this->router->getRoutes();
@@ -72,10 +79,24 @@ class ControllerReader
             $name = $route?->getName();
         }
 
-        $handler = $route !== null ? $route->getActionName() : ($action['controller'] ?? null);
+        $handler = $route !== null ? $this->handlerOf($route) : ($action['controller'] ?? null);
 
-        if (! is_string($handler) || ! str_contains($handler, '@')) {
+        /* Not in the router (a route registered only in some requests, say): read the routes files. */
+        if ($handler === null && $name !== null) {
+            $read = $this->routesFile->find($name, rtrim(dirname($app ?? app_path()), '/').'/routes');
+
+            if ($read !== null) {
+                $handler = $read['class'].'@'.$read['method'];
+                $foundBy = 'routes file ('.self::tidy($read['file']).':'.$read['line'].')';
+            }
+        }
+
+        if (! is_string($handler) || $handler === '' || $handler === 'Closure') {
             return null;
+        }
+
+        if (! str_contains($handler, '@')) {
+            $handler .= '@__invoke';
         }
 
         [$class, $method] = explode('@', ltrim($handler, '\\'), 2);
@@ -90,7 +111,44 @@ class ControllerReader
             'class' => $class,
             'method' => $method,
             'file' => $this->fileOf($class, $app),
+            'found_by' => $foundBy,
         ];
+    }
+
+    /**
+     * A route's controller action as `Class@method`; null for a closure.
+     * Laravel keeps an invokable controller's action as the class alone.
+     */
+    private function handlerOf(Route $route): ?string
+    {
+        $uses = $route->getAction('uses');
+        $controller = $route->getAction('controller');
+
+        if (is_string($uses) && str_contains($uses, '@')) {
+            return $uses;
+        }
+
+        if (is_string($controller) && $controller !== '') {
+            return str_contains($controller, '@') ? $controller : $controller.'@__invoke';
+        }
+
+        return is_string($uses) && $uses !== '' ? $uses.'@__invoke' : null;
+    }
+
+    /**
+     * The fields named in `$request->only([...])` or `->safe()->only(...)`.
+     *
+     * @return list<string>|null
+     */
+    private function only(string $argument): ?array
+    {
+        if (preg_match('/only\(\s*\[?([^\])]*)/', $argument, $match) !== 1) {
+            return null;
+        }
+
+        preg_match_all('/[\'"]([\w.-]+)[\'"]/', $match[1], $names);
+
+        return $names[1] === [] ? null : $names[1];
     }
 
     /**
@@ -99,19 +157,23 @@ class ControllerReader
      * @param  list<string>  $fields  The questions the form asks
      * @return array<string, mixed>
      */
-    public function read(string $file, string $class, string $method, array $fields = []): array
+    public function read(string $file, string $class, string $method, array $fields = [], ?string $route = null): array
     {
         $source = (string) $this->files->get($file);
-        [$body, $line] = $this->method($source, $method);
+        [$body, $line] = PhpSource::method($source, $method);
 
         if ($body === null) {
             return ['file' => $file, 'line' => 0, 'found' => false, 'does' => ["The method {$method}() was not found in the file; read it by hand."], 'custom' => []];
         }
 
-        $uses = $this->uses($source);
+        $uses = PhpSource::uses($source);
         $writes = $this->writes($body, $uses, $source);
         $events = $this->events($body, $uses);
-        $redirect = $this->redirect($body);
+        $redirects = $this->redirects($body);
+        $redirect = $this->chooseRedirect($redirects, $route);
+        $redirect = $redirect === null ? null : array_diff_key($redirect, ['condition' => true]);
+        $recipients = $this->recipients($body, $uses);
+        $analytics = preg_match('/[\'"](?:analytics_event|analytics|gtm_event|ga_event|tracking_event)[\'"]\s*(?:,|=>)\s*[\'"]([\w.:-]+)[\'"]/', $body, $event) === 1 ? $event[1] : null;
         $custom = [];
 
         foreach (self::CUSTOM as $pattern => $description) {
@@ -148,7 +210,11 @@ class ControllerReader
         }
 
         if ($emails) {
-            $does[] = 'Sends an email - the builder form\'s own emails do this';
+            $does[] = 'Sends an email'.($recipients['emails'] !== [] ? ' to '.implode(', ', $recipients['emails']).' (from '.implode(', ', $recipients['from']).')' : '').' - the builder form\'s own staff emails do this'.($recipients['emails'] !== [] ? ', and are set to the same addresses' : '');
+        }
+
+        foreach ($recipients['unresolved'] as $expression) {
+            $does[] = 'Emails '.$expression.', which is not set in this environment (or is worked out per enquiry): set the form\'s staff emails by hand.';
         }
 
         foreach ($custom as $description) {
@@ -162,6 +228,9 @@ class ControllerReader
             'writes' => $writes,
             'events' => $events,
             'redirect' => $redirect,
+            'redirects' => count($redirects) > 1 ? $redirects : [],
+            'notify' => $recipients,
+            'analytics_event' => $analytics,
             'consent' => $consent,
             'policy_version_config' => $policyConfig,
             'attribution' => $attribution,
@@ -259,7 +328,7 @@ class ControllerReader
             '/\brequest\(\s*[\'"]([\w.]+)[\'"]/',
             '/\$request\[\s*[\'"]([\w.]+)[\'"]\s*\]/',
             '/\$(?:validated|data|input|attributes|values|payload)\[\s*[\'"]([\w.]+)[\'"]\s*\]/',
-            '/\$request->(?!validated|input|get|post|ip|userAgent|header|headers|url|fullUrl|query|cookie|session|user|route|boolean|string|integer|date|only|all|except|has|filled)(\w+)\b/',
+            '/\$request->(?!validated|input|get|post|ip|userAgent|header|headers|url|fullUrl|query|cookie|session|user|route|boolean|string|integer|date|only|all|except|has|filled|path|decodedPath|is|method|root|segments?|getHost|host|httpHost|getPathInfo|server)(\w+)\b/',
         ] as $pattern) {
             if (preg_match($pattern, $expression, $match) === 1) {
                 $input = $match[1];
@@ -273,6 +342,8 @@ class ControllerReader
         $moment = preg_match('/\bnow\(\)|Carbon::now|Date::now/', $expression) === 1;
 
         return match (true) {
+            /* Several campaign parameters kept together, as `array_filter(['utm_source' => ..., 'utm_medium' => ...])`. */
+            preg_match_all('/utm_(source|medium|campaign|term|content)|gclid|fbclid|msclkid/', $expression) > 1 || ($name === 'attribution' && preg_match('/utm_|referr?er|landing/', $expression) === 1) => '@attribution',
             $input !== null && preg_match('/^(utm_(source|medium|campaign|term|content)|gclid|fbclid|msclkid)$/', $input) === 1 => '@'.$input,
             $moment && preg_match('/consent|agree|accept|privacy/', $name) === 1 => '@consent.at',
             (bool) preg_match('/config\(\s*[\'"][^\'"]*(privacy|policy)[^\'"]*[\'"]/i', $expression) => '@consent.policy_version',
@@ -283,7 +354,7 @@ class ControllerReader
             (bool) preg_match('/landing/i', $expression) => '@landing_page',
             (bool) preg_match('/referr?er/i', $expression) && preg_match('/header|headers/', $expression) === 1 => '@page_url',
             (bool) preg_match('/referr?er/i', $expression) => '@referrer',
-            (bool) preg_match('/url\(\)->(previous|current|full)|->fullUrl\(\)|->url\(\)/', $expression) => '@page_url',
+            (bool) preg_match('/url\(\)->(previous|current|full)|->fullUrl\(\)|->url\(\)|\$request->(path|decodedPath|getPathInfo)\(\)|request\(\)->(path|decodedPath)\(\)/', $expression) => '@page_url',
             (bool) preg_match('/->ip\(\)/', $expression) => '@ip',
             (bool) preg_match('/userAgent\(\)|User-Agent/i', $expression) => '@user_agent',
             (bool) preg_match('/getLocale\(\)|locale\(\)|->locale\b/', $expression) => '@locale',
@@ -344,13 +415,13 @@ class ControllerReader
                 continue;
             }
 
-            $arguments = $this->arguments($body, $call[0][1] + strlen($call[0][0]) - 1);
+            $arguments = PhpSource::arguments($body, $call[0][1] + strlen($call[0][0]) - 1);
             $method = $call[2][0];
             $attributes = [];
             $whole = false;
 
             foreach ($method === 'updateOrCreate' || $method === 'firstOrCreate' ? $arguments : array_slice($arguments, 0, 1) as $argument) {
-                $pairs = $this->pairs($argument);
+                $pairs = PhpSource::pairs($argument);
 
                 if ($pairs === null) {
                     $whole = true;
@@ -380,7 +451,7 @@ class ControllerReader
                 continue;
             }
 
-            $attributes = isset($new[3]) && $new[3] !== '' ? ($this->pairs($new[3]) ?? []) : [];
+            $attributes = isset($new[3]) && $new[3] !== '' ? (PhpSource::pairs($new[3]) ?? []) : [];
 
             preg_match_all('/\$'.$new[1].'->(\w+)\s*=\s*([^;]+);/', $body, $sets, PREG_SET_ORDER);
 
@@ -389,7 +460,7 @@ class ControllerReader
             }
 
             if (preg_match('/\$'.$new[1].'->(?:fill|forceFill)\(\s*(\[.*?\])\s*\)/s', $body, $fill) === 1) {
-                $attributes = [...$attributes, ...($this->pairs($fill[1]) ?? [])];
+                $attributes = [...$attributes, ...(PhpSource::pairs($fill[1]) ?? [])];
             }
 
             $writes[] = ['model' => $model, 'method' => 'save', 'attributes' => $attributes];
@@ -425,179 +496,234 @@ class ControllerReader
     }
 
     /**
-     * @return array{route?: string, url?: string, back?: bool, message?: string, message_key?: string, flash?: string}|null
-     */
-    private function redirect(string $body): ?array
-    {
-        $redirect = [];
-
-        if (preg_match('/redirect\(\)\s*->\s*route\(\s*[\'"]([^\'"]+)[\'"]/', $body, $match) === 1 || preg_match('/to_route\(\s*[\'"]([^\'"]+)[\'"]/', $body, $match) === 1) {
-            $redirect['route'] = $match[1];
-        } elseif (preg_match('/redirect\((?:\)\s*->\s*to\()?\s*[\'"]([^\'"]+)[\'"]/', $body, $match) === 1) {
-            $redirect['url'] = $match[1];
-        } elseif (preg_match('/\bback\(\)|redirect\(\)\s*->\s*back\(\)/', $body) === 1) {
-            $redirect['back'] = true;
-        }
-
-        if (preg_match('/->with\(\s*[\'"](\w+)[\'"]\s*,\s*(.+?)\)\s*(?:->|;)/s', $body, $match) === 1) {
-            $redirect['flash'] = $match[1];
-            $key = LangFiles::keyIn($match[2]);
-
-            if ($key !== null) {
-                $redirect['message_key'] = $key;
-            } elseif (preg_match('/^\s*([\'"])((?:(?!\1).)*)\1\s*$/s', $match[2], $text) === 1) {
-                $redirect['message'] = $text[2];
-            }
-        }
-
-        return $redirect === [] ? null : $redirect;
-    }
-
-    /**
-     * A method's body and the line it starts on.
+     * Every place the method sends the visitor, with the message flashed
+     * and the condition it is under (for a controller that serves two
+     * brands, say, and thanks each in its own words).
      *
-     * @return array{0: string|null, 1: int}
+     * @return list<array{route?: string, url?: string, back?: bool, message?: string, message_key?: string, flash?: string, condition?: string}>
      */
-    private function method(string $source, string $method): array
+    private function redirects(string $body): array
     {
-        if (preg_match('/function\s+'.preg_quote($method, '/').'\s*\(/', $source, $match, PREG_OFFSET_CAPTURE) !== 1) {
-            return [null, 0];
+        $candidates = [];
+        $flashed = null;
+
+        /* A message flashed before the return: session()->flash('status', ...), Session::flash(...). */
+        if (preg_match('/(?:session\(\)|Session::|->session\(\))\s*(?:->\s*)?flash\(/', $body, $flash, PREG_OFFSET_CAPTURE) === 1) {
+            $arguments = PhpSource::arguments($body, $flash[0][1] + strlen($flash[0][0]) - 1);
+            $flashed = $this->message($arguments);
         }
 
-        $start = $match[0][1];
-        $open = strpos($source, '{', $start + strlen($match[0][0]));
+        preg_match_all('/\breturn\b/', $body, $returns, PREG_OFFSET_CAPTURE);
 
-        if ($open === false) {
-            return [null, 0];
-        }
+        foreach ($returns[0] as [, $offset]) {
+            $statement = $this->statement($body, $offset + 6);
 
-        $depth = 0;
-        $length = strlen($source);
-
-        for ($i = $open; $i < $length; $i++) {
-            $character = $source[$i];
-
-            if ($character === '\'' || $character === '"') {
-                $i = $this->skipString($source, $i);
-
+            if (preg_match('/\bredirect\(|\bback\(\)|\bto_route\(|->with\(|Redirect::/', $statement) !== 1) {
                 continue;
             }
 
-            if ($character === '{') {
+            $redirect = [];
+
+            if (preg_match('/(?:->route|\bto_route|Redirect::route|(?<![\w>:])\w*_route|::route)\(\s*[\'"]([^\'"]+)[\'"]/', $statement, $match) === 1) {
+                $redirect['route'] = $match[1];
+            } elseif (preg_match('/redirect\((?:\)\s*->\s*to\()?\s*[\'"]([^\'"]+)[\'"]/', $statement, $match) === 1) {
+                $redirect['url'] = $match[1];
+            } elseif (preg_match('/\bback\(\)|->back\(\)/', $statement) === 1) {
+                $redirect['back'] = true;
+            }
+
+            if (preg_match('/->with\(/', $statement, $with, PREG_OFFSET_CAPTURE) === 1) {
+                $redirect = [...$redirect, ...$this->message(PhpSource::arguments($statement, $with[0][1] + strlen($with[0][0]) - 1))];
+            } elseif ($flashed !== null) {
+                $redirect = [...$redirect, ...$flashed];
+            }
+
+            $condition = $this->condition($body, $offset);
+
+            if ($condition !== null) {
+                $redirect['condition'] = $condition;
+            }
+
+            if ($redirect !== [] && $redirect !== ['condition' => $condition]) {
+                $candidates[] = $redirect;
+            }
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * The redirect a form posting to `$route` meets: the one sending the
+     * visitor back to the same part of the site (`avant.contact` for
+     * `avant.contact.submit`), or whose condition names that part, else
+     * the one taken when no condition holds.
+     *
+     * @param  list<array<string, mixed>>  $candidates
+     * @return array<string, mixed>|null
+     */
+    private function chooseRedirect(array $candidates, ?string $route): ?array
+    {
+        if ($candidates === []) {
+            return null;
+        }
+
+        $segments = $route === null ? [] : array_values(array_filter(preg_split('/[.\/]/', $route) ?: [], fn (string $segment): bool => ! in_array($segment, ['submit', 'store', 'send', 'post', 'save'], true) && preg_match('/^(localized|[a-z]{2})$/', $segment) !== 1));
+        $scored = [];
+
+        foreach ($candidates as $index => $candidate) {
+            $score = 0;
+            $target = array_values(array_filter(preg_split('/[.\/]/', (string) ($candidate['route'] ?? $candidate['url'] ?? '')) ?: [], fn (string $segment): bool => $segment !== '' && preg_match('/^(localized|[a-z]{2})$/', $segment) !== 1));
+
+            if ($segments !== [] && $target !== [] && $target[0] === $segments[0]) {
+                $score += 2;
+            }
+
+            if (isset($candidate['condition'])) {
+                preg_match_all('/[\'"]([^\'"]+)[\'"]/', (string) $candidate['condition'], $words);
+
+                foreach ($words[1] as $word) {
+                    if (in_array(trim($word, '/*'), $segments, true)) {
+                        $score++;
+                    }
+                }
+            } else {
+                $score += 0.5;
+            }
+
+            $scored[] = [$score, $index];
+        }
+
+        usort($scored, fn (array $a, array $b): int => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
+
+        return $candidates[$scored[0][1]];
+    }
+
+    /**
+     * `('status', __('contact.thanks'))` as the flash's name and its
+     * message or lang key.
+     *
+     * @param  list<string>  $arguments
+     * @return array{flash?: string, message?: string, message_key?: string}
+     */
+    private function message(array $arguments): array
+    {
+        if (count($arguments) < 2 || preg_match('/^([\'"])(\w+)\1$/', $arguments[0], $name) !== 1) {
+            return [];
+        }
+
+        $message = ['flash' => $name[2]];
+        $key = LangFiles::keyIn($arguments[1]);
+
+        if ($key !== null) {
+            $message['message_key'] = $key;
+        } elseif (preg_match('/^\s*([\'"])((?:(?!\1).)*)\1\s*$/s', $arguments[1], $text) === 1) {
+            $message['message'] = stripslashes($text[2]);
+        }
+
+        return $message;
+    }
+
+    /** A statement from an offset to its `;`, past strings and brackets. */
+    private function statement(string $source, int $start): string
+    {
+        $depth = 0;
+
+        for ($i = $start, $length = strlen($source); $i < $length; $i++) {
+            $character = $source[$i];
+
+            if ($character === '\'' || $character === '"') {
+                $i = PhpSource::skipString($source, $i);
+            } elseif (in_array($character, ['(', '[', '{'], true)) {
                 $depth++;
-            } elseif ($character === '}' && --$depth === 0) {
-                return [substr($source, $open + 1, $i - $open - 1), substr_count(substr($source, 0, $start), "\n") + 1];
-            }
-        }
-
-        return [null, 0];
-    }
-
-    /**
-     * The arguments of a call, from the offset of its opening bracket.
-     *
-     * @return list<string>
-     */
-    private function arguments(string $source, int $open): array
-    {
-        $depth = 0;
-        $current = '';
-        $arguments = [];
-        $length = strlen($source);
-
-        for ($i = $open; $i < $length; $i++) {
-            $character = $source[$i];
-
-            if ($character === '\'' || $character === '"') {
-                $end = $this->skipString($source, $i);
-                $current .= substr($source, $i, $end - $i + 1);
-                $i = $end;
-
-                continue;
-            }
-
-            if (in_array($character, ['(', '[', '{'], true)) {
-                if ($depth++ === 0) {
-                    continue;
-                }
             } elseif (in_array($character, [')', ']', '}'], true)) {
-                if (--$depth === 0) {
-                    $arguments[] = trim($current);
+                $depth--;
+            } elseif ($character === ';' && $depth <= 0) {
+                break;
+            }
+        }
 
-                    break;
+        return substr($source, $start, $i - $start);
+    }
+
+    /** The condition of the innermost `if` whose block holds an offset. */
+    private function condition(string $body, int $offset): ?string
+    {
+        $condition = null;
+
+        preg_match_all('/\b(?:if|elseif)\s*\(/', $body, $ifs, PREG_OFFSET_CAPTURE);
+
+        foreach ($ifs[0] as [$text, $start]) {
+            $open = $start + strlen($text) - 1;
+            $close = PhpSource::closing($body, $open);
+            $brace = $close === null ? false : strpos($body, '{', $close);
+
+            if ($close === null || $brace === false || $start > $offset || trim(substr($body, $close + 1, $brace - $close - 1)) !== '') {
+                continue;
+            }
+
+            $end = PhpSource::closing($body, $brace);
+
+            if ($end !== null && $brace < $offset && $end > $offset) {
+                $condition = trim(substr($body, $open + 1, $close - $open - 1));
+            }
+        }
+
+        return $condition;
+    }
+
+    /**
+     * Who the method emails - `Mail::to(...)`, `Notification::route('mail',
+     * ...)` - with a recipient from config or env worked out in the
+     * running app.
+     *
+     * @param  array<string, string>  $uses
+     * @return array{emails: list<string>, from: list<string>, unresolved: list<string>}
+     */
+    private function recipients(string $body, array $uses): array
+    {
+        $emails = [];
+        $from = [];
+        $unresolved = [];
+
+        preg_match_all('/\bMail::(?:to|cc|bcc)\(|\bNotification::route\(\s*[\'"]mail[\'"]\s*,/', $body, $calls, PREG_OFFSET_CAPTURE);
+
+        foreach ($calls[0] as [$text, $offset]) {
+            $open = str_starts_with($text, 'Mail::') ? $offset + strlen($text) - 1 : $offset + strpos($text, '(');
+            $arguments = PhpSource::arguments($body, $open);
+            $expression = $arguments[str_starts_with($text, 'Mail::') ? 0 : 1] ?? null;
+
+            if ($expression === null) {
+                continue;
+            }
+
+            $written = $expression;
+
+            if (preg_match('/^\$(\w+)$/', $expression, $variable) === 1) {
+                $expression = PhpSource::assignment($body, $variable[1], $offset) ?? $expression;
+            }
+
+            $value = $this->values->evaluate($expression, [], $uses);
+            $found = [];
+
+            foreach ((array) ($value['ok'] ? $value['value'] : []) as $one) {
+                foreach (is_string($one) ? preg_split('/[,;\s]+/', $one) ?: [] : [] as $address) {
+                    if (filter_var($address, FILTER_VALIDATE_EMAIL) !== false) {
+                        $found[] = $address;
+                    }
                 }
-            } elseif ($character === ',' && $depth === 1) {
-                $arguments[] = trim($current);
-                $current = '';
+            }
+
+            if ($found === []) {
+                $unresolved[] = $written === $expression ? $written : $written.' = '.$expression;
 
                 continue;
             }
 
-            $current .= $character;
+            $emails = [...$emails, ...$found];
+            $from[] = $expression;
         }
 
-        return array_values(array_filter($arguments, fn (string $argument): bool => $argument !== ''));
-    }
-
-    /**
-     * `['name' => $request->name, ...]` as attribute => expression; null
-     * when the argument is not an array written out.
-     *
-     * @return array<string, string>|null
-     */
-    private function pairs(string $argument): ?array
-    {
-        $argument = trim($argument);
-
-        if (! str_starts_with($argument, '[')) {
-            return null;
-        }
-
-        $pairs = [];
-
-        foreach ($this->arguments($argument, 0) as $item) {
-            if (preg_match('/^([\'"])([\w.-]+)\1\s*=>\s*(.+)$/s', trim($item), $match) === 1) {
-                $pairs[$match[2]] = trim($match[3]);
-            }
-        }
-
-        return $pairs;
-    }
-
-    /**
-     * The fields named in `$request->only([...])` or `->safe()->only(...)`.
-     *
-     * @return list<string>|null
-     */
-    private function only(string $argument): ?array
-    {
-        if (preg_match('/only\(\s*\[?([^\])]*)/', $argument, $match) !== 1) {
-            return null;
-        }
-
-        preg_match_all('/[\'"]([\w.-]+)[\'"]/', $match[1], $names);
-
-        return $names[1] === [] ? null : $names[1];
-    }
-
-    private function skipString(string $source, int $start): int
-    {
-        $quote = $source[$start];
-        $length = strlen($source);
-
-        for ($i = $start + 1; $i < $length; $i++) {
-            if ($source[$i] === '\\') {
-                $i++;
-
-                continue;
-            }
-
-            if ($source[$i] === $quote) {
-                return $i;
-            }
-        }
-
-        return $length - 1;
+        return ['emails' => array_values(array_unique($emails)), 'from' => array_values(array_unique($from)), 'unresolved' => array_values(array_unique($unresolved))];
     }
 
     /**
@@ -611,7 +737,7 @@ class ControllerReader
             return null;
         }
 
-        $class = $uses[$name] ?? (str_contains($name, '\\') ? $name : $this->namespaceOf($source).'\\'.$name);
+        $class = $uses[$name] ?? (str_contains($name, '\\') ? $name : PhpSource::namespaceOf($source).'\\'.$name);
 
         if (class_exists($class)) {
             return is_subclass_of($class, Model::class) ? $class : null;
@@ -619,27 +745,6 @@ class ControllerReader
 
         /* A class this process cannot load is taken for a model when it lives with the models. */
         return str_contains($class, '\\Models\\') ? $class : null;
-    }
-
-    /**
-     * @return array<string, string> short name => class
-     */
-    private function uses(string $source): array
-    {
-        $uses = [];
-
-        preg_match_all('/^use\s+([\w\\\\]+)(?:\s+as\s+(\w+))?\s*;/m', $source, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $uses[$match[2] ?? class_basename($match[1])] = $match[1];
-        }
-
-        return $uses;
-    }
-
-    private function namespaceOf(string $source): string
-    {
-        return preg_match('/^namespace\s+([\w\\\\]+)\s*;/m', $source, $match) === 1 ? $match[1] : '';
     }
 
     private function routeForUrl(string $url): ?Route

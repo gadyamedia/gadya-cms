@@ -2,6 +2,23 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.16.1
+
+### Fixed
+
+Found converting the forms of a real two-brand site in three languages with 0.16.0:
+
+- **`forms:scan` follows an invokable controller.** `Route::post('/contact', ContactController::class)` - which Laravel keeps as the class alone - `[ContactController::class]`, a class name in a string and `action(ContactController::class)` all lead to `__invoke`. A form's `action` written with a helper of the site's own (`locale_route('contact.submit')`) is followed by the route's name, through the running router first, so a route whose address is worked out in code (`$uri('contact.submit')` in a localised group) is found; when the router does not have it, `routes/*.php` are read, with the names their groups give (`->name('avant.')`, `'as' =>`, `"localized.{$locale}."`).
+- **Required labels keep their translations.** A label beside an `@error` block, or written `{{ __('contact.name') }} *`, `{{ __('contact.name') }} <span>*</span>` or `@lang('x') <span class="required">*</span>`, keeps its lang key and is imported in every language, instead of falling back to the field's name.
+- **No required mark shown twice.** `*`, `<span>*</span>`, `(required)` and `<abbr title="required">*</abbr>` are taken off labels - in the template and in the lang files' words - in every language, and make the question required.
+- **Choices drawn in a `@foreach`** no longer become a text field labelled with the loop. The loop is written out in every language from what it runs over - `__('file.key')`, `config('x')`, an array in `@php`, a static call, or a variable the page's controller, route closure or view composer passes the template - keeping each language's words for the choices. When that cannot be worked out, the question is still a dropdown, radio buttons or tick boxes with the choices written out beside the loop, and the scan's new `unmapped` says where its choices come from. The empty first choice becomes the dropdown's placeholder. Only expressions that read are run.
+- **Labels are only labels.** A label is the words of its `<label>` (by `for`, or wrapped around the control), a `<fieldset>`'s `<legend>` or an `aria-label` - never a dropdown's choices, an error message or Blade directives beside it.
+- **Consent, analytics and the thank-you come across.** The consent box's exact wording, a sentence with a link to the privacy policy in it, is imported in every language, and the policy's address suggested as `privacy.policy_url` when none is set. The analytics event is read from a `data-analytics`/`data-event` attribute on the form or its send button, a `gtag('event', ...)` or `dataLayer.push({event: ...})` in the template, or the controller. A controller with a thank-you per brand gives each form its own, in every language.
+- **Lead emails come across.** The addresses a controller emails (`Mail::to(...)`, `Notification::route('mail', ...)`), with `config()` or `env()` recipients worked out in the running app, become the form's staff emails, and the dry run lists them to confirm.
+- Words written out in a template ("Name *") that are word for word a string in the lang files are given its translations, listed as `lang_matches` to check.
+- The suggested destination maps `$request->path()` to `@page_url`, and an array of campaign parameters to `@attribution`.
+- The `gadya-cms-forms` skill has a dry-run checklist - labels in every language, options, consent wording, analytics event, thank-you, notification emails, the destination map - and runs `gadya-cms:audit` after converting, reporting a tracker without consent and a missing `@cmsSection` as follow-ups with their fixes, without fixing them in the forms task.
+
 ## 0.16.0
 
 ### Added

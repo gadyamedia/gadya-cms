@@ -25,7 +25,11 @@ A builder form keeps the configured form's **slug and every field's name**, so t
 php artisan gadya-cms:forms:scan --json
 ```
 
-Each entry has `kind` (`config`, `blade`, `livewire`), `name` (the package form it posts to, or null), `file` and `line`, the `fields` found (type, label, required, options, or the validation `rules`; `label_key`, `placeholder_key` where the words are lang keys), the `config` definition if any, whether a `builder` form exists already, and a `suggested_slug`. The top-level `notices` list anything that stops a converted form working - a panel with `->forms(false)`.
+Each entry has `kind` (`config`, `blade`, `livewire`), `name` (the package form it posts to, or null), `file` and `line`, the `fields` found (type, label, required, options, or the validation `rules`; `label_key`, `placeholder_key` where the words are lang keys, `label_parts` for a label mixing keys and words, such as a consent sentence with a link), the `config` definition if any, whether a `builder` form exists already, a `suggested_slug`, the `analytics` event the form sends (and where it was found), and `unmapped` - choices the scan could not work out. The top-level `notices` list anything that stops a converted form working - a panel with `->forms(false)`.
+
+- **Choices in a `@foreach`** are written out in every language when the scan can tell what the loop runs over: `__('file.key')`, `config('x')`, an array in `@php`, a static call, or a variable the page's controller, route or view composer passes (`view('pages.contact', ['services' => ...])`, `compact()`, `->with()`). When it cannot, the field is still a dropdown (or radio buttons, or tick boxes) with the choices written out in the template, and `unmapped` says `options come from $services in <file>; fill them in` - fill them in in the builder after converting.
+- **Labels** are only ever the words of the `<label>` (by `for`, or wrapped around the control), a `<legend>` or an `aria-label` - never a dropdown's choices or an error message beside it. A required mark (`*`, `<span>*</span>`, `(required)`, `<abbr title="required">*</abbr>`) is taken off the words, in the lang files too, and makes the question required.
+- **Routes**: `route('name')`, `locale_route('name')` and the like are followed by the route's name through the running router, then through `routes/*.php` (including groups and names built from a variable); an invokable controller (`ContactController::class`) is its `__invoke`.
 
 - A `blade` form with a `name` posts to the package (`route('gadya-cms.forms.store', 'name')` / `@cmsForm('name')`) and usually has a matching `config` entry: convert from config and read the labels from the template.
 - A `blade` form with no `name` posts to a controller of the site's own. The scan reads it for you: `handler` (what it does, in `does`) and `suggested_destination`. Follow **When the controller does more** below.
@@ -35,13 +39,13 @@ Each entry has `kind` (`config`, `blade`, `livewire`), `name` (the package form 
 
 A site's own controller often does more than store and email the enquiry: it saves to the site's own model (a `Lead` with a status and its own panel screen), records the brand, the page it came from and the ad campaign, stores when consent was given and which privacy-policy version, and thanks the visitor in their language. A builder form does all of that generically - so convert it, don't stop.
 
-1. **Read what it does.** `handler.does` says it in plain words; `handler.writes` has each record it creates with the expression behind each attribute; `handler.redirect` the message it flashes; `handler.custom` anything no destination can express. Open the method at `handler.file:handler.line` and check.
+1. **Read what it does.** `handler.does` says it in plain words; `handler.writes` has each record it creates with the expression behind each attribute; `handler.redirect` the message it flashes (when it has several - one per brand, say - `handler.redirects` lists them all and `redirect` is the one this form meets); `handler.notify` who it emails, worked out from `config()`/`env()` in the running app; `handler.custom` anything no destination can express. Open the method at `handler.file:handler.line` and check.
 2. **Configure a destination that mirrors it.** `suggested_destination.config` is the block for `forms.builder.destinations`: the model, the `map` (questions by key, `@` tokens for the rest) and `defaults` such as `'status' => 'new'`. Check each line against the controller and fix what the reader guessed wrong. Keep the campaign and consent through tokens - `@utm_source` (or `@source`), `@landing_page`, `@referrer`, `@page_url`, `@site`, `@locale`, `@consent.at`, `@consent.policy_version`, `@consent.policy_url` (the full list is in `references/forms.md`). Anything in `suggested_destination.unmapped` needs a decision: map it, give it a default, or leave it to the column's default.
    - The brand: when one app serves several brands, set `forms.builder.attribution.site` (a map of host to brand, or an invokable class) so `@site` says which.
    - The policy version: if the controller read it from config (`handler.policy_version_config`), set `gadya-cms.privacy.policy_version` to the same value (for example `env()` or that config key); otherwise the CMS dates a CMS policy page itself. Set `privacy.policy_url` (or **Settings → Privacy choices**) to the policy's address.
    - The language: set `gadya-cms.locales.default` to the site's own default language (`app.locale`). Forms follow `App::getLocale()`; the site does not need to list its languages under `locales.enabled`.
    - Events the controller fires (`handler.events`): fire them from a listener on `Gadya\Cms\Events\FormSubmitted`, or the model's `created` event, in the app.
-3. **Import the translations.** When the template's words are `__()`, `@lang` or `trans()` keys, the convert command reads them from `lang/` in every language - labels, placeholders, choices, the send button and the controller's flashed message - and writes the default language into the form and each other language as its live translation. Check `translations` in the JSON.
+3. **Import the translations.** When the template's words are `__()`, `@lang` or `trans()` keys, the convert command reads them from `lang/` in every language - labels, placeholders, choices, the consent sentence, the send button and the controller's flashed message - and writes the default language into the form and each other language as its live translation. Words written out in the template ("Name *") that are word for word a string in the lang files get that string's translations too; each such match is listed in `lang_matches` - check them. Check `translations` in the JSON.
 4. **Switch forms on in the panel.** If the scan's `notices` mention `->forms(false)`, change it to `->forms()` in that panel provider yourself (the command never edits it) - without it there is no builder and no inbox.
 5. **Convert** - dry run first, and let it write the destination only when you have read the diff:
 
@@ -51,6 +55,16 @@ A site's own controller often does more than store and email the enquiry: it sav
    ```
 
    `--write-config` adds the suggested block to `config/gadya-cms.php` (never changing an entry already there); edit it there if the mapping needs fixing. `--destination` chooses it for the form. The client can adjust the mapping per form under **Also save to**.
+
+   **Review the dry run** before building, in every language the site has, and fix anything wrong first (in the template, the lang files or the config) or note it for after:
+
+   - **Labels** (`fields[].label`, and `translations.{locale}.fields[].label`): the words the visitor sees, with no `*` left in them, in every locale - not the field's name ("Name", "Message") where the site had its own words.
+   - **Options**: every choice of every dropdown, radio group and tick-box list, in every locale; anything in `unmapped` is yours to fill in.
+   - **Consent wording** (`consent.wording`, per locale): word for word what the old box said. The link to the privacy policy becomes `suggested_config['privacy.policy_url']` when none is set: set `gadya-cms.privacy.policy_url` (or **Settings → Privacy choices**).
+   - **Analytics event** (`analytics`, `settings.analytics_event`): the name the site's reports already count, and where it was found.
+   - **Success message** (`success`, per locale): this form's own thank-you (on a site with several brands, not another brand's).
+   - **Notification emails** (`settings.notify`, from `notify.from`): the addresses the controller emailed, worked out in this environment - confirm them with the person, since production may set them differently. `notify.unresolved` lists addresses that were not set here.
+   - **Destination map** (`suggested_destination.config.map` and the `config.diff`): every attribute of the site's record, and `unmapped`.
 6. **Point the markup at the builder form** as in step 4 below. Per-language thank-yous and pages to go to are under **After sending → In other languages**; set them if the controller redirected somewhere different per language.
 7. **Verify** a test submission lands in **both** the inbox **and** the site's own model, with the source and consent columns filled (`source`, `landing_page`, `consented_at`, `privacy_version` - whatever the site keeps), and that the enquiry in the inbox says **Saved to Leads**, not **Not saved**. Check a submission in each language too.
 8. **Keep the old controller route** until that is verified. Removing it (and the controller) is a separate commit, later, when the person agrees.
@@ -130,10 +144,16 @@ php artisan gadya-cms:forms:convert contact --from=blade --file=resources/views/
 
 ```bash
 php artisan test --compact
+php artisan gadya-cms:audit
 ```
+
+Run `gadya-cms:audit` after converting, and **report** what it finds that bears on the form as follow-ups for the person - do not fix them silently as part of the forms task:
+
+- **Third-party trackers without consent** (Google Analytics or Tag Manager loaded straight into the layout): the fix is to wrap each tag in `<x-gadya-cms::consented-script category="analytics">...</x-gadya-cms::consented-script>` and add `<x-gadya-cms::consent-banner />` to the layout (and switch the banner on under **Settings → Privacy choices**). Say which layout files, and that it changes what visitors see.
+- **Form sections are not drawn** (`@cmsSection` missing from the section loop): the fix is to add `@cmsSection($section, $index)` as the first line inside the loop over `$page['sections']` (the audit names the file and line; `php artisan gadya:upgrade --phase=code` can add it). Without it a **Form** section a client adds is not shown.
 
 Then check it for real: the page renders the form, and a test submission lands in **Content → Enquiries** under the same form name, with the notify emails sent. For a form with a destination, it also lands in the site's own model, with the source and consent columns filled. While the built form is still a draft, the old configured form answers - publish it (or ask the person to) under **Content → Forms**, then submit again and confirm the enquiry has the builder form's labels.
 
 ## 6. Commit and hand over
 
-Commit on the branch, one form per commit where practical (`feat: convert the contact form to the form builder`). Tell the person: which forms were converted, which are drafts waiting to be published, which destinations were added to config and what they map, anything the scan could not see, and that the config definitions and old controller routes can be removed once they are happy - not before.
+Commit on the branch, one form per commit where practical (`feat: convert the contact form to the form builder`). Tell the person: which forms were converted, which are drafts waiting to be published, which destinations were added to config and what they map, the notification emails and analytics event carried over, anything the scan could not see (`unmapped`, `lang_matches` to check), the audit's follow-ups, and that the config definitions and old controller routes can be removed once they are happy - not before.

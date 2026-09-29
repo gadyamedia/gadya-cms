@@ -1,0 +1,38 @@
+<?php
+
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\LocalizedHomeController;
+use App\Http\Controllers\PageController;
+use App\Support\Locales;
+use Illuminate\Support\Facades\Route;
+
+/*
+| Each translatable page is registered once per locale on a fully translated path,
+| named localized.{locale}.{base}. App\Support\Locales owns the mapping between
+| those names, the English base names, and the slugs.
+*/
+foreach (Locales::TRANSLATED as $locale) {
+    Route::prefix($locale)
+        ->name("localized.{$locale}.")
+        ->group(function () use ($locale) {
+            $uri = fn (string $base): string => Locales::uri($base, $locale);
+
+            Route::get($uri('home'), LocalizedHomeController::class)->name('home');
+            Route::get($uri('contact'), [PageController::class, 'contact'])->name('contact');
+            Route::post($uri('contact.submit'), ContactController::class)->middleware('throttle:10,1')->name('contact.submit');
+            Route::get($uri('privacy'), [PageController::class, 'privacy'])->name('privacy');
+        });
+}
+
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
+
+Route::post('/contact', ContactController::class)->middleware('throttle:10,1')->name('contact.submit');
+
+Route::prefix('avant')->name('avant.')->middleware('avant.enabled')->group(function () {
+    Route::get('/contact', function () {
+        return view('avant.pages.contact');
+    })->name('contact');
+
+    Route::post('/contact', ContactController::class)->middleware('throttle:10,1')->name('contact.submit');
+});

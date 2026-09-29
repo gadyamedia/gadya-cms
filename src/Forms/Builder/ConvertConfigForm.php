@@ -4,6 +4,7 @@ namespace Gadya\Cms\Forms\Builder;
 
 use Gadya\Cms\Forms\CallbackForm;
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Form;
@@ -166,6 +167,14 @@ class ConvertConfigForm
      * CMS's default language becomes the form's own words, and each other
      * language an overlay, as a translation made in the panel would be.
      *
+     * Words written out in the template ("Name *") that are, word for
+     * word, a string in the lang files are given that string's
+     * translations too, and noted under `lang_matches` for a person to
+     * check. A label mixing keys and words - a consent sentence with a
+     * link - is put together in each language. A required mark (`*`,
+     * `(required)`) is taken off every language's words, and makes the
+     * question required.
+     *
      * @param  array<string, mixed>  $plan
      * @param  array<string, array<string, mixed>>  $hints
      * @param  array<string, mixed>  $words
@@ -175,8 +184,11 @@ class ConvertConfigForm
     {
         $lang = app(LangFiles::class);
         $default = app(Locales::class)->default();
+        $locales = array_values(array_unique(array_map(fn (string $locale): string => FormLocale::normalise($locale) ?? $locale, $lang->locales())));
         $overlays = [];
         $missing = [];
+        $matches = [];
+        $plan['lang_matches'] ??= [];
 
         $read = function (string $key) use ($lang, $default, &$missing): array {
             $everywhere = $lang->everywhere($key);
@@ -186,20 +198,140 @@ class ConvertConfigForm
                 $missing[] = $key;
             }
 
+            $required = false;
+
+            foreach ($everywhere as $locale => $text) {
+                [$everywhere[$locale], $found] = LabelText::strip($text);
+                $required = $required || ($found && $locale === $default);
+            }
+
             /*
              * A JSON-style key (`__('Building work')`) is itself the words
              * in the language it was written in.
              */
-            $own = $everywhere[$default] ?? ($dotted ? (reset($everywhere) ?: null) : $key);
+            $own = $everywhere[$default] ?? ($dotted ? (reset($everywhere) ?: null) : LabelText::strip($key)[0]);
 
-            return ['own' => $own, 'others' => array_diff_key($everywhere, [$default => true])];
+            return ['own' => $own, 'others' => array_diff_key($everywhere, [$default => true]), 'required' => $required];
+        };
+
+        /* Words written out, matched to the lang files' strings: the group most of the form's words share wins. */
+        $texts = [];
+
+        foreach ($hints as $hint) {
+            if (! isset($hint['label_key']) && ! isset($hint['label_parts']) && is_string($hint['label'] ?? null)) {
+                $texts[] = $hint['label'];
+            }
+
+            foreach ((array) ($hint['label_parts'] ?? []) as $part) {
+                if (isset($part['text'])) {
+                    $texts[] = $part['text'];
+                }
+            }
+
+            foreach ((array) ($hint['options'] ?? []) as $option) {
+                if (is_array($option) && ! isset($option['label_key']) && ! isset($option['labels']) && is_string($option['label'] ?? null)) {
+                    $texts[] = $option['label'];
+                }
+            }
+        }
+
+        foreach (['submit', 'success'] as $message) {
+            if (! isset($words[$message]['key']) && is_string($words[$message]['text'] ?? null)) {
+                $texts[] = $words[$message]['text'];
+            }
+        }
+
+        $candidates = [];
+        $groups = [];
+
+        foreach (array_unique($texts) as $text) {
+            $candidates[$text] = $lang->keysFor($text);
+
+            foreach (array_unique(array_map(fn (string $key): string => Str::beforeLast($key, '.'), $candidates[$text])) as $group) {
+                $groups[$group] = ($groups[$group] ?? 0) + 1;
+            }
+        }
+
+        $keyFor = function (string $text) use (&$candidates, $groups, &$matches): ?string {
+            $keys = $candidates[$text] ?? [];
+
+            if ($keys === []) {
+                return null;
+            }
+
+            usort($keys, fn (string $a, string $b): int => ($groups[Str::beforeLast($b, '.')] ?? 0) <=> ($groups[Str::beforeLast($a, '.')] ?? 0));
+            $matches[$text] = $keys[0];
+
+            return $keys[0];
+        };
+
+        /* A label of parts, put together in one language. */
+        $compose = function (array $parts, string $locale) use ($lang, $default, $keyFor, &$missing): array {
+            $pieces = [];
+            $translated = false;
+
+            foreach ($parts as $part) {
+                $key = $part['key'] ?? (isset($part['text']) ? $keyFor($part['text']) : null);
+
+                if ($key === null) {
+                    $pieces[] = (string) ($part['text'] ?? '');
+
+                    continue;
+                }
+
+                $text = $lang->get($key, $locale);
+                $translated = $translated || ($text !== null && $locale !== $default);
+                $text ??= $lang->get($key, $default) ?? ($part['text'] ?? (preg_match('/^[\w-]+(\.[\w-]+)+$/', $key) === 1 ? null : $key));
+
+                if ($text === null) {
+                    $missing[] = $key;
+                }
+
+                $pieces[] = (string) $text;
+            }
+
+            [$words, $required] = LabelText::strip(LabelText::join($pieces));
+
+            return ['words' => $words, 'required' => $required, 'translated' => $translated];
         };
 
         foreach ($plan['fields'] as $index => $field) {
             $hint = $hints[$field['key']] ?? [];
 
+            /* A label written out, matched to the lang files. */
+            if (! isset($hint['label_key']) && ! isset($hint['label_parts']) && is_string($hint['label'] ?? null)) {
+                $matched = $keyFor($hint['label']);
+
+                if ($matched !== null) {
+                    $hint['label_key'] = $matched;
+                }
+            }
+
+            if (is_array($hint['label_parts'] ?? null) && $hint['label_parts'] !== []) {
+                $own = $compose($hint['label_parts'], $default);
+
+                if ($own['words'] !== '') {
+                    $plan['fields'][$index]['label'] = $own['words'];
+                }
+
+                $plan['fields'][$index]['required'] = $plan['fields'][$index]['required'] || $own['required'];
+
+                foreach ($locales as $locale) {
+                    if ($locale === $default) {
+                        continue;
+                    }
+
+                    $other = $compose($hint['label_parts'], $locale);
+
+                    if ($other['translated'] && $other['words'] !== $own['words']) {
+                        $overlays[$locale]['fields'][$field['key']]['key'] = $field['key'];
+                        $overlays[$locale]['fields'][$field['key']]['label'] = $other['words'];
+                    }
+                }
+            }
+
             foreach (['label' => 'label_key', 'placeholder' => 'placeholder_key'] as $part => $hintKey) {
-                if (! is_string($hint[$hintKey] ?? null)) {
+                if (! is_string($hint[$hintKey] ?? null) || ($part === 'label' && isset($hint['label_parts']))) {
                     continue;
                 }
 
@@ -209,6 +341,10 @@ class ConvertConfigForm
                     $plan['fields'][$index][$part] = $found['own'];
                 }
 
+                if ($part === 'label' && $found['required']) {
+                    $plan['fields'][$index]['required'] = true;
+                }
+
                 foreach ($found['others'] as $locale => $text) {
                     $overlays[$locale]['fields'][$field['key']]['key'] = $field['key'];
                     $overlays[$locale]['fields'][$field['key']][$part] = $text;
@@ -216,16 +352,44 @@ class ConvertConfigForm
             }
 
             foreach (array_values((array) ($hint['options'] ?? [])) as $position => $option) {
-                $target = $plan['fields'][$index]['options'][$position] ?? null;
-
-                if (! is_array($option) || ! is_string($option['label_key'] ?? null) || ! is_array($target)) {
+                if (! is_array($option)) {
                     continue;
                 }
 
-                $found = $read($option['label_key']);
+                /* The plan's choices have their keys tidied ("deep-tissue" becomes "deep_tissue"). */
+                $tidy = fn (string $key): string => Str::of($key)->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->toString();
+                $targetIndex = collect($plan['fields'][$index]['options'] ?? [])->search(fn (array $one): bool => $tidy((string) $one['key']) === $tidy((string) ($option['key'] ?? '')));
+                $targetIndex = $targetIndex === false ? (isset($plan['fields'][$index]['options'][$position]) && ! isset($option['key']) ? $position : null) : $targetIndex;
+
+                if ($targetIndex === null) {
+                    continue;
+                }
+
+                $target = $plan['fields'][$index]['options'][$targetIndex];
+                $key = $option['label_key'] ?? (! isset($option['labels']) && is_string($option['label'] ?? null) ? $keyFor($option['label']) : null);
+
+                /* Choices a loop wrote out in each language. */
+                if (is_array($option['labels'] ?? null)) {
+                    foreach ($option['labels'] as $locale => $text) {
+                        if ($locale === $default) {
+                            $plan['fields'][$index]['options'][$targetIndex]['label'] = (string) $text;
+                        } else {
+                            $overlays[$locale]['fields'][$field['key']]['key'] = $field['key'];
+                            $overlays[$locale]['fields'][$field['key']]['options'][$target['key']] = ['key' => $target['key'], 'label' => (string) $text];
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (! is_string($key)) {
+                    continue;
+                }
+
+                $found = $read($key);
 
                 if ($found['own'] !== null) {
-                    $plan['fields'][$index]['options'][$position]['label'] = $found['own'];
+                    $plan['fields'][$index]['options'][$targetIndex]['label'] = $found['own'];
                 }
 
                 foreach ($found['others'] as $locale => $text) {
@@ -236,11 +400,13 @@ class ConvertConfigForm
         }
 
         foreach (['submit', 'success'] as $message) {
-            if (! is_string($words[$message]['key'] ?? null)) {
+            $key = $words[$message]['key'] ?? (is_string($words[$message]['text'] ?? null) ? $keyFor($words[$message]['text']) : null);
+
+            if (! is_string($key)) {
                 continue;
             }
 
-            $found = $read($words[$message]['key']);
+            $found = $read($key);
 
             if ($found['own'] !== null) {
                 $plan['messages'][$message] = $found['own'];
@@ -251,17 +417,34 @@ class ConvertConfigForm
             }
         }
 
+        /* A language's translation of a choice list is the whole list, in the form's order. */
         foreach ($overlays as $locale => $overlay) {
-            if (isset($overlay['fields'])) {
-                $overlays[$locale]['fields'] = array_values(array_map(
-                    fn (array $field): array => isset($field['options']) ? [...$field, 'options' => array_values($field['options'])] : $field,
-                    $overlay['fields'],
-                ));
+            foreach ($overlay['fields'] ?? [] as $key => $field) {
+                if (! isset($field['options'])) {
+                    continue;
+                }
+
+                $own = collect($plan['fields'])->firstWhere('key', $key);
+                $options = [];
+
+                foreach ((array) ($own['options'] ?? []) as $option) {
+                    $options[] = $field['options'][$option['key']] ?? ['key' => $option['key'], 'label' => $option['label']];
+                }
+
+                $overlays[$locale]['fields'][$key]['options'] = $options;
+            }
+
+            if (isset($overlays[$locale]['fields'])) {
+                $overlays[$locale]['fields'] = array_values($overlays[$locale]['fields']);
             }
         }
 
         foreach (array_unique($missing) as $key) {
             $plan['warnings'][] = "The lang key \"{$key}\" is not in any of the site's lang files; its words were not imported.";
+        }
+
+        foreach ($matches as $text => $key) {
+            $plan['lang_matches'][] = ['text' => $text, 'key' => $key];
         }
 
         $plan['translations'] = $overlays;
@@ -299,6 +482,8 @@ class ConvertConfigForm
             $has('boolean') || $hinted === 'checkbox' => 'checkbox',
             $options !== [] && ($has('array') || $hinted === 'checkboxes') => 'checkboxes',
             $options !== [] => in_array($hinted, ['radio', 'multi_select'], true) ? $hinted : 'select',
+            /* Choices the template draws from something that could not be worked out: the right kind, for a person to fill in. */
+            in_array($hinted, ['select', 'multi_select', 'radio', 'checkboxes'], true) => $hinted,
             $has('numeric') || $has('integer') || $hinted === 'number' => 'number',
             preg_match('/phone|tel|mobile|cell/', $key) === 1 || $hinted === 'phone' => 'phone',
             $hinted === 'long_text' || ($max !== null && (int) $max > 255) || preg_match('/message|comment|details|enquiry|inquiry|notes|question/', $key) === 1 => 'long_text',
