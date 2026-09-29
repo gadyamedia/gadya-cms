@@ -78,7 +78,7 @@
                     <p class="cms-bform__progress-text" aria-live="polite">
                         Step <span data-cms-step-number>{{ $startStep + 1 }}</span> of <span data-cms-step-total>{{ $total }}</span>
                     </p>
-                    <div class="cms-bform__bar" aria-hidden="true"><span class="cms-bform__bar-fill" data-cms-bar style="width: {{ round(($startStep + 1) / $total * 100) }}%"></span></div>
+                    <div class="cms-bform__bar" aria-hidden="true"><span class="cms-bform__bar-fill" data-cms-bar style="transform: scaleX({{ round(($startStep + 1) / $total, 4) }})"></span></div>
                 </div>
             @endif
 

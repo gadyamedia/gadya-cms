@@ -250,7 +250,7 @@
             }
 
             if (bar) {
-                bar.style.width = `${Math.round(((position + 1) / Math.max(1, shown.length)) * 100)}%`;
+                bar.style.transform = `scaleX(${(position + 1) / Math.max(1, shown.length)})`;
             }
         };
 

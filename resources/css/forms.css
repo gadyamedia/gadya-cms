@@ -53,7 +53,7 @@
 :where(.cms-bform__canvas) { display: block; width: 100%; height: auto; aspect-ratio: 10 / 3; border: 1px dashed var(--cms-form-line); border-radius: var(--cms-form-radius); background: #fff; touch-action: none; }
 :where(.cms-bform__progress-text) { margin: 0 0 .35rem; font-weight: 600; }
 :where(.cms-bform__bar) { height: .5rem; border-radius: 999px; background: color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 15%, transparent); overflow: hidden; }
-:where(.cms-bform__bar-fill) { display: block; height: 100%; background: var(--cms-form-accent, #1d4ed8); transition: width .2s ease; }
+:where(.cms-bform__bar-fill) { display: block; width: 100%; height: 100%; background: var(--cms-form-accent, #1d4ed8); transform-origin: left center; transition: transform .2s ease; }
 @media (prefers-reduced-motion: reduce) { :where(.cms-bform__bar-fill) { transition: none; } }
 :where(.cms-bform__actions) { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
 :where(.cms-bform__submit, .cms-bform__next, .cms-bform__back, .cms-bform__later-send, .cms-bform__clear, .cms-bform__restart) { font: inherit; font-weight: 700; min-height: 2.75rem; padding: .6rem 1.4rem; border-radius: 999px; cursor: pointer; border: 2px solid var(--cms-form-accent, #1d4ed8); }
@@ -64,7 +64,7 @@
 :where(.cms-bform__summary) { border: 2px solid var(--cms-form-danger); border-radius: var(--cms-form-radius); padding: .75rem 1rem; }
 :where(.cms-bform__summary-title) { margin: 0 0 .35rem; font-weight: 700; }
 :where(.cms-bform__summary a) { color: var(--cms-form-danger); }
-:where(.cms-bform__success, .cms-bform__saved, .cms-bform__restored) { border-left: 4px solid var(--cms-form-accent, #1d4ed8); padding: .75rem 1rem; background: color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 8%, transparent); border-radius: var(--cms-form-radius); }
+:where(.cms-bform__success, .cms-bform__saved, .cms-bform__restored) { border: 1px solid color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 35%, transparent); padding: .75rem 1rem; background: color-mix(in srgb, var(--cms-form-accent, #1d4ed8) 8%, transparent); border-radius: var(--cms-form-radius); }
 :where(.cms-bform__later) { font-size: .95rem; }
 :where(.cms-bform__later summary) { cursor: pointer; text-decoration: underline; }
 :where(.cms-bform__later[open]) { display: grid; gap: .5rem; }
