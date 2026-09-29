@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Events\LeadReceived;
+use App\Mail\NewLead;
+use Gadya\Cms\Tests\Fixtures\Lead;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+
+class ContactController extends Controller
+{
+    public function send(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email'],
+            'topic' => ['nullable', 'string'],
+            'message' => ['nullable', 'string', 'max:5000'],
+            'consent' => ['accepted'],
+        ]);
+
+        $lead = Lead::create([
+            'name' => $validated['name'],
+            'email' => $request->input('email'),
+            'topic' => $request->topic,
+            'message' => $validated['message'] ?? null,
+            'brand' => config('app.brand'),
+            'source' => session('utm_source', 'direct'),
+            'landing_page' => session('landing_page'),
+            'locale' => app()->getLocale(),
+            'consented_at' => $request->boolean('consent') ? now() : null,
+            'privacy_version' => config('privacy.version'),
+            'status' => 'new',
+            'score' => $this->score($request),
+        ]);
+
+        Mail::to(config('mail.from.address'))->send(new NewLead($lead));
+        event(new LeadReceived($lead));
+
+        return back()->with('success', __('contact.thanks'));
+    }
+
+    public function book(Request $request)
+    {
+        $response = Http::post('https://api.booking.example/bookings', $request->all());
+
+        return back()->with('success', 'Booked.');
+    }
+}

@@ -4,6 +4,8 @@ namespace Gadya\Cms\Forms\Builder;
 
 use Gadya\Cms\Forms\CallbackForm;
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Localisation\Locales;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Form;
 use Gadya\Cms\Options\Options;
 use Gadya\Cms\Support\SiteContext;
@@ -56,11 +58,16 @@ class ConvertConfigForm
      * What the builder form would hold, without saving anything.
      *
      * @param  array<string, array<string, mixed>>  $hints  What the template says about each field: type, label, options, required
-     * @return array{slug: string, title: string, fields: list<array<string, mixed>>, messages: array<string, string>, settings: array<string, mixed>, warnings: list<string>}
+     * @param  array{submit?: array{text?: string, key?: string}|null, success?: array{text?: string, key?: string}|null}  $words  The send button's and the thank-you's words, or their lang keys
+     * @return array{slug: string, title: string, fields: list<array<string, mixed>>, messages: array<string, string>, settings: array<string, mixed>, warnings: list<string>, translations: array<string, array<string, mixed>>}
      */
-    public function plan(string $name, array $hints = []): array
+    public function plan(string $name, array $hints = [], array $words = [], bool $withConfig = true): array
     {
-        $definition = FormDefinition::find($name);
+        /*
+         * A form that posted to the site's own controller owes nothing to a
+         * configured form that happens to share its name.
+         */
+        $definition = $withConfig ? FormDefinition::find($name) : null;
 
         if ($definition === null && $hints === []) {
             throw new InvalidArgumentException("There is no configured form called [{$name}].");
@@ -97,28 +104,36 @@ class ConvertConfigForm
             $settings['autoreply'] = $reply;
         }
 
-        return [
+        $plan = [
             'slug' => Str::slug($name) ?: $name,
             'title' => $definition?->label ?? Str::headline($name),
             'fields' => FormSchema::normalise($fields),
-            'messages' => array_filter(['success' => $definition?->success]),
+            'messages' => array_filter([
+                'success' => $definition?->success ?? ($words['success']['text'] ?? null),
+                'submit' => $words['submit']['text'] ?? null,
+            ]),
             'settings' => $settings,
             'warnings' => $warnings,
+            'translations' => [],
         ];
+
+        return $this->withLangFiles($plan, $hints, $words);
     }
 
     /**
      * @param  array<string, array<string, mixed>>  $hints
+     * @param  array{submit?: array{text?: string, key?: string}|null, success?: array{text?: string, key?: string}|null}  $words
+     * @param  array<string, mixed>  $settings  Settings of the new form's own, over the ones planned: its destinations, say
      */
-    public function convert(string $name, array $hints = []): Form
+    public function convert(string $name, array $hints = [], array $words = [], array $settings = [], bool $withConfig = true): Form
     {
-        $plan = $this->plan($name, $hints);
+        $plan = $this->plan($name, $hints, $words, $withConfig);
 
         if (Form::query()->forCurrentSite()->where('slug', $plan['slug'])->exists()) {
             throw new InvalidArgumentException("There is already a builder form at [{$plan['slug']}].");
         }
 
-        return Form::query()->create([
+        $form = Form::query()->create([
             'site_id' => app(SiteContext::class)->id(),
             'slug' => $plan['slug'],
             'title' => $plan['title'],
@@ -126,9 +141,132 @@ class ConvertConfigForm
             'template' => 'config:'.$name,
             'fields' => $plan['fields'],
             'messages' => $plan['messages'],
-            'settings' => $plan['settings'],
+            'settings' => [...$plan['settings'], ...$settings],
             'created_by' => auth()->id(),
         ]);
+
+        /*
+         * The site's own translations, from its lang files, go live with
+         * the form: they are words the site already shows, not a machine's
+         * draft waiting for someone to read it.
+         */
+        foreach ($plan['translations'] as $locale => $overlay) {
+            $row = app(Translations::class)->store('form:'.$form->getKey(), $locale, $overlay, machine: false);
+            $row->forceFill(['published' => $overlay, 'reviewed_at' => now()])->save();
+        }
+
+        app(Translations::class)->forget();
+
+        return $form;
+    }
+
+    /**
+     * Words the template wrote as `__('contact.name')`, `@lang(...)` or
+     * `trans(...)`, read from every language in the site's lang files: the
+     * CMS's default language becomes the form's own words, and each other
+     * language an overlay, as a translation made in the panel would be.
+     *
+     * @param  array<string, mixed>  $plan
+     * @param  array<string, array<string, mixed>>  $hints
+     * @param  array<string, mixed>  $words
+     * @return array<string, mixed>
+     */
+    public function withLangFiles(array $plan, array $hints, array $words = []): array
+    {
+        $lang = app(LangFiles::class);
+        $default = app(Locales::class)->default();
+        $overlays = [];
+        $missing = [];
+
+        $read = function (string $key) use ($lang, $default, &$missing): array {
+            $everywhere = $lang->everywhere($key);
+            $dotted = preg_match('/^[\w-]+(\.[\w-]+)+$/', $key) === 1;
+
+            if ($everywhere === [] && $dotted) {
+                $missing[] = $key;
+            }
+
+            /*
+             * A JSON-style key (`__('Building work')`) is itself the words
+             * in the language it was written in.
+             */
+            $own = $everywhere[$default] ?? ($dotted ? (reset($everywhere) ?: null) : $key);
+
+            return ['own' => $own, 'others' => array_diff_key($everywhere, [$default => true])];
+        };
+
+        foreach ($plan['fields'] as $index => $field) {
+            $hint = $hints[$field['key']] ?? [];
+
+            foreach (['label' => 'label_key', 'placeholder' => 'placeholder_key'] as $part => $hintKey) {
+                if (! is_string($hint[$hintKey] ?? null)) {
+                    continue;
+                }
+
+                $found = $read($hint[$hintKey]);
+
+                if ($found['own'] !== null) {
+                    $plan['fields'][$index][$part] = $found['own'];
+                }
+
+                foreach ($found['others'] as $locale => $text) {
+                    $overlays[$locale]['fields'][$field['key']]['key'] = $field['key'];
+                    $overlays[$locale]['fields'][$field['key']][$part] = $text;
+                }
+            }
+
+            foreach (array_values((array) ($hint['options'] ?? [])) as $position => $option) {
+                $target = $plan['fields'][$index]['options'][$position] ?? null;
+
+                if (! is_array($option) || ! is_string($option['label_key'] ?? null) || ! is_array($target)) {
+                    continue;
+                }
+
+                $found = $read($option['label_key']);
+
+                if ($found['own'] !== null) {
+                    $plan['fields'][$index]['options'][$position]['label'] = $found['own'];
+                }
+
+                foreach ($found['others'] as $locale => $text) {
+                    $overlays[$locale]['fields'][$field['key']]['key'] = $field['key'];
+                    $overlays[$locale]['fields'][$field['key']]['options'][$target['key']] = ['key' => $target['key'], 'label' => $text];
+                }
+            }
+        }
+
+        foreach (['submit', 'success'] as $message) {
+            if (! is_string($words[$message]['key'] ?? null)) {
+                continue;
+            }
+
+            $found = $read($words[$message]['key']);
+
+            if ($found['own'] !== null) {
+                $plan['messages'][$message] = $found['own'];
+            }
+
+            foreach ($found['others'] as $locale => $text) {
+                $overlays[$locale]['messages'][$message] = $text;
+            }
+        }
+
+        foreach ($overlays as $locale => $overlay) {
+            if (isset($overlay['fields'])) {
+                $overlays[$locale]['fields'] = array_values(array_map(
+                    fn (array $field): array => isset($field['options']) ? [...$field, 'options' => array_values($field['options'])] : $field,
+                    $overlay['fields'],
+                ));
+            }
+        }
+
+        foreach (array_unique($missing) as $key) {
+            $plan['warnings'][] = "The lang key \"{$key}\" is not in any of the site's lang files; its words were not imported.";
+        }
+
+        $plan['translations'] = $overlays;
+
+        return $plan;
     }
 
     /**
@@ -145,12 +283,13 @@ class ConvertConfigForm
         $in = $value('in');
         $options = $in !== null
             ? array_map(fn (string $option): array => ['key' => $option, 'label' => (string) ($hint['option_labels'][$option] ?? Str::headline($option))], array_map(fn (string $option): string => trim($option, '"\''), str_getcsv($in)))
-            : array_map(fn ($option): array => is_array($option) ? $option : ['key' => (string) $option, 'label' => (string) $option], (array) ($hint['options'] ?? []));
+            : array_map(fn ($option): array => is_array($option) ? ['key' => (string) ($option['key'] ?? ''), 'label' => (string) ($option['label'] ?? $option['key'] ?? '')] : ['key' => (string) $option, 'label' => (string) $option], (array) ($hint['options'] ?? []));
         $max = $value('max');
         $hinted = is_string($hint['type'] ?? null) ? $hint['type'] : null;
 
         $type = match (true) {
             $has('accepted') => $form === CallbackForm::NAME || preg_match('/consent|agree|terms|permission/', $key) === 1 ? 'consent' : 'checkbox',
+            $hinted === 'checkbox' && preg_match('/consent|agree|terms|privacy|gdpr/', $key) === 1 => 'consent',
             $has('email') || $hinted === 'email' => 'email',
             $has('url') || $hinted === 'url' => 'url',
             $has('image') => 'image',
