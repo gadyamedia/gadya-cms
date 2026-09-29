@@ -75,7 +75,7 @@ php artisan gadya-cms:audit       # then fix each "!" it lists
 
 On a site whose gadya/connect is older than 0.6 (no `gadya:upgrade`), run `migrate`, `filament:assets`, `optimize:clear` and `boost:update --discover` instead.
 
-## Unreleased
+## 0.14.8 → 0.15.0
 
 The published `config/gadya-cms.php` is now merged over the package's defaults at every depth, so a key a release adds - even inside an array the site has published - takes its default, and copying it is only needed to change it. `gadya-cms:audit` lists keys the file lacks as optional. Lists and the site-owned maps are still taken whole from the site; see [Configuration](commands.md#configuration). Refresh the update workflow to template 2 from the portal (or copy `vendor/gadya/cms/resources/github/gadya-update.yml` over `.github/workflows/gadya-update.yml`), and update gadya/connect to 0.6 for `gadya:upgrade`.
 
