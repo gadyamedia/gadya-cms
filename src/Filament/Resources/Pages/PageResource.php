@@ -42,6 +42,7 @@ use Gadya\Cms\Filament\Resources\Pages\Pages\EditPage;
 use Gadya\Cms\Filament\Resources\Pages\Pages\ListPages;
 use Gadya\Cms\Filament\Schemas\MediaSelect;
 use Gadya\Cms\Filament\Schemas\SeoSection;
+use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Services\ManagePages;
 use Illuminate\Contracts\View\View;
@@ -148,8 +149,16 @@ class PageResource extends Resource
                                 ->options(fn (Get $get): array => static::sectionTypeOptions($get('../../type')))
                                 ->required()
                                 ->live(),
-                            TextInput::make('subtitle')->maxLength(160)->columnSpanFull(),
-                            Textarea::make('text')->rows(3)->columnSpanFull(),
+                            Select::make('form')
+                                ->label('Form')
+                                ->options(fn (): array => Form::query()->forCurrentSite()->where('status', '!=', Form::STATUS_ARCHIVED)->orderBy('title')->pluck('title', 'slug')->all())
+                                ->helperText('Build and change forms under Content → Forms. A draft form shows nothing until it is published.')
+                                ->required(fn (Get $get): bool => $get('type') === 'form')
+                                ->searchable()
+                                ->visible(fn (Get $get): bool => $get('type') === 'form')
+                                ->columnSpanFull(),
+                            TextInput::make('subtitle')->maxLength(160)->columnSpanFull()->visible(fn (Get $get): bool => $get('type') !== 'form'),
+                            Textarea::make('text')->label(fn (Get $get): string => $get('type') === 'form' ? 'A few words above the form' : 'Text')->rows(3)->columnSpanFull(),
                             Repeater::make('items')
                                 ->schema([
                                     /* An item's key outlives renames, so a site can sync it elsewhere. */
@@ -163,7 +172,7 @@ class PageResource extends Resource
                                 ->columns(3)
                                 ->collapsed()
                                 ->itemLabel(fn (array $state): ?string => $state['title'] ?? null)
-                                ->visible(fn (Get $get): bool => $get('type') !== 'gallery')
+                                ->visible(fn (Get $get): bool => ! in_array($get('type'), ['gallery', 'form'], true))
                                 ->columnSpanFull(),
                             Repeater::make('images')
                                 ->simple(MediaSelect::make('image', 'Photo'))
@@ -505,7 +514,7 @@ class PageResource extends Resource
     {
         $types = app(PageTypes::class)->sectionTypesFor($pageType);
 
-        return array_combine($types, array_map(Str::headline(...), $types));
+        return array_combine($types, array_map(fn (string $type): string => $type === 'form' ? 'Form' : Str::headline($type), $types));
     }
 
     /**

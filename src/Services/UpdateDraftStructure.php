@@ -2,7 +2,9 @@
 
 namespace Gadya\Cms\Services;
 
+use Gadya\Cms\Content\PageTypes;
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Models\Form;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -16,10 +18,7 @@ class UpdateDraftStructure
      */
     public function sectionTypes(): array
     {
-        /** @var list<string> $types */
-        $types = config('gadya-cms.pages.section_types', []);
-
-        return $types;
+        return app(PageTypes::class)->sectionTypesFor(null);
     }
 
     /**
@@ -71,11 +70,35 @@ class UpdateDraftStructure
         $document = $this->repository->draft();
         $sections = $this->sectionsAt($document, $pageSlug);
 
-        $sections[] = $type === 'gallery'
-            ? ['title' => $title, 'type' => $type, 'images' => []]
-            : ['title' => $title, 'type' => $type, 'items' => []];
+        $sections[] = match ($type) {
+            'gallery' => ['title' => $title, 'type' => $type, 'images' => []],
+            'form' => ['title' => $title, 'type' => $type, 'form' => ''],
+            default => ['title' => $title, 'type' => $type, 'items' => []],
+        };
 
         $this->writeSections($document, $pageSlug, $sections);
+    }
+
+    /**
+     * Put another form in a Form section, from the live editor. Only a
+     * published form of this site can be chosen, and only into a section
+     * that is a Form section.
+     */
+    public function chooseForm(string $sectionPath, string $slug): void
+    {
+        $document = $this->repository->draft();
+        $section = Arr::get($document, $sectionPath);
+
+        if (! is_array($section) || ($section['type'] ?? null) !== 'form') {
+            throw new InvalidArgumentException("[{$sectionPath}] is not a form section.");
+        }
+
+        if (Form::findLive($slug) === null) {
+            throw new InvalidArgumentException('That form is not published.');
+        }
+
+        Arr::set($document, $sectionPath.'.form', $slug);
+        $this->repository->saveDraft($document);
     }
 
     public function removeSection(string $pageSlug, int $index): void

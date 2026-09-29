@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Content;
 
+use Gadya\Cms\Forms\Builder\FormRenderer;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -17,6 +18,8 @@ use Illuminate\Support\Str;
  */
 class SiteMarkdown
 {
+    private static bool $embedding = false;
+
     public function render(mixed $text): HtmlString
     {
         $text = trim(is_scalar($text) ? (string) $text : '');
@@ -25,9 +28,42 @@ class SiteMarkdown
             return new HtmlString('');
         }
 
-        return new HtmlString(Str::markdown($text, [
+        $html = Str::markdown($text, [
             'html_input' => 'strip',
             'allow_unsafe_links' => false,
-        ]));
+        ]);
+
+        return new HtmlString($this->embedForms($html));
+    }
+
+    /**
+     * `[form:catering-order]` in the text becomes that form: on a line of
+     * its own it replaces the paragraph, anywhere else it sits where it
+     * was written. A form that is not published leaves nothing behind for
+     * a visitor.
+     */
+    private function embedForms(string $html): string
+    {
+        /* Never a form inside a form's own text. */
+        if (self::$embedding || ! str_contains($html, '[form:') || ! config('gadya-cms.forms.builder.enabled', true)) {
+            return $html;
+        }
+
+        self::$embedding = true;
+
+        try {
+            return $this->replaceForms($html);
+        } finally {
+            self::$embedding = false;
+        }
+    }
+
+    private function replaceForms(string $html): string
+    {
+        return (string) preg_replace_callback(
+            '/<p>\s*\[form:([a-z0-9-]+)\]\s*<\/p>|\[form:([a-z0-9-]+)\]/',
+            fn (array $match): string => app(FormRenderer::class)->render(($match[1] ?? '') !== '' ? $match[1] : ($match[2] ?? ''))->toHtml(),
+            $html,
+        );
     }
 }

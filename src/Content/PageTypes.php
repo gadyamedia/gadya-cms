@@ -56,7 +56,12 @@ class PageTypes
     {
         $types = $this->all()[$type]['section_types'] ?? config('gadya-cms.pages.section_types', []);
 
-        return array_values(array_filter((array) $types, 'is_string'));
+        /*
+         * The kinds the package draws itself - a form - go on every page,
+         * whatever the type narrows: a client places a form wherever a
+         * form is needed.
+         */
+        return array_values(array_unique([...array_filter((array) $types, 'is_string'), ...app(SectionRenderer::class)->types()]));
     }
 
     /**

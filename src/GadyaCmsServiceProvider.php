@@ -33,6 +33,7 @@ use Gadya\Cms\Console\ResetPasswordCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Console\SendDriftDigestCommand;
 use Gadya\Cms\Console\TakeoutCommand;
+use Gadya\Cms\Content\SectionRenderer;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Content\SiteImage;
 use Gadya\Cms\Content\SlugPagePaths;
@@ -181,6 +182,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(SharedSender::class);
         $this->app->singleton(FieldTypes::class);
         $this->app->scoped(FormRenderer::class);
+        $this->app->singleton(SectionRenderer::class);
 
         $this->app->register(LocalisationServiceProvider::class);
     }
@@ -381,6 +383,12 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         });
         Blade::directive('cmsForm', fn (string $expression): string => "<?php echo view('gadya-cms::forms.fields', ['form' => {$expression}, 'honeypot' => (string) config('gadya-cms.forms.honeypot', 'website')])->render(); ?>");
         Blade::directive('cmsFormEmbed', fn (string $expression): string => "<?php echo app(\\Gadya\\Cms\\Forms\\Builder\\FormRenderer::class)->render({$expression}); ?>");
+        /*
+         * The first line inside a site's loop over $page['sections']: a
+         * section the package draws is drawn and the loop moves on, so the
+         * site's own markup only ever sees the kinds it knows.
+         */
+        Blade::directive('cmsSection', fn (string $expression): string => "<?php if ((\$__cmsSection = app(\\Gadya\\Cms\\Content\\SectionRenderer::class)->render({$expression})) !== null) { echo \$__cmsSection; continue; } ?>");
         Blade::directive('cmsFormStatus', fn (string $expression): string => "<?php echo view('gadya-cms::forms.status', ['form' => {$expression}])->render(); ?>");
         Blade::directive('gadyaBuiltBy', function (string $expression): string {
             $expression = trim($expression) === '' ? '[]' : $expression;

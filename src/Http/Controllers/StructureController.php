@@ -19,6 +19,7 @@ class StructureController extends Controller
                 'add-item' => $structure->addItem($sectionPath, $request->array('item')),
                 'remove-item' => $structure->removeItem($sectionPath, $request->integer('index')),
                 'reorder-items' => $structure->reorderItems($sectionPath, array_map('intval', $request->array('order'))),
+                'choose-form' => $structure->chooseForm($sectionPath, $request->string('form')->toString()),
             };
         } catch (InvalidArgumentException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);

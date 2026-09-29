@@ -18,7 +18,7 @@ class StructureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'operation' => ['required', Rule::in(['add-item', 'remove-item', 'reorder-items'])],
+            'operation' => ['required', Rule::in(['add-item', 'remove-item', 'reorder-items', 'choose-form'])],
             'section_path' => ['required', 'string', 'max:255', 'regex:/^pages\.[a-z0-9-]+\.sections\.\d+\z/'],
             'index' => ['required_if:operation,remove-item', 'integer', 'min:0'],
             'order' => ['required_if:operation,reorder-items', 'array'],
@@ -27,6 +27,7 @@ class StructureRequest extends FormRequest
             'item.title' => ['nullable', 'string', 'max:200'],
             'item.text' => ['nullable', 'string', 'max:2000'],
             'item.image' => ['nullable', 'string', 'max:255'],
+            'form' => ['nullable', 'required_if:operation,choose-form', 'string', 'max:80', 'regex:/^[a-z0-9-]+$/'],
         ];
     }
 }

@@ -294,3 +294,29 @@
     border-radius: 999px;
     font-size: 0.875rem;
 }
+
+/* A built form on the page, for an editor: which form it is, and how to change it. */
+.gadya-cms-form-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem 1rem;
+    margin: 0 0 .75rem;
+    padding: .5rem .75rem;
+    border: 2px dashed var(--gadya-cms-primary);
+    border-radius: .5rem;
+    background: var(--gadya-cms-surface);
+    color: var(--gadya-cms-ink);
+    font: 14px/1.4 system-ui, sans-serif;
+}
+
+.gadya-cms-form-tools__label {
+    margin: 0;
+    font-weight: 700;
+}
+
+.gadya-cms-form-tools__choose {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}

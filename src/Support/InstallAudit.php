@@ -9,6 +9,7 @@ use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Privacy\TrackerScan;
 use Gadya\Cms\Seo\AgentReadiness;
+use Gadya\Cms\Upgrade\SectionLoops;
 use Gadya\Cms\Upgrade\WorkflowTemplate;
 use Gadya\Connect\Models\Connection;
 use Illuminate\Console\Scheduling\Schedule;
@@ -292,7 +293,44 @@ class InstallAudit
             $this->check('Templates', '@cmsSearchForm somewhere on the site', str_contains($views, '@cmsSearchForm'), 'Add @cmsSearchForm to the header or footer.', optional: true),
             $this->check('Templates', '@cmsNewsletterForm somewhere on the site', str_contains($views, '@cmsNewsletterForm'), 'Add @cmsNewsletterForm to the footer.', optional: true),
             $this->trackersCheck($views),
+            $this->formSectionsCheck(),
         ];
+    }
+
+    /**
+     * Whether a client's "Form" section is drawn on the page. It is only
+     * once the site's section loop hands the package the sections it knows
+     * with @cmsSection.
+     *
+     * @return array{group: string, label: string, status: string, fix: string}
+     */
+    private function formSectionsCheck(): array
+    {
+        $loops = app(SectionLoops::class);
+        $unwired = collect($loops->find())->reject(fn (array $loop): bool => $loop['wired']);
+        $label = 'Form sections are drawn on the page (@cmsSection in the section loop)';
+
+        if (! config('gadya-cms.forms.builder.enabled', true) || ! config('gadya-cms.forms.builder.sections', true)) {
+            return $this->check('Templates', $label, true, '');
+        }
+
+        if ($unwired->isNotEmpty()) {
+            return $this->check('Templates', $label, false, 'Run php artisan gadya:upgrade --phase=code (step cms.form-sections), or add @cmsSection('.$unwired->first()['section'].($unwired->first()['index'] !== null ? ', '.$unwired->first()['index'] : '').') as the first line inside the loop at '.str_replace(base_path().'/', '', $unwired->first()['file']).':'.$unwired->first()['line'].'.');
+        }
+
+        if ($loops->anyWired()) {
+            return $this->check('Templates', $label, true, '');
+        }
+
+        return $this->check(
+            'Templates',
+            $label,
+            false,
+            $loops->mentionsSections()
+                ? 'The templates loop over $page[\'sections\'] in a way the upgrade cannot change by itself. Add @cmsSection($section, $index) as the first line inside that loop, so a "Form" section a client adds is drawn.'
+                : 'No template draws page sections. Where a page should take a form, place <x-gadya-cms::form form="slug" /> instead.',
+            optional: ! $loops->mentionsSections(),
+        );
     }
 
     /**

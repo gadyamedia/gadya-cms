@@ -5,6 +5,7 @@ namespace Gadya\Cms\Upgrade;
 use Gadya\Cms\Upgrade\Steps\CheckUpdateWorkflow;
 use Gadya\Cms\Upgrade\Steps\ClearCmsCaches;
 use Gadya\Cms\Upgrade\Steps\CreateNotificationsTable;
+use Gadya\Cms\Upgrade\Steps\EnableFormSections;
 use Gadya\Cms\Upgrade\Steps\LinkPublicStorage;
 
 /**
@@ -31,6 +32,7 @@ final class UpgradeSteps
     public const STEPS = [
         CreateNotificationsTable::class,
         CheckUpdateWorkflow::class,
+        EnableFormSections::class,
         LinkPublicStorage::class,
         ClearCmsCaches::class,
     ];
