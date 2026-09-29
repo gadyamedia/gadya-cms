@@ -47,6 +47,7 @@ To upgrade the package or switch on features a site has not taken up, use the `g
 | `Forms\FormDefinition` | the configured forms; `route('gadya-cms.forms.store', 'contact')` |
 | `Models\Form` / `Forms\Builder\FormRenderer` | forms built in the panel: `Form::findLive($slug)`, `<x-gadya-cms::form form="slug" />`, `@cmsFormEmbed('slug')` |
 | `Forms\Builder\FieldTypes` | register a kind of question of the site's own with `FieldType::make()` |
+| `Forms\Destinations\FormDestinations` | where else a form saves each enquiry: `forms.builder.destinations` (a model and a map of questions and `@` tokens, or a `FormDestination` class); `Events\FormSubmitted` for every enquiry |
 | `Content\SectionRenderer` | sections the package draws; `@cmsSection($section, $index)` first in the section loop |
 | `Analytics\AnalyticsReport` | `for($days)->headline()/daily()/topPages()/referrers()/events()` |
 | `Filament\GadyaCmsPlugin` | `::get()->hasBlog()`, `hasAi()`, `hasForms()`, `hasSearch()` ... |

@@ -66,7 +66,7 @@ With the editor on, a form on the page carries **Edit this form** (to its builde
 
 Templates: contact, request a quote, book an appointment, catering order (three steps, delivery address only when delivering), job application, event RSVP, feedback with a star rating and the 0-10 "would you recommend us", newsletter sign-up, and call me back.
 
-The edit screen has the questions beside a live preview, then **Details** (name, address, status), **After sending** (the thank-you or a page to go to, the button words, finishing later), **Emails and texts**, **Webhooks** and **Settings** (its own page, the built-in look, a CSS class, Turnstile, the dashboard event, whether it is a call-back form). Every save of a changed form is kept as a numbered version, and each enquiry notes the version it answered.
+The edit screen has the questions beside a live preview, then **Details** (name, address, status), **After sending** (the thank-you or a page to go to, in each language, the button words, finishing later), **Emails and texts**, **Webhooks**, **Also save to** (when the site has destinations, below) and **Settings** (its own page, the built-in look, a CSS class, Turnstile, the dashboard event, whether it is a call-back form). Every save of a changed form is kept as a numbered version, and each enquiry notes the version it answered.
 
 ### Kinds of question
 
@@ -83,7 +83,7 @@ The edit screen has the questions beside a live preview, then **Details** (name,
 
 Each question has its words, help under it, an example answer in the box, whether it must be answered, full or half width, what it starts filled in with, and its own checks: shortest and longest answer and a pattern for text, smallest and largest for numbers, today-or-later for dates, allowed kinds of file and the largest size for uploads. **Can be filled in from the web address** takes the answer from `?key=value` - a hidden `campaign` field on a link in a flyer, say. **Name in the inbox and exports** is the key the answer is kept under; it is made from the question and kept when the question is reworded.
 
-A **consent** question keeps the exact words the visitor agreed to, when and from which address, with the enquiry. On a **call-back form** a ticked consent is sent to the Gadya portal as consent to be rung back (see [The Gadya portal](portal.md)).
+A **consent** question keeps the exact words the visitor agreed to (in the language they read them), when (`at`, ISO 8601), from which address (`ip`), and which privacy policy: its address (`policy_url`, from **Settings → Privacy choices** or `privacy.policy_url`) and its version (`policy_version`). The version is `privacy.policy_version` in config when the site numbers its policy; otherwise, when the policy is a page of the CMS, the moment its current wording went live (the oldest published revision in which the page reads as it does now); otherwise nothing. On a **call-back form** a ticked consent is sent to the Gadya portal as consent to be rung back (see [The Gadya portal](portal.md)). The record is kept under `meta.consents.{key}` and reaches destinations as `@consent.*` (below).
 
 **Join the mailing list**, ticked on a form that asks for an email address, adds them to **Content → Mailing list**.
 
@@ -111,7 +111,7 @@ A small default stylesheet comes with the first form on a page, coloured from **
 
 A single-step form works without JavaScript. The script - vanilla, inlined once per page, with the page's CSP nonce - adds steps, show and hide, keeping progress, sending without a page load, and the form's figures.
 
-Answers are kept in the site's own language; a translated form's choices are stored as the site's own words.
+Answers are kept in the site's own language; a translated form's choices are stored as the site's own words. A form carries a hidden `_locale` (the language it was drawn in) and hidden `_attribution[...]` inputs the script fills with where the visit began.
 
 ## Where each enquiry goes
 
@@ -120,7 +120,8 @@ Answers are kept in the site's own language; a translated form's choices are sto
 - **Text alerts**, through the client's own Twilio account (below).
 - **The reply** to the sender, in the client's words, when the form asked for an email address.
 - **The panel's bell**, for everyone who reads enquiries (it needs Laravel's `notifications` table).
-- **Webhooks** (below) and **the Gadya portal**, which is given the name, email, phone and message by the kind of question rather than its name.
+- **The site's own records** - a `Lead` in its own table, a CRM - through the form's **destinations** (below).
+- **Webhooks** (below) and **the Gadya portal**, which is given the name, email, phone and message by the kind of question rather than its name, and where it came from as `attribution` beside them.
 
 Merge tags in any of these: `{name}`, `{business}`, `{form}`, `{all_answers}` and `{key}` of any question. `{{ name }}` works too.
 
@@ -146,6 +147,115 @@ Each enquiry is posted as JSON to every webhook on the form - for Zapier, Make o
 ```
 
 With a secret, the request carries `X-Gadya-Signature: sha256=<HMAC-SHA256 of the body>`. A 2xx is delivered; most 4xx are marked failed at once; a timeout, 5xx or 429 is tried again, `forms.builder.webhooks.tries` (5) times over about half an hour. Every attempt is logged on the form's **Figures**. Addresses on the server's own network are refused.
+
+## Saving enquiries to the site's own records
+
+A site whose own controller did more than store and email an enquiry - saved a `Lead` with a status, the brand, the campaign and the consent - keeps doing all of it with a **destination**. The enquiry goes into the inbox first, as always; then each destination the form names runs, straight away, before anyone is emailed.
+
+Most need no PHP. Describe the model in config:
+
+```php
+'forms' => [
+    'builder' => [
+        'destinations' => [
+            'leads' => [
+                'label' => 'Leads',
+                'model' => App\Models\Lead::class,
+                'map' => [
+                    'name' => 'name',
+                    'email' => 'email',
+                    'source' => '@utm_source',
+                    'landing_page' => '@landing_page',
+                    'brand' => '@site',
+                    'consented_at' => '@consent.at',
+                    'privacy_version' => '@consent.policy_version',
+                    'locale' => '@locale',
+                ],
+                'defaults' => ['status' => 'new'],
+            ],
+        ],
+    ],
+],
+```
+
+Each value in `map` is one of:
+
+- **the key of a question** (`'email'`): its answer, as kept in the inbox (a choice's words, a name joined up, "Yes" for a tick). A question they did not answer gives nothing - never the key's own name;
+- **a token** starting with `@`, from where the enquiry came from and what they consented to;
+- **anything else**, as written (`'new'`); start it with `=` to keep it as written where a question has that key (`'=email'`).
+
+`defaults` fill an attribute the map left empty. An attribute left with nothing is not set at all, so the table's own default applies. Attributes are set directly (not through `$fillable`): the developer chose them, and the client can only map the attributes listed in `map` or the model's `$fillable`. A moment (`@consent.at`, `@submitted_at`) is written as a date, whether or not the model casts it; a list of answers is joined with commas unless the model casts that attribute.
+
+| Token | |
+| --- | --- |
+| `@utm_source`, `@utm_medium`, `@utm_campaign`, `@utm_term`, `@utm_content`, `@gclid`, `@fbclid`, `@msclkid` | the campaign that brought them, first touch |
+| `@source` | the campaign's source, else the ad network whose click it was (`google-ads`, `facebook-ads`, `microsoft-ads`), else the site that sent them, else `direct` |
+| `@referrer`, `@landing_page`, `@page_url` | the site that sent them, the first page of their visit, the page they sent the form from |
+| `@locale`, `@site` | the language they filled it in, the brand they were on |
+| `@user_agent`, `@ip` | their browser, their address (as the privacy settings keep it) |
+| `@consent.given`, `@consent.text`, `@consent.at`, `@consent.ip`, `@consent.policy_version`, `@consent.policy_url` | the first consent question ticked; `@consent.{key}.at` and so on for a particular one |
+| `@name`, `@email`, `@phone`, `@message` | the answer to that kind of question, whatever it is called |
+| `@form`, `@form_title`, `@submission_id`, `@submitted_at`, `@answers`, `@attribution` | the form, the enquiry, every answer as text, all of where it came from |
+
+On the form, **Also save to** chooses the destinations. Choosing one fills in a mapping from this form's questions - a question with the same name or a common other name (`phone`, `tel`, `mobile`), a question of the right kind (an email address for `email`), a token the field's name points at (`utm_campaign`, `landing_page`, `consented_at`, `privacy_version`, `brand`, `locale`), and whatever the developer mapped in config - and **Match to this form's questions** does it again. The client can change any line for this form; a line left empty leaves that field out.
+
+**If a destination fails**, the failure is reported (to the site's error tracking, as `report()` does), the next destination still runs, and the visitor is thanked all the same. Each enquiry notes how each went, under `meta.destinations` - `{"leads": {"ok": true, "result": "Lead #12", "at": "..."}}` or `{"ok": false, "error": "QueryException: ..."}` - and the inbox shows it as **Saved to Leads**, or **Not saved** and why. It runs in the request rather than on the queue, so the site's own record exists as soon as the visitor is thanked.
+
+### A destination of the site's own
+
+For what a mapping cannot say - a call to a booking system's API, a payment - write a class:
+
+```php
+namespace App\Forms;
+
+use Gadya\Cms\Forms\Destinations\FormDestination;
+use Gadya\Cms\Forms\SubmissionContext;
+use Gadya\Cms\Models\Form;
+use Gadya\Cms\Models\FormSubmission;
+use Illuminate\Support\Facades\Http;
+
+class SendToBookingSystem implements FormDestination
+{
+    public function key(): string { return 'bookings'; }
+
+    public function label(): string { return 'The booking system'; }
+
+    /** Nothing to map: it decides what to send. */
+    public function fields(): array { return []; }
+
+    public function handle(Form $form, FormSubmission $submission, array $data, SubmissionContext $context): mixed
+    {
+        $response = Http::timeout(10)->post('https://api.bookings.example/v1/enquiries', [
+            'name' => $context->token('@name'),
+            'email' => $context->token('@email'),
+            'date' => $data['date'] ?? null,
+            'source' => $context->source(),
+        ])->throw();
+
+        return 'Booking '.$response->json('id');
+    }
+}
+```
+
+and name it in config: `'destinations' => ['bookings' => App\Forms\SendToBookingSystem::class]` (or `['class' => ..., ...]`, whose array is given to its constructor as `$config`). A package can `app(FormDestinations::class)->register(new ...)` instead. Throw when it fails - the enquiry notes it and the visitor never sees it. Keep it quick; queue a job from it for anything slow.
+
+### Listening instead
+
+Every enquiry - through a built form or a configured one - dispatches `Gadya\Cms\Events\FormSubmitted` once it is kept (and after a built form's destinations): `$event->submission`, `$event->data` (the answers), `$event->context` (a `SubmissionContext`: `token('@utm_source')`, `source()`, `site()`, `locale()`, `consents`), and `$event->form` (a built form) or `$event->definition` (a configured one). A listener that throws is reported without reaching the visitor. It suits "also fire our own `LeadReceived` event" better than a destination.
+
+## Where each enquiry came from
+
+Every enquiry keeps, under `meta.attribution`:
+
+- the campaign: `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, and the ad clicks `gclid`, `fbclid`, `msclkid`;
+- `referrer` (the other site that sent them), `landing_page` (the first page of their visit) and `page_url` (the page they sent it from);
+- `locale`, `site` (the brand), `user_agent` and `ip`.
+
+It is the **first touch**: the forms script notes the campaign, the referrer and the landing page in the tab's `sessionStorage` on the first page with a form it sees, and posts them with the form in hidden `_attribution[...]` inputs. The landing page is only noted by the script when that page is where the visit began (nothing, or another site, sent them there). The server fills in whatever the script did not send - no JavaScript, or the form on a later page - from the first request of the visit, which the session notes (`RememberFirstTouch`, in the `web` group), then from the address of the page the form was sent from. A referrer on the site itself, or a "landing page" on another site, is not believed.
+
+`site` is the CMS site's key unless `forms.builder.attribution.site` says otherwise: a map of host to brand (`['aleksey.com' => 'aleksey', 'avantgarde.com' => 'avantgarde']`), or an invokable class given the request. (A closure works too, but not with `config:cache`.) `ip` is kept in full, `masked` (the last part blanked) or not at all (`none`), under `forms.builder.attribution.ip`; it is always masked for someone who refused analytics in the privacy banner or whose browser sends Global Privacy Control. `forms.builder.attribution.enabled => false` keeps none of it.
+
+It shows in the inbox under each enquiry, as columns after the answers in both downloads, reaches destinations as tokens, and goes to the portal as `attribution` beside the answers (without the address and the browser). Configured forms keep it too. Why this is not analytics, and what it means for the privacy banner: [Privacy choices](privacy.md).
 
 ## The inbox
 
@@ -174,6 +284,12 @@ app(\Gadya\Cms\Analytics\FormAnalytics::class)->for($form, 30);   // views, star
 ## More than one language
 
 A built form is translated like an article: its title, questions, choices and words are an overlay kept as `form:{id}`, drawn in the visitor's language, included in **Translate the whole site** and **Translate into Spanish** on its row. Keys, rules and logic are never sent for translation. Validation messages go through Laravel's translator. See [More than one language](multilingual.md).
+
+The visitor's language is the CMS's own on a page it serves in another language (`/es/contact`), and otherwise **whatever the app says** - `App::getLocale()` - so a site that chooses the language itself (from the session, a cookie, or a `/{locale}` prefix of its own routes) gets its forms in that language without listing it under `locales.enabled`. The overlay applies for any language a translation exists in (`ru`, `uk`, ...). The form's own words are the ones in `locales.default`: set it to the site's own default language. The form posts the language it was drawn in (`_locale`), so the errors and the thank-you come back in it even though the app's locale middleware never sees the package's address; only a language the site speaks is taken from the post (a CMS language, one with a `lang/` directory or JSON file, or one the form is translated into).
+
+Under **After sending → In other languages**, each language can have its own thank-you and its own page to go to (`/ru/spasibo`). Without one, the thank-you is the translated one, and the page the form's own. Without JavaScript the thank-you is flashed, in that language, for the page they land on.
+
+Answers are kept in the site's own words whatever language the form was filled in; the consent wording is kept as the visitor read it; the language is kept as `meta.locale` and `@locale`.
 
 ## Who may do what
 
@@ -233,7 +349,20 @@ app(StoreFormSubmission::class)->handle(FormDefinition::find('contact'), $valida
 
 **Content → Forms → Make a site form editable** (or `php artisan gadya-cms:forms:convert contact`) copies a configured form into the builder as a draft, with the same slug and every field under the same name, its `notify` addresses, its thank-you email and its analytics event. The configured form keeps answering until the copy is published; from then on the built form answers the same address, so enquiries, emails and figures carry on - and so does hand-written markup posting to it. Replace that markup with `<x-gadya-cms::form form="contact" />` when convenient, and remove the config entry only once the built form is verified.
 
-For an agent: `php artisan gadya-cms:forms:scan --json` finds every form on the site - configured, `<form>` markup in the templates (with the fields, labels, kinds and choices read from it) and Livewire components that call `StoreFormSubmission`. `php artisan gadya-cms:forms:convert {form} [--from=blade --file=...] [--dry-run] [--json]` builds the draft and prints the replacement line; it never changes a template. The `gadya-cms-forms` Boost skill walks through it.
+For an agent: `php artisan gadya-cms:forms:scan --json` finds every form on the site - configured, `<form>` markup in the templates (with the fields, labels, kinds and choices read from it) and Livewire components that call `StoreFormSubmission`. `php artisan gadya-cms:forms:convert {form} [--from=blade --file=...] [--destination=...] [--write-config] [--dry-run] [--json]` builds the draft and prints the replacement line; it never changes a template. The `gadya-cms-forms` Boost skill walks through it.
+
+### A form that posts to the site's own controller
+
+The scan follows a `<form>` whose `action` is the site's own - `route('contact.send')`, `action([ContactController::class, 'send'])`, `url('/contact')` - to the controller method behind it and reads it (never runs it). Each such form carries:
+
+- `handler`: the `action`, `file` and `line`; `writes` (each Eloquent `create`, `updateOrCreate`, `new ...->save()`, with the attributes and the expression each is set from); `events` fired; `redirect` (where to, and the flashed message or its lang key); whether it deals with `consent` or a privacy policy (and `policy_version_config`, the config key it read the version from); whether it keeps `attribution`; `emails`; `custom` - what no destination can do (a call to another service over HTTP, a payment, a third-party SDK); and `does`, all of it in plain words.
+- `suggested_destination`: a destination for config that does what the record the controller creates does - its model, each attribute mapped to a question or a token (`session('utm_source')` becomes `@utm_source`, `now()` for `consented_at` becomes `@consent.at`, `config('privacy.version')` becomes `@consent.policy_version`, `app()->getLocale()` becomes `@locale`, the host or the brand becomes `@site`), fixed values as `defaults` (`'status' => 'new'`), and `unmapped` for expressions it could not place.
+
+The scan's `notices` say when the panel has forms switched off (`->forms(false)`), which hides the builder and the inbox.
+
+`forms:convert --from=blade --file=... --destination=leads --write-config` then builds the draft from the template (the template decides the questions; a configured form of the same name is not consulted), adds the suggested destination to `config/gadya-cms.php` under `forms.builder.destinations` - with `--dry-run`, it prints the diff instead and changes nothing - and chooses it for the form. `--write-config` never changes an entry already there. `--destination` alone chooses a destination the config already has.
+
+Words the template writes as `{{ __('contact.name') }}`, `@lang('contact.name')` or `{{ trans('contact.name') }}` - in labels, placeholders, `aria-label`s, choices, the send button, and the message the controller flashes - are read from the site's `lang/` files (`lang/ru/contact.php` and `lang/ru.json` alike) in every language they have: the words of `locales.default` become the form's own, and each other language becomes the form's translation, live with the form. A JSON-style key (`__('Building work')`) is its own words in the default language. A language that lacks a key shows the default language's words there. The command's JSON has them under `translations`.
 
 ## For developers
 
@@ -250,7 +379,7 @@ app(FieldTypes::class)->register(
 );
 ```
 
-A registered kind appears in the builder, is drawn, checked and kept like the built-in ones. Also: `Form::findLive($slug)`, `$form->schema()` (`fields()`, `inputs()`, `steps()`), `FormLogic::visible($schema, $input)`, `FormRenderer::render($slug, $options)`, `SubmitBuilderForm`, `FormTemplates`, `FormGenerator` (the `FormWriter` agent) and `FormWebhooks::sign($body, $secret)`.
+A registered kind appears in the builder, is drawn, checked and kept like the built-in ones. Also: `FormDestinations` (`register()`, `all()`, `run()`), `DestinationMap` (`resolve()`, `suggest()`), `SubmissionContext::fromSubmission($submission)`, `Attribution`, `FormLocale`, `PolicyVersion`, `Form::findLive($slug)`, `$form->schema()` (`fields()`, `inputs()`, `steps()`), `FormLogic::visible($schema, $input)`, `FormRenderer::render($slug, $options)`, `SubmitBuilderForm`, `FormTemplates`, `FormGenerator` (the `FormWriter` agent) and `FormWebhooks::sign($body, $secret)`.
 
 ```php
 'forms' => [
@@ -266,7 +395,13 @@ A registered kind appears in the builder, is drawn, checked and kept like the bu
         'max_fields' => 100,
         'uploads' => ['disk' => null, 'directory' => 'form-uploads', 'max_kb' => 20480],
         'webhooks' => ['tries' => 5, 'timeout' => 10],
+        'destinations' => [],
+        'attribution' => ['enabled' => true, 'site' => null, 'ip' => 'full'],
     ],
+],
+'privacy' => [
+    'policy_url' => null,
+    'policy_version' => null,
 ],
 ```
 

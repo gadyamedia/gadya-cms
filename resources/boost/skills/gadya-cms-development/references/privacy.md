@@ -86,6 +86,19 @@ The dashboard's figures are counted on the site's own server ([Analytics](analyt
 
 That is why the package does not wait for consent before counting. But once a visitor **refuses analytics** in the banner, the package stops counting her: her page views are not recorded at all, and a phone tap, an enquiry or a search she makes is counted as nobody in particular - a fresh random value each time in place of the daily identifier - so it cannot be linked to anything else she does. Accepting analytics, or never answering, leaves counting as it was.
 
+## Where an enquiry came from
+
+Each enquiry sent through a form keeps where it came from - the campaign in the address (`utm_*`, and the ad clicks `gclid`, `fbclid`, `msclkid`), the site that sent the visitor, the first page of their visit, the page they sent it from, their language, the brand, their browser and their address - and each ticked consent box keeps its exact wording, when, from which address, and which version of the privacy policy. See [Forms](forms.md).
+
+The package treats this as **part of the enquiry**, not as analytics, and keeps it whatever the visitor chose in the banner:
+
+- It is only kept **when someone writes in**, with what they chose to send, for the business to answer and to know which advert brought them - the same purpose as the page it was sent from, which enquiries have always kept.
+- **Nothing identifies the visitor across visits.** The forms script notes the first page of the visit in the tab's `sessionStorage` (gone when the tab closes; no cookie) and posts it only with a form. On the server, the first request of the visit is noted in Laravel's own session, the strictly necessary cookie the site sets anyway.
+- **The address** is kept in full, masked (`forms.builder.attribution.ip => 'masked'`) or not at all (`'none'`), and always masked for someone who **refused analytics** or whose browser sends **Global Privacy Control**. The portal is sent the rest without the address or the browser.
+- `forms.builder.attribution.enabled => false` keeps none of it.
+
+A site whose privacy policy says it keeps no campaign data with enquiries should either say that it does, or switch it off. Destinations and webhooks can pass it on to the site's own records and other services - the policy should name them.
+
 ## The portal and the audit
 
 The check-in carries `consent: {banner_enabled, honours_gpc}`.

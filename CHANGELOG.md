@@ -2,6 +2,25 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Form destinations.** A builder form can also save each enquiry to the site's own records - a `Lead` with a status, say - once it is in the inbox. Describe a model in config under `forms.builder.destinations` (`label`, `model`, a `map` of attributes to question keys, `@` tokens or values, and `defaults` such as `'status' => 'new'`), or name a class implementing `Gadya\Cms\Forms\Destinations\FormDestination`. Each form chooses them under the new **Also save to** tab, with a mapping matched to its questions by name, kind and token that the client can change per form. They run straight after the enquiry is kept, each on its own: one that fails is reported and noted on the enquiry (`meta.destinations`, shown in the inbox as **Saved to** / **Not saved**), and the visitor is thanked all the same.
+- **`Gadya\Cms\Events\FormSubmitted`**, dispatched for every enquiry, through built and configured forms alike, with the answers and a `SubmissionContext`.
+- **Where each enquiry came from**, kept as `meta.attribution`: `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `gclid`, `fbclid`, `msclkid`, the referrer, the landing page (first touch - noted in the tab's `sessionStorage` by the forms script and posted with the form, with the session's note of the visit's first request and the page's own address to fall back on), the page it was sent from, the language, the brand (`forms.builder.attribution.site`: a host map or a resolver class) and the browser and address (`forms.builder.attribution.ip`: `full`, `masked` or `none`; always masked for a visitor who refused analytics or sends Global Privacy Control). Shown in the inbox, as columns in both downloads, as `@` tokens, and sent to the portal as `attribution` beside the answers. `docs/privacy.md` explains why it is kept as part of the enquiry rather than as analytics.
+- **Consent records say which privacy policy.** A consent question keeps `policy_url` and `policy_version` with the wording, time and address: `privacy.policy_version` from config, else the moment the current wording of the CMS page at `privacy.policy_url` went live, else null.
+- **Forms in the app's own language.** A built form is drawn in `App::getLocale()` when the app chooses the language itself (session, cookie, its own prefix), in any language it has a translation for (`ru`, `uk`, ...), and answered in the language it was drawn in (`_locale`). Per-language thank-yous and pages to go to under **After sending → In other languages**.
+- **`forms:scan` reads a form's own controller.** A `<form>` posting to a site route is followed to its controller method, which is read for the records it creates (and from what), events, redirects and flashed messages, consent and privacy handling, campaign tracking, and work no destination can do (HTTP calls, payments). It suggests a destination for config with the mapping, the tokens and the defaults, and warns about a panel with `->forms(false)`.
+- **`forms:convert --destination=` and `--write-config`**: choose destinations for the new form, and add the suggested destination to `config/gadya-cms.php` (a diff with `--dry-run`; an existing entry is never changed). A form posting to the site's own controller is built from its template alone.
+- **Lang files imported on convert.** Labels, placeholders, `aria-label`s, choices, the send button and the controller's flashed message written as `__()`, `@lang` or `trans()` are read from `lang/` (PHP and JSON) in every language: the default language becomes the form's words and each other language its live translation.
+- The `gadya-cms-forms` skill has **When the controller does more**: mirror the controller with a destination, keep consent and attribution with tokens, import the translations, switch forms on in the panel, convert, and check a test enquiry reaches both the inbox and the site's own table - with a custom destination class for what config cannot express.
+
+### Changed
+
+- The forms script, and every built form, carries hidden `_locale` and `_attribution[...]` inputs.
+- Configured forms keep `meta.attribution` and `meta.locale` too.
+
 ## 0.15.0
 
 ### Added
