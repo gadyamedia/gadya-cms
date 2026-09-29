@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Filament\Resources\Forms;
 
+use Closure;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -9,8 +10,11 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Gadya\Cms\Forms\Builder\FormLogic;
+use Gadya\Cms\Sms\PhoneNumbers;
+use Gadya\Cms\Sms\TextAlerts;
 
 /**
  * Who hears about an enquiry, and what the person who sent it hears back.
@@ -77,6 +81,48 @@ final class FormNotificationSchema
      */
     public static function phones(string $path): array
     {
-        return [];
+        if (! app(TextAlerts::class)->enabled()) {
+            return [
+                Text::make('Add your Twilio details under Settings → Text messages to send text alerts.')->columnSpanFull(),
+            ];
+        }
+
+        return [
+            TagsInput::make($path)
+                ->label('Mobile numbers to text')
+                ->placeholder('Add a mobile number')
+                ->nestedRecursiveRules([fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                    if (PhoneNumbers::normalise($value) === null) {
+                        $fail('"'.$value.'" does not look like a mobile number.');
+                    }
+                }])
+                ->helperText(fn (?array $state): string => self::numberStates((array) $state))
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * How each number is doing, in a line under the box: a number whose
+     * owner replied STOP gets no more texts until they text START.
+     *
+     * @param  array<array-key, mixed>  $numbers
+     */
+    private static function numberStates(array $numbers): string
+    {
+        $alerts = app(TextAlerts::class);
+        $notes = [];
+
+        foreach (PhoneNumbers::normaliseAll($numbers) as $number) {
+            $state = $alerts->state($number);
+
+            $notes[] = PhoneNumbers::display($number).': '.match (true) {
+                filled($state['opted_out_at'] ?? null) => 'replied STOP - no texts until they text START to your Twilio number',
+                filled($state['last_error'] ?? null) => 'last text failed ('.$state['last_error'].')',
+                filled($state['last_sent_at'] ?? null) => 'receiving texts',
+                default => 'not texted yet',
+            };
+        }
+
+        return $notes === [] ? 'Each gets a short text the moment an enquiry arrives. The first one says how to opt out.' : implode(' · ', $notes);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Models;
 
+use Gadya\Cms\Forms\Builder\FormFiles;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -57,6 +58,23 @@ class FormSubmission extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(Site::class);
+    }
+
+    /**
+     * An enquiry deleted takes its uploads with it: nothing a visitor sent
+     * outlives the enquiry it came with.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (FormSubmission $submission): void {
+            foreach ((array) ($submission->files ?? []) as $files) {
+                foreach ((array) $files as $file) {
+                    if (is_array($file) && is_string($file['path'] ?? null)) {
+                        app(FormFiles::class)->delete($file['path']);
+                    }
+                }
+            }
+        });
     }
 
     /**

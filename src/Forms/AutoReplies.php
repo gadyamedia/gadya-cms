@@ -4,7 +4,6 @@ namespace Gadya\Cms\Forms;
 
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Options\Options;
-use Illuminate\Support\Str;
 
 /**
  * The "thank you, we have your message" email.
@@ -79,20 +78,7 @@ class AutoReplies
      */
     public function render(string $template, string $subject, FormSubmission $submission): array
     {
-        $replace = function (string $text) use ($submission): string {
-            $values = [
-                'name' => $submission->sender(),
-                'business' => (string) config('gadya-cms.brand.name', config('app.name')),
-                'form' => FormDefinition::labels()[$submission->form] ?? $submission->form,
-                ...array_map(fn ($value): string => is_array($value) ? implode(', ', $value) : (string) $value, $submission->data ?? []),
-            ];
-
-            return trim((string) preg_replace_callback(
-                '/\{\{\s*([a-z0-9_]+)\s*\}\}/i',
-                fn (array $match): string => (string) ($values[Str::lower($match[1])] ?? ''),
-                $text,
-            ));
-        };
+        $replace = fn (string $text): string => MergeTags::render($text, $submission);
 
         return [
             'subject' => $replace($subject),

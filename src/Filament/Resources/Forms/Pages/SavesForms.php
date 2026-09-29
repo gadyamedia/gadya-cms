@@ -7,6 +7,7 @@ use Filament\Pages\Page;
 use Filament\Support\Exceptions\Halt;
 use Gadya\Cms\Filament\Resources\Forms\FormBuilderSchema;
 use Gadya\Cms\Forms\Builder\FormSchemaValidator;
+use Gadya\Cms\Sms\PhoneNumbers;
 
 /**
  * What both the create and the edit screen do before a form is saved:
@@ -53,8 +54,9 @@ final class SavesForms
         )));
 
         $settings['notify'] = $emails($settings['notify'] ?? []);
+        $settings['notify_sms'] = PhoneNumbers::normaliseAll((array) ($settings['notify_sms'] ?? []));
         $settings['routes'] = array_values(array_map(
-            fn (array $route): array => [...$route, 'emails' => $emails($route['emails'] ?? []), 'instead' => (bool) ($route['instead'] ?? false)],
+            fn (array $route): array => [...$route, 'emails' => $emails($route['emails'] ?? []), 'sms' => PhoneNumbers::normaliseAll((array) ($route['sms'] ?? [])), 'instead' => (bool) ($route['instead'] ?? false)],
             array_filter((array) ($settings['routes'] ?? []), fn ($route): bool => is_array($route) && filled($route['field'] ?? null)),
         ));
         $settings['webhooks'] = array_values(array_filter((array) ($settings['webhooks'] ?? []), fn ($hook): bool => is_array($hook) && filled($hook['url'] ?? null)));

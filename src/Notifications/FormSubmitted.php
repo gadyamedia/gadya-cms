@@ -4,6 +4,7 @@ namespace Gadya\Cms\Notifications;
 
 use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Forms\MergeTags;
 use Gadya\Cms\Models\FormSubmission;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,9 +20,15 @@ class FormSubmitted extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    /**
+     * @param  string|null  $subject  A built form's own subject line, merge tags filled in
+     * @param  string|null  $intro  A built form's own words above the answers
+     */
     public function __construct(
         public readonly FormSubmission $submission,
         public readonly FormDefinition $form,
+        public readonly ?string $subject = null,
+        public readonly ?string $intro = null,
     ) {}
 
     /**
@@ -35,14 +42,26 @@ class FormSubmitted extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject("New {$this->form->label} enquiry from {$this->submission->sender()}")
+            ->subject(filled($this->subject) ? (string) $this->subject : "New {$this->form->label} enquiry from {$this->submission->sender()}")
             ->greeting("Someone filled in the {$this->form->label} form.");
 
-        foreach ($this->submission->data ?? [] as $field => $value) {
-            $mail->line('**'.Str::headline((string) $field).':** '.(is_array($value) ? implode(', ', $value) : (string) $value));
+        foreach (preg_split('/\n{2,}/', trim((string) $this->intro)) ?: [] as $paragraph) {
+            if (trim($paragraph) !== '') {
+                $mail->line(trim($paragraph));
+            }
         }
 
-        $replyTo = $this->submission->data['email'] ?? null;
+        $labels = $this->submission->fieldLabels();
+
+        foreach ($this->submission->data ?? [] as $field => $value) {
+            $mail->line('**'.($labels[$field] ?? Str::headline((string) $field)).':** '.MergeTags::text($value));
+        }
+
+        if (($this->submission->files ?? []) !== []) {
+            $mail->line('Files they sent are attached to the enquiry in the admin.');
+        }
+
+        $replyTo = $this->submission->answerOfType(['email']) ?? ($this->submission->data['email'] ?? null);
 
         if (is_string($replyTo) && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
             $mail->replyTo($replyTo, $this->submission->sender());

@@ -227,6 +227,8 @@ class SubmitBuilderForm
      */
     protected function tell(Form $form, FormSubmission $submission): void
     {
+        rescue(fn () => app(FormNotifier::class)->send($form, $submission), report: true);
+        rescue(fn () => app(FormWebhooks::class)->dispatch($form, $submission), report: true);
         rescue(fn () => app(SubmissionPush::class)->queue($submission), report: false);
     }
 

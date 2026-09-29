@@ -129,11 +129,12 @@ class SubmissionPush
         return [
             'external_id' => (string) $submission->getKey(),
             'form' => Str::limit((string) $submission->form, 60, ''),
-            'name' => $this->first($data, ['name', 'full_name']) ?? $this->joined($data, ['first_name', 'last_name']),
-            'email' => $this->first($data, ['email', 'email_address']),
-            'phone' => $this->first($data, ['phone', 'telephone', 'tel', 'mobile', 'phone_number']),
+            /* A built form says what kind each question is; a configured one is read by its names. */
+            'name' => $this->typed($submission, ['name']) ?? $this->first($data, ['name', 'full_name']) ?? $this->joined($data, ['first_name', 'last_name']),
+            'email' => $this->typed($submission, ['email']) ?? $this->first($data, ['email', 'email_address']),
+            'phone' => $this->typed($submission, ['phone']) ?? $this->first($data, ['phone', 'telephone', 'tel', 'mobile', 'phone_number']),
             'company' => $this->first($data, ['company', 'business', 'organisation', 'organization']),
-            'message' => $this->first($data, ['message', 'enquiry', 'inquiry', 'comments', 'details']),
+            'message' => $this->first($data, ['message', 'enquiry', 'inquiry', 'comments', 'details']) ?? $this->typed($submission, ['long_text']),
             'fields' => (object) collect($data)
                 ->take(self::MAX_FIELDS)
                 ->map(fn ($value): string|int|float|bool|null => is_array($value) ? implode(', ', array_map('strval', $value)) : $value)
@@ -222,6 +223,16 @@ class SubmissionPush
         }
 
         return null;
+    }
+
+    /**
+     * @param  list<string>  $types
+     */
+    private function typed(FormSubmission $submission, array $types): ?string
+    {
+        $answer = $submission->answerOfType($types);
+
+        return $answer === null ? null : Str::limit($answer, 5000, '');
     }
 
     /**

@@ -25,6 +25,8 @@ use Gadya\Cms\Filament\Pages\Quality;
 use Gadya\Cms\Filament\Pages\SearchSettings;
 use Gadya\Cms\Filament\Pages\SiteDetails;
 use Gadya\Cms\Filament\Pages\SiteStatus;
+use Gadya\Cms\Filament\Pages\SpamProtection;
+use Gadya\Cms\Filament\Pages\TextMessages;
 use Gadya\Cms\Filament\Pages\ThemeSettings;
 use Gadya\Cms\Filament\Resources\Activity\ActivityResource;
 use Gadya\Cms\Filament\Resources\BrokenLinks\BrokenLinkResource;
@@ -444,6 +446,8 @@ class GadyaCmsPlugin implements Plugin
                 SiteStatus::class,
                 PrivacySettings::class,
                 $this->hasForms() ? Emails::class : null,
+                $this->hasForms() ? TextMessages::class : null,
+                $this->hasForms() ? SpamProtection::class : null,
                 $this->hasAi() && $this->hasBlog() ? ArticleGenerator::class : null,
                 ...static::connectPages(),
             ]));
