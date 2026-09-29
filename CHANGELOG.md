@@ -2,7 +2,7 @@
 
 All notable changes to `gadya/cms` are documented here.
 
-## Unreleased
+## 0.17.0
 
 ### Added
 
