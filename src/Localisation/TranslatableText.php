@@ -26,6 +26,8 @@ class TranslatableText
         'url', 'href', 'link', 'icon', 'side', 'highlight', 'email', 'phone', 'telephone', 'color', 'colour',
         'embed', 'video', 'map', 'target', 'form', 'layout', 'variant', 'style', 'class', 'anchor',
         'lat', 'lng', 'latitude', 'longitude', 'price', 'booking_url',
+        /* A built form's machinery: what is checked, when it shows, how wide, what it starts as. */
+        'rules', 'logic', 'width', 'default',
     ];
 
     /**

@@ -4,6 +4,7 @@ namespace Gadya\Cms\Localisation;
 
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Event;
+use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\Post;
 use Gadya\Cms\Models\Term;
 use Gadya\Cms\Models\Translation;
@@ -56,6 +57,7 @@ class Translations
         Post::class => ['prefix' => 'post', 'fields' => ['title', 'excerpt', 'content', 'hero_alt', 'meta_title', 'meta_description', 'faq', 'reading_time']],
         Event::class => ['prefix' => 'event', 'fields' => ['title', 'summary', 'body', 'hero_alt']],
         Term::class => ['prefix' => 'term', 'fields' => ['name', 'description']],
+        Form::class => ['prefix' => 'form', 'fields' => ['title', 'description', 'fields', 'messages']],
     ];
 
     /** @var array<string, Collection<string, Translation>> */

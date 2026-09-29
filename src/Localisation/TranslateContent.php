@@ -6,6 +6,7 @@ use Gadya\Cms\Content\PageRegistry;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Jobs\TranslateSiteContent;
 use Gadya\Cms\Models\Event;
+use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\Post;
 use Gadya\Cms\Models\Term;
 use Gadya\Cms\Models\Translation;
@@ -74,6 +75,7 @@ class TranslateContent
             $units[$key] = match (true) {
                 $model instanceof Post => ['label' => (string) $model->title, 'kind' => 'Article', 'path' => $model->publicPath()],
                 $model instanceof Event => ['label' => (string) $model->title, 'kind' => 'Event', 'path' => $model->publicPath()],
+                $model instanceof Form => ['label' => (string) $model->title, 'kind' => 'Form', 'path' => $model->setting('public_page', true) ? '/'.trim((string) config('gadya-cms.forms.builder.path', 'forms'), '/').'/'.$model->slug : null],
                 default => ['label' => (string) $model->getAttribute('name'), 'kind' => 'Category or tag', 'path' => null],
             };
         }

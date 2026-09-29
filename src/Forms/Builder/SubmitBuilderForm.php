@@ -89,12 +89,12 @@ class SubmitBuilderForm
         ['rules' => $rules, 'attributes' => $attributes, 'visible' => $visible] = $this->rules($form, $input, $onlyStep);
 
         $validator = Validator::make($input, $rules, [
-            'required' => 'Please answer ":attribute".',
-            'accepted' => 'Please tick ":attribute" to go on.',
-            'email' => 'Please give an email address like name@example.com for ":attribute".',
-            'regex' => 'Please check ":attribute" - it does not look right.',
-            'extensions' => '":attribute" must be one of these kinds of file: :values.',
-            'in' => 'Please choose one of the answers for ":attribute".',
+            'required' => __('Please answer ":attribute".'),
+            'accepted' => __('Please tick ":attribute" to go on.'),
+            'email' => __('Please give an email address like name@example.com for ":attribute".'),
+            'regex' => __('Please check ":attribute" - it does not look right.'),
+            'extensions' => __('":attribute" must be one of these kinds of file: :values.'),
+            'in' => __('Please choose one of the answers for ":attribute".'),
         ], $attributes);
 
         /*
@@ -104,7 +104,7 @@ class SubmitBuilderForm
         if ($onlyStep === null && $form->setting('turnstile') && $this->spam->turnstileConfigured()) {
             $validator->after(function ($validator) use ($request): void {
                 if (! $this->spam->passesTurnstile($request)) {
-                    $validator->errors()->add('cf-turnstile-response', 'Please confirm you are a person, then send the form again.');
+                    $validator->errors()->add('cf-turnstile-response', __('Please confirm you are a person, then send the form again.'));
                 }
             });
         }
