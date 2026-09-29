@@ -25,7 +25,7 @@ class AutoReplies
         $stored = (array) $this->options->get('forms.replies', []);
         $replies = [];
 
-        foreach (array_keys(FormDefinition::labels()) as $form) {
+        foreach (array_keys(FormDefinition::activeConfigLabels()) as $form) {
             $reply = is_array($stored[$form] ?? null) ? $stored[$form] : [];
 
             $replies[$form] = [

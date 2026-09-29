@@ -54,7 +54,7 @@ class Emails extends Page
         $this->form->fill([
             'replies' => $replies->all(),
             'reply_to' => (string) ($options->get('mail.reply_to') ?? ''),
-            'notify' => collect(FormDefinition::labels())
+            'notify' => collect(FormDefinition::activeConfigLabels())
                 ->mapWithKeys(fn (string $label, string $name): array => [$name => FormDefinition::chosenRecipients($name)])
                 ->all(),
         ]);
@@ -64,7 +64,7 @@ class Emails extends Page
     {
         $sections = [];
 
-        foreach (FormDefinition::labels() as $name => $label) {
+        foreach (FormDefinition::activeConfigLabels() as $name => $label) {
             $sections[] = Section::make($label)
                 ->description('Sent to whoever filled this form in, as soon as they send it. Only sent when the form asks for an email address.')
                 ->schema([
@@ -227,6 +227,6 @@ class Emails extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return FormDefinition::labels() !== [] || app(SharedSender::class)->enabled();
+        return FormDefinition::activeConfigLabels() !== [] || app(SharedSender::class)->enabled();
     }
 }

@@ -31,6 +31,7 @@ use Gadya\Cms\Filament\Resources\BrokenLinks\BrokenLinkResource;
 use Gadya\Cms\Filament\Resources\ChangeRequests\ChangeRequestResource;
 use Gadya\Cms\Filament\Resources\Comments\CommentResource;
 use Gadya\Cms\Filament\Resources\Events\EventResource;
+use Gadya\Cms\Filament\Resources\Forms\FormResource;
 use Gadya\Cms\Filament\Resources\Media\MediaResource;
 use Gadya\Cms\Filament\Resources\MenuItems\MenuItemResource;
 use Gadya\Cms\Filament\Resources\Menus\MenuResource;
@@ -424,6 +425,7 @@ class GadyaCmsPlugin implements Plugin
                 $this->hasRedirects() ? BrokenLinkResource::class : null,
                 config('gadya-cms.activity.enabled', true) ? ActivityResource::class : null,
                 $this->hasForms() ? SubmissionResource::class : null,
+                $this->hasForms() && config('gadya-cms.forms.builder.enabled', true) ? FormResource::class : null,
                 $this->hasNewsletter() ? SubscriberResource::class : null,
             ]))
             ->pages(array_filter([

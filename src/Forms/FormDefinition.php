@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Forms;
 
+use Gadya\Cms\Models\Form;
 use Gadya\Cms\Options\Options;
 use Illuminate\Support\Str;
 
@@ -80,9 +81,25 @@ final class FormDefinition
     }
 
     /**
+     * Every form enquiries can come from: the configured ones and the ones
+     * built in the panel, a built form's title winning where it replaced a
+     * configured form of the same name.
+     *
      * @return array<string, string>
      */
     public static function labels(): array
+    {
+        $built = rescue(fn (): array => Form::query()->forCurrentSite()->orderBy('title')->pluck('title', 'slug')->all(), [], report: false);
+
+        return [...self::configLabels(), ...$built];
+    }
+
+    /**
+     * The forms written in config/gadya-cms.php alone.
+     *
+     * @return array<string, string>
+     */
+    public static function configLabels(): array
     {
         $labels = [];
 
@@ -91,6 +108,19 @@ final class FormDefinition
         }
 
         return $labels;
+    }
+
+    /**
+     * Configured forms still answering for themselves - not yet replaced
+     * by a published builder form of the same name.
+     *
+     * @return array<string, string>
+     */
+    public static function activeConfigLabels(): array
+    {
+        $replaced = rescue(fn (): array => Form::query()->forCurrentSite()->live()->pluck('slug')->all(), [], report: false);
+
+        return array_diff_key(self::configLabels(), array_flip($replaced));
     }
 
     /**
