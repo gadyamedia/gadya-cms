@@ -75,10 +75,31 @@ carries it.
 
 ## In the panel
 
-**Settings → Enquiry emails** says who sends the site's email and from
-which address, lists what has gone out lately and whether it arrived, and
-has **Send me a test email**, which sends to the signed-in person's own
-address and reports the failure on the screen rather than in a log.
+**Settings → Enquiry emails** has a **Who is this sent by?** panel (the same
+one is at the top of every form's **Emails and texts** tab and inside the
+test modals). It says:
+
+- **From**: the name and address, and how it is sent - "Sent by Gadya Media
+  (on.gadya.media)" or "Sent by this site's own mail service (smtp)".
+- **Replies go to**: whoever filled the form in for the email to your team,
+  and the configured reply-to for the reply to a visitor.
+- **Sending allowance** on the shared sender: "12 of 100 emails this hour".
+- **Sent lately** and whether each arrived, with a plain reason for one that
+  did not. The shared sender reports this; a site's own mail service does not
+  tell the site, so the panel says to look in its dashboard.
+- **Warnings**, each with a one-line fix: no `from` address; the shared sender
+  switched off at the portal; the portal not answering; the site not paired;
+  `log`/`array` mailer on the live site; and, on its own mail, a From domain
+  that differs from the site's (a spam risk).
+
+**Send me a test email** sends to the signed-in person's own address and
+reports what happened on the screen rather than in a log: who it was sent to
+and from ("Sent to a@b.com from 'Site Name <hello@on.gadya.media>'. It can
+take a few minutes; check junk too."), or the real reason it failed - rate
+limited, sending switched off, an invalid address - kept on screen with the
+fix. A site whose mailer is `log` is told the test was written to the log and
+not sent. Through the shared sender the test carries `purpose: test`, so it is
+marked as a test in the portal's sent list.
 
 The address and the list come from the portal, asked for when that screen
 is opened and remembered for ten minutes. The site could work its own

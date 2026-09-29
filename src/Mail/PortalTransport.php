@@ -23,6 +23,9 @@ class PortalTransport extends AbstractTransport
 {
     public const PATH = '/api/connect/v1/mail';
 
+    /** Set on a test the panel sent, so the portal's sent list can say so. */
+    public const PURPOSE_HEADER = 'X-Gadya-Purpose';
+
     public function __construct(
         private readonly PortalClient $portal,
         private readonly SharedSender $sender,
@@ -81,6 +84,7 @@ class PortalTransport extends AbstractTransport
             'cc' => $this->addresses($email->getCc()),
             'bcc' => $this->addresses($this->blindRecipients($email, $envelope)),
             'subject' => (string) $email->getSubject(),
+            'purpose' => $email->getHeaders()->has(self::PURPOSE_HEADER) ? 'test' : null,
             'html' => $this->body($email->getHtmlBody()),
             'text' => $this->body($email->getTextBody()),
             'attachments' => $this->attachments($email),

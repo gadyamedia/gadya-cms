@@ -6,6 +6,7 @@ use Gadya\Cms\Filament\Resources\Submissions\SubmissionResource;
 use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Forms\MergeTags;
 use Gadya\Cms\Models\FormSubmission;
+use Gadya\Cms\Notifications\Concerns\CanBeATest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -18,17 +19,20 @@ use Illuminate\Support\Str;
  */
 class FormSubmitted extends Notification implements ShouldQueue
 {
+    use CanBeATest;
     use Queueable;
 
     /**
      * @param  string|null  $subject  A built form's own subject line, merge tags filled in
      * @param  string|null  $intro  A built form's own words above the answers
+     * @param  bool  $test  Sent from the panel to try it out: marked as one, and otherwise identical
      */
     public function __construct(
         public readonly FormSubmission $submission,
         public readonly FormDefinition $form,
         public readonly ?string $subject = null,
         public readonly ?string $intro = null,
+        public readonly bool $test = false,
     ) {}
 
     /**
@@ -42,8 +46,8 @@ class FormSubmitted extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject(filled($this->subject) ? (string) $this->subject : "New {$this->form->label} enquiry from {$this->submission->sender()}")
-            ->greeting("Someone filled in the {$this->form->label} form.");
+            ->subject($this->testSubject(filled($this->subject) ? (string) $this->subject : "New {$this->form->label} enquiry from {$this->submission->sender()}"))
+            ->greeting($this->test ? self::testBanner() : "Someone filled in the {$this->form->label} form.");
 
         foreach (preg_split('/\n{2,}/', trim((string) $this->intro)) ?: [] as $paragraph) {
             if (trim($paragraph) !== '') {
@@ -67,7 +71,7 @@ class FormSubmitted extends Notification implements ShouldQueue
             $mail->replyTo($replyTo, $this->submission->sender());
         }
 
-        return $mail
+        return $this->markTest($mail)
             ->line('Sent from '.($this->submission->path ?: 'the site').' on '.$this->submission->created_at->format('D j M Y, g:ia').'.')
             ->action('Open in the admin', SubmissionResource::getUrl())
             ->salutation('Replying to this email goes straight to them.');

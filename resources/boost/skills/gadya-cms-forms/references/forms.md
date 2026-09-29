@@ -125,6 +125,19 @@ Answers are kept in the site's own language; a translated form's choices are sto
 
 Merge tags in any of these: `{name}`, `{business}`, `{form}`, `{all_answers}` and `{key}` of any question. `{{ name }}` works too.
 
+### Send a test
+
+Every form's **Emails and texts** tab opens with **Send a test** and the **Who is this sent by?** panel (who the email comes from and how, where replies go, the sending allowance, what was sent lately, and warnings such as no From address, the shared sender switched off, or a From domain that is not the site's). Configured forms have the same button on **Settings → Enquiry emails**.
+
+The test sends the form's **real** staff email through the code a real enquiry uses - the same recipients, subject, message, routing rules and sender and reply-to - built from sample answers, with the subject starting "[Test]" and a line saying "This is a test - nobody has written in." In the modal:
+
+- **Send to everyone on the list**, **Send only to me**, or **Send to this address**.
+- **Also test the reply to the visitor**, sent to the chosen address (or to you), never to a real visitor. It shows what it would say even when the reply is switched off.
+- **Also send the text alert**, when texting is set up, to the numbers typed (blank tests the form's own numbers, only when sending to everyone). Each number's state is reported as the text code has it: sent, failed with Twilio's reason, or replied STOP.
+- **Pretend the answer makes a rule fire**, for a form with routing rules: the rule's condition is made true, its people get the email, and the result names which rules fired.
+
+It reads the form as it is on screen, so an unsaved draft can be tested. It never keeps an enquiry, never fires `FormSubmitted`, and never pushes to the portal or runs a webhook or destination. The result says who it went to and from what address, or the actual reason it failed (with the fix) and stays on screen. See `docs/email.md` for the panel.
+
 ### Text alerts
 
 Texts are sent from the client's **own** Twilio account: under **Settings → Text messages** she enters the Account SID, the auth token (stored encrypted, never shown back) and the Twilio number or a Messaging Service SID, and can **Send a test text**. Her Twilio number must be registered for business messages - toll-free verification, or A2P 10DLC for a local number - or the networks may block the texts.

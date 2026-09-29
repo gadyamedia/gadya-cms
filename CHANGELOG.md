@@ -2,6 +2,15 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Send a test** on every form's **Emails and texts** tab, and for each configured form on **Settings → Enquiry emails**. It sends the form's real staff email - same recipients, subject, body, routing and sender - from sample answers, marked "[Test]" with "This is a test - nobody has written in." Choose everyone on the list, only yourself or one address; also test the reply to the visitor and the text alert; or pretend an answer to make a routing rule fire, and the result names which rules fired. It reads the form as it is on screen (a draft works), and never stores an enquiry, fires `FormSubmitted`, pushes to the portal or runs a webhook or destination.
+- **Who is this sent by?** panel on the Emails and texts tab, in the test modals and on Settings → Enquiry emails: the From name and address, whether it is sent by Gadya Media (on.gadya.media) or the site's own mail service (and which), where replies go, the hourly allowance, the emails sent lately with failures flagged and a reason, and warnings with a fix for no From address, the shared sender switched off, an unreachable portal, an unpaired site, `log`/`array` mail in production and a From domain that is not the site's.
+- Test results are reported clearly: who it was sent to and from, or the real reason it failed with a fix, kept on screen. **Send me a test email** uses the same panel and result. Through the shared sender a test carries `purpose: test` to the portal, which marks it in its sent list (needs the portal's matching update; older portals ignore it).
+- `FormNotifier::staffEmail()`, `replySettings()` and `resolve()` (which rules fired), so a test and a real enquiry share one code path.
+
 ## 0.16.1
 
 ### Fixed

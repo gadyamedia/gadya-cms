@@ -38,12 +38,7 @@ class FormNotifier
         ['emails' => $emails, 'sms' => $sms] = $this->recipients($form, $submission);
 
         if ($emails !== []) {
-            rescue(fn () => Notification::route('mail', $emails)->notify(new FormSubmitted(
-                $submission,
-                $this->definition($form, $emails),
-                MergeTags::render((string) ($form->setting('email_subject') ?: 'New {form} enquiry from {name}'), $submission),
-                MergeTags::render((string) $form->setting('email_body', ''), $submission),
-            )), report: true);
+            rescue(fn () => Notification::route('mail', $emails)->notify($this->staffEmail($form, $submission, $emails)), report: true);
         }
 
         if ($sms !== []) {
@@ -55,6 +50,37 @@ class FormNotifier
     }
 
     /**
+     * The email staff get, built once here so a test sent from the panel
+     * is the very same message a real enquiry produces.
+     *
+     * @param  list<string>  $emails
+     */
+    public function staffEmail(Form $form, FormSubmission $submission, array $emails, bool $test = false): FormSubmitted
+    {
+        return new FormSubmitted(
+            $submission,
+            $this->definition($form, $emails),
+            MergeTags::render((string) ($form->setting('email_subject') ?: 'New {form} enquiry from {name}'), $submission),
+            MergeTags::render((string) $form->setting('email_body', ''), $submission),
+            $test,
+        );
+    }
+
+    /**
+     * What the reply to the visitor says, as the form has it set.
+     *
+     * @return array{enabled: bool, subject: string, body: string}
+     */
+    public function replySettings(Form $form): array
+    {
+        return [
+            'enabled' => (bool) $form->setting('autoreply.enabled'),
+            'subject' => (string) ($form->setting('autoreply.subject') ?: 'Thank you for getting in touch with {business}'),
+            'body' => (string) ($form->setting('autoreply.body') ?: Form::defaultSettings()['autoreply']['body']),
+        ];
+    }
+
+    /**
      * The form's own list, plus the addresses and numbers of every rule
      * the enquiry matches - or only theirs, for a rule that says so.
      *
@@ -62,11 +88,28 @@ class FormNotifier
      */
     public function recipients(Form $form, FormSubmission $submission): array
     {
+        ['emails' => $emails, 'sms' => $sms] = $this->resolve($form, $submission);
+
+        return ['emails' => $emails, 'sms' => $sms];
+    }
+
+    /**
+     * The same, and which rules (by their place in the form's list, from
+     * 0) sent the enquiry somewhere - for a test to say what fired.
+     *
+     * @return array{emails: list<string>, sms: list<string>, fired: list<int>}
+     */
+    public function resolve(Form $form, FormSubmission $submission): array
+    {
         $emails = (array) $form->setting('notify', []);
         $sms = (array) $form->setting('notify_sms', []);
         $schema = $form->schema();
+        $fired = [];
+        $position = -1;
 
-        foreach ((array) $form->setting('routes', []) as $route) {
+        foreach (array_values((array) $form->setting('routes', [])) as $route) {
+            $position++;
+
             if (! is_array($route) || ! is_string($route['field'] ?? null) || ! in_array($route['operator'] ?? null, FormLogic::OPERATORS, true)) {
                 continue;
             }
@@ -76,6 +119,8 @@ class FormNotifier
             if (! $this->logic->passes($rule, ($submission->data ?? [])[$route['field']] ?? null, $schema->field($route['field']))) {
                 continue;
             }
+
+            $fired[] = $position;
 
             if ($route['instead'] ?? false) {
                 $emails = [];
@@ -96,6 +141,7 @@ class FormNotifier
                 fn (string $address): bool => filter_var($address, FILTER_VALIDATE_EMAIL) !== false,
             ))),
             'sms' => PhoneNumbers::normaliseAll($sms),
+            'fired' => $fired,
         ];
     }
 
@@ -107,11 +153,7 @@ class FormNotifier
             return;
         }
 
-        rescue(fn () => Notification::route('mail', $email)->notify(new FormAutoReply($submission, [
-            'enabled' => true,
-            'subject' => (string) ($form->setting('autoreply.subject') ?: 'Thank you for getting in touch with {business}'),
-            'body' => (string) ($form->setting('autoreply.body') ?: Form::defaultSettings()['autoreply']['body']),
-        ])), report: true);
+        rescue(fn () => Notification::route('mail', $email)->notify(new FormAutoReply($submission, $this->replySettings($form))), report: true);
     }
 
     /** The panel's bell, for everyone who reads enquiries. */

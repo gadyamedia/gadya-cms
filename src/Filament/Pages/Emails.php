@@ -13,17 +13,17 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
+use Gadya\Cms\Filament\Resources\Forms\SendTestAction;
 use Gadya\Cms\Forms\AutoReplies;
+use Gadya\Cms\Forms\Builder\FormTestSender;
 use Gadya\Cms\Forms\FormDefinition;
-use Gadya\Cms\Mail\PortalMail;
+use Gadya\Cms\Mail\SenderPanel;
 use Gadya\Cms\Mail\SharedSender;
-use Gadya\Cms\Notifications\TestEmail;
 use Gadya\Cms\Options\Options;
-use Illuminate\Support\Facades\Notification as Notifier;
-use Throwable;
 use UnitEnum;
 
 /**
@@ -66,7 +66,9 @@ class Emails extends Page
 
         foreach (FormDefinition::activeConfigLabels() as $name => $label) {
             $sections[] = Section::make($label)
+                ->key("form_{$name}")
                 ->description('Sent to whoever filled this form in, as soon as they send it. Only sent when the form asks for an email address.')
+                ->headerActions([SendTestAction::make($name)])
                 ->schema([
                     TagsInput::make("notify.{$name}")
                         ->label('Who is told about a new one')
@@ -121,46 +123,24 @@ class Emails extends Page
 
     /**
      * Where the site's email comes from, and a way to prove it arrives.
+     * The portal is asked here, on a screen someone opened, because it is
+     * what decides the address - not this site's guess at it.
      */
     private function sendingSection(): Section
     {
-        $sender = $this->sender();
-
-        if (! $sender->enabled()) {
-            return Section::make('How this site sends email')
-                ->description('Your email is sent by this site\'s own mail service ('.config('mail.default').'), from '.(config('mail.from.address') ?: 'no address yet').'.')
-                ->schema([]);
-        }
-
-        /*
-         * Asked of the portal here, on a screen someone opened, because
-         * the portal is what decides the address - not this site's guess
-         * at it - and this is where the client is told what it is.
-         */
-        $status = app(PortalMail::class)->status();
-
         return Section::make('How this site sends email')
-            ->description('Your email is sent by Gadya Media, from '.($status['address'] ?? $sender->address()).'. There is nothing to set up, and nothing to pay for. Replies go to '.($sender->replyTo() ?? 'whoever the message is about').'.')
-            ->schema([]);
+            ->description($this->sender()->enabled()
+                ? 'There is nothing to set up, and nothing to pay for.'
+                : 'Your email is sent by this site\'s own mail service.')
+            ->schema([
+                View::make('gadya-cms::filament.mail.sender-panel')
+                    ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 20]),
+            ]);
     }
 
     private function sender(): SharedSender
     {
         return app(SharedSender::class);
-    }
-
-    /**
-     * What has gone out lately, as the portal that sent it has it.
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function recentEmails(): array
-    {
-        if (! $this->sender()->enabled()) {
-            return [];
-        }
-
-        return (array) (app(PortalMail::class)->status()['recent'] ?? []);
     }
 
     /**
@@ -173,6 +153,13 @@ class Emails extends Page
                 ->label('Send me a test email')
                 ->icon(Heroicon::OutlinedPaperAirplane)
                 ->color('gray')
+                ->modalHeading('Send yourself a test email')
+                ->modalDescription('Proves the site can send email at all. To try a form\'s own emails, use Send a test on that form.')
+                ->modalSubmitActionLabel('Send it')
+                ->schema([
+                    View::make('gadya-cms::filament.mail.sender-panel')
+                        ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 3]),
+                ])
                 ->action(fn () => $this->sendTest()),
         ];
     }
@@ -188,20 +175,7 @@ class Emails extends Page
             return;
         }
 
-        try {
-            Notifier::route('mail', $address)->notify(new TestEmail((string) ($user?->name ?: 'someone')));
-        } catch (Throwable $exception) {
-            Notification::make()
-                ->danger()
-                ->title('The test email could not be sent')
-                ->body($exception->getMessage())
-                ->persistent()
-                ->send();
-
-            return;
-        }
-
-        Notification::make()->success()->title('Sent to '.$address)->body('If it has not arrived in a few minutes, look in the junk folder.')->send();
+        SendTestAction::report(app(FormTestSender::class)->generic($address, (string) ($user?->name ?: 'someone')));
     }
 
     public function save(AutoReplies $replies, Options $options): void

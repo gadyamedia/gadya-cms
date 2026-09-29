@@ -4,6 +4,7 @@ namespace Gadya\Cms\Notifications;
 
 use Gadya\Cms\Forms\AutoReplies;
 use Gadya\Cms\Models\FormSubmission;
+use Gadya\Cms\Notifications\Concerns\CanBeATest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,6 +16,7 @@ use Illuminate\Notifications\Notification;
  */
 class FormAutoReply extends Notification implements ShouldQueue
 {
+    use CanBeATest;
     use Queueable;
 
     /**
@@ -23,6 +25,7 @@ class FormAutoReply extends Notification implements ShouldQueue
     public function __construct(
         public readonly FormSubmission $submission,
         public readonly array $reply,
+        public readonly bool $test = false,
     ) {}
 
     /**
@@ -37,7 +40,11 @@ class FormAutoReply extends Notification implements ShouldQueue
     {
         $rendered = app(AutoReplies::class)->render($this->reply['body'], $this->reply['subject'], $this->submission);
 
-        $mail = (new MailMessage)->subject($rendered['subject']);
+        $mail = $this->markTest((new MailMessage)->subject($this->testSubject($rendered['subject'])));
+
+        if ($this->test) {
+            $mail->line(self::testBanner());
+        }
 
         foreach ($rendered['lines'] as $line) {
             $mail->line($line);

@@ -12,7 +12,9 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\View;
 use Gadya\Cms\Forms\Builder\FormLogic;
+use Gadya\Cms\Mail\SenderPanel;
 use Gadya\Cms\Sms\PhoneNumbers;
 use Gadya\Cms\Sms\TextAlerts;
 
@@ -29,6 +31,14 @@ final class FormNotificationSchema
     public static function fields(): array
     {
         return [
+            Section::make('Send a test')
+                ->key('sendTestSection')
+                ->description('Check who the email comes from, who gets it, and that it arrives - before a real enquiry does.')
+                ->headerActions([SendTestAction::make()])
+                ->schema([
+                    View::make('gadya-cms::filament.mail.sender-panel')
+                        ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 3]),
+                ]),
             Section::make('Who is told about a new enquiry')
                 ->description('Everyone here gets an email the moment one arrives. Replying goes straight to whoever sent it.')
                 ->schema([

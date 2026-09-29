@@ -76,21 +76,31 @@ final class FormEditSchema
      */
     public static function preview(mixed $livewire): HtmlString
     {
-        $data = (array) data_get($livewire, 'data', []);
-
-        $form = new Form([
-            'slug' => (string) (($data['slug'] ?? '') ?: 'preview'),
-            'title' => (string) ($data['title'] ?? ''),
-            'fields' => FormBuilderSchema::fromBuilder((array) ($data['fields'] ?? [])),
-            'messages' => (array) ($data['messages'] ?? []),
-            'settings' => (array) ($data['settings'] ?? []),
-        ]);
+        $form = self::formFromScreen($livewire);
 
         return rescue(
             fn (): HtmlString => app(FormRenderer::class)->render($form, ['preview' => true]),
             new HtmlString('<p>The preview will appear once the form has a question.</p>'),
             report: false,
         );
+    }
+
+    /**
+     * The form as it is on screen right now - saved or not - so the
+     * preview and a test of its emails read what is being typed, not
+     * what was last saved.
+     */
+    public static function formFromScreen(mixed $livewire): Form
+    {
+        $data = (array) data_get($livewire, 'data', []);
+
+        return new Form([
+            'slug' => (string) (($data['slug'] ?? '') ?: 'preview'),
+            'title' => (string) ($data['title'] ?? ''),
+            'fields' => FormBuilderSchema::fromBuilder((array) ($data['fields'] ?? [])),
+            'messages' => (array) ($data['messages'] ?? []),
+            'settings' => (array) ($data['settings'] ?? []),
+        ]);
     }
 
     /**
