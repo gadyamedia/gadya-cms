@@ -145,6 +145,16 @@ class SubmissionPush
             'callback_consent_text' => $consent['text'] ?? null,
             'callback_consented_at' => $consent['at'] ?? null,
             'callback_consent_ip' => $consent['ip'] ?? null,
+            /*
+             * Where it came from - the campaign, the landing page, the
+             * brand - beside the answers rather than among them, so the
+             * portal's `fields` stay a flat list of answers.
+             */
+            'attribution' => (object) array_filter(
+                (array) (($submission->meta ?? [])['attribution'] ?? []),
+                fn ($value, $key): bool => is_string($value) && $key !== 'ip' && $key !== 'user_agent',
+                ARRAY_FILTER_USE_BOTH,
+            ),
         ];
     }
 

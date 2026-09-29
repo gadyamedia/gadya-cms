@@ -4,6 +4,7 @@ namespace Gadya\Cms\Forms;
 
 use Gadya\Cms\Analytics\VisitorFingerprint;
 use Gadya\Cms\Analytics\VisitorGeo;
+use Gadya\Cms\Events\FormSubmitted as FormSubmittedEvent;
 use Gadya\Cms\Models\AnalyticsEvent;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Notifications\FormAutoReply;
@@ -24,11 +25,14 @@ class StoreFormSubmission
     public function handle(FormDefinition $form, array $data, Request $request): FormSubmission
     {
         $kept = array_intersect_key($data, array_flip($form->fields()));
+        $locale = app(FormLocale::class)->current();
+        $attribution = rescue(fn (): array => app(Attribution::class)->capture($request, $locale), [], report: true);
 
         $submission = FormSubmission::query()->create([
             'site_id' => $this->siteContext->id(),
             'form' => $form->name,
             'data' => $kept,
+            'meta' => $attribution === [] ? null : ['locale' => $locale, 'attribution' => $attribution],
             'path' => Str::limit((string) ($request->input('_path') ?: $request->headers->get('referer')), 255, ''),
             'referrer_host' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST) ?: null,
             'country' => VisitorGeo::for($request)['country'],
@@ -63,6 +67,8 @@ class StoreFormSubmission
         if ($form->notify !== []) {
             rescue(fn () => Notification::route('mail', $form->notify)->notify(new FormSubmitted($submission, $form)), report: true);
         }
+
+        rescue(fn () => event(new FormSubmittedEvent($submission, $kept, SubmissionContext::fromSubmission($submission, $form->label), definition: $form)), report: true);
 
         /*
          * To the Gadya Media portal, queued and rescued: the visitor has

@@ -7,6 +7,8 @@ use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\PanelBrand;
 use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Filament\Resources\Forms\FormResource;
+use Gadya\Cms\Forms\Attribution;
+use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Models\Form;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\MessageBag;
@@ -112,6 +114,8 @@ class FormRenderer
             'types' => app(FieldTypes::class),
             'logic' => $this->logic,
             'editorTools' => $preview ? null : $this->editorTools($form, $options['section'] ?? null),
+            'locale' => app(FormLocale::class)->current(),
+            'attributionKeys' => [...Attribution::PARAMETERS, ...Attribution::VISIT],
         ];
     }
 

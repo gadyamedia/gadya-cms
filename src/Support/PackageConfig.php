@@ -27,6 +27,8 @@ final class PackageConfig
         'pages.content_fields',
         'users.roles',
         'forms.forms',
+        'forms.builder.destinations',
+        'forms.builder.attribution.site',
         'fonts.display',
         'fonts.sans',
         'menus.dietary',

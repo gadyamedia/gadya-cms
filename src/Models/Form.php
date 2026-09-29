@@ -3,7 +3,11 @@
 namespace Gadya\Cms\Models;
 
 use Gadya\Cms\Database\Factories\FormFactory;
+use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Forms\Builder\FormSchema;
+use Gadya\Cms\Forms\FormLocale;
+use Gadya\Cms\Localisation\Locales;
+use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -105,6 +109,9 @@ class Form extends Model
             'analytics_event' => 'lead_form_submit',
             'progress' => true,
             'styles' => true,
+            'destinations' => [],
+            'destination_maps' => [],
+            'localised' => [],
         ];
     }
 
@@ -168,11 +175,33 @@ class Form extends Model
      */
     public static function findLive(string $slug): ?self
     {
-        return rescue(
+        $form = rescue(
             fn (): ?self => static::query()->forCurrentSite()->live()->where('slug', $slug)->first(),
             null,
             report: false,
         );
+
+        return $form?->inVisitorLanguage();
+    }
+
+    /**
+     * Put the form into the visitor's language when the app chose it
+     * rather than the CMS - a session, a cookie, a prefix of the app's
+     * own. A request the CMS answers in another language has had it done
+     * already, as the form was read.
+     */
+    public function inVisitorLanguage(): self
+    {
+        $locales = app(Locales::class);
+        $locale = app(FormLocale::class)->current();
+
+        if ($locales->isTranslating() || $locale === $locales->default()) {
+            return $this;
+        }
+
+        app(Translations::class)->translateModel($this, $locale, app(EditContext::class)->showsDraft());
+
+        return $this;
     }
 
     public function isLive(): bool
@@ -190,6 +219,49 @@ class Form extends Model
         $written = trim((string) (($this->messages ?? [])[$key] ?? ''));
 
         return $written !== '' ? $written : (string) (self::defaultMessages()[$key] ?? '');
+    }
+
+    /**
+     * The thank-you in a language: the words the client wrote for that
+     * language under **After sending**, else the translation, else her
+     * own words.
+     */
+    public function successMessage(?string $locale = null): string
+    {
+        $written = trim((string) ($this->localised($locale)['success'] ?? ''));
+
+        return $written !== '' ? $written : $this->message('success');
+    }
+
+    /**
+     * Where to take someone once they have sent it, in a language: that
+     * language's own page, else the form's. Only ever a page on this site.
+     */
+    public function redirectFor(?string $locale = null): ?string
+    {
+        foreach ([$this->localised($locale)['redirect'] ?? null, $this->setting('redirect')] as $to) {
+            if (is_string($to) && str_starts_with($to, '/') && ! str_starts_with($to, '//')) {
+                return $to;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{locale?: string, success?: string|null, redirect?: string|null}
+     */
+    private function localised(?string $locale): array
+    {
+        $locale = FormLocale::normalise($locale ?? app(FormLocale::class)->current());
+
+        foreach ((array) $this->setting('localised', []) as $entry) {
+            if (is_array($entry) && FormLocale::normalise($entry['locale'] ?? null) === $locale) {
+                return $entry;
+            }
+        }
+
+        return [];
     }
 
     public function setting(string $key, mixed $default = null): mixed

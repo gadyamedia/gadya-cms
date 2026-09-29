@@ -44,12 +44,14 @@ use Gadya\Cms\Editor\EditContext;
 use Gadya\Cms\Events\PageViewed;
 use Gadya\Cms\Forms\Builder\FieldTypes;
 use Gadya\Cms\Forms\Builder\FormRenderer;
+use Gadya\Cms\Forms\Destinations\FormDestinations;
 use Gadya\Cms\Http\Middleware\AdvertiseDiscovery;
 use Gadya\Cms\Http\Middleware\ComingSoon;
 use Gadya\Cms\Http\Middleware\HandleRedirects;
 use Gadya\Cms\Http\Middleware\NegotiateMarkdown;
 use Gadya\Cms\Http\Middleware\NoStoreWhenEditing;
 use Gadya\Cms\Http\Middleware\RecordMissingUrls;
+use Gadya\Cms\Http\Middleware\RememberFirstTouch;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
 use Gadya\Cms\Localisation\LocalisationServiceProvider;
@@ -185,6 +187,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(AiSettings::class);
         $this->app->scoped(SharedSender::class);
         $this->app->singleton(FieldTypes::class);
+        $this->app->singleton(FormDestinations::class);
         $this->app->scoped(FormRenderer::class);
         $this->app->singleton(SectionRenderer::class);
 
@@ -285,6 +288,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', NoStoreWhenEditing::class);
         $this->app->make(Kernel::class)->prependMiddlewareToGroup('web', NegotiateMarkdown::class);
         $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', TrackPageViews::class);
+        $this->app->make(Kernel::class)->appendMiddlewareToGroup('web', RememberFirstTouch::class);
 
         $this->registerPortal();
     }

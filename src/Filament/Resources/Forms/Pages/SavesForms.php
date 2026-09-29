@@ -7,6 +7,8 @@ use Filament\Pages\Page;
 use Filament\Support\Exceptions\Halt;
 use Gadya\Cms\Filament\Resources\Forms\FormBuilderSchema;
 use Gadya\Cms\Forms\Builder\FormSchemaValidator;
+use Gadya\Cms\Forms\Destinations\FormDestinations;
+use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Sms\PhoneNumbers;
 
 /**
@@ -60,6 +62,20 @@ final class SavesForms
             array_filter((array) ($settings['routes'] ?? []), fn ($route): bool => is_array($route) && filled($route['field'] ?? null)),
         ));
         $settings['webhooks'] = array_values(array_filter((array) ($settings['webhooks'] ?? []), fn ($hook): bool => is_array($hook) && filled($hook['url'] ?? null)));
+
+        /* Only destinations that exist, and a mapping only for one that is chosen. */
+        $known = array_keys(app(FormDestinations::class)->all());
+        $settings['destinations'] = array_values(array_intersect(array_filter((array) ($settings['destinations'] ?? []), 'is_string'), $known));
+        $settings['destination_maps'] = array_map(
+            fn ($map): array => array_filter((array) $map, fn ($source, $attribute): bool => is_string($attribute) && $attribute !== '' && is_string($source), ARRAY_FILTER_USE_BOTH),
+            array_intersect_key(array_filter((array) ($settings['destination_maps'] ?? []), 'is_array'), array_flip($settings['destinations'])),
+        );
+        $settings['localised'] = array_values(array_filter(array_map(
+            fn ($entry): ?array => is_array($entry) && FormLocale::normalise($entry['locale'] ?? null) !== null
+                ? ['locale' => FormLocale::normalise($entry['locale']), 'success' => trim((string) ($entry['success'] ?? '')) ?: null, 'redirect' => trim((string) ($entry['redirect'] ?? '')) ?: null]
+                : null,
+            (array) ($settings['localised'] ?? []),
+        )));
 
         return $settings;
     }

@@ -11,6 +11,7 @@ use Gadya\Cms\Forms\Builder\FormFiles;
 use Gadya\Cms\Forms\Builder\FormRenderer;
 use Gadya\Cms\Forms\Builder\SpamGuard;
 use Gadya\Cms\Forms\Builder\SubmitBuilderForm;
+use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\FormDraft;
 use Gadya\Cms\Models\FormEvent;
@@ -123,14 +124,18 @@ class BuilderFormController extends Controller
 
     public function embedStore(Request $request, string $slug): JsonResponse|Response
     {
+        app(FormLocale::class)->adopt($request);
+
         $form = Form::findLive($slug);
 
         abort_if($form === null, 404);
 
+        $form = app(FormLocale::class)->adoptFor($request, $form);
+
         if ($this->isBot($request, $form)) {
             return $request->expectsJson()
-                ? response()->json(['ok' => true, 'message' => $form->message('success')])
-                : $this->embedPage($form, success: $form->message('success'));
+                ? response()->json(['ok' => true, 'message' => $form->successMessage()])
+                : $this->embedPage($form, success: $form->successMessage());
         }
 
         $step = $request->input('_validate_step');
@@ -150,8 +155,8 @@ class BuilderFormController extends Controller
         $this->submit->store($form, $validator->validated(), $request, $visible);
 
         return $request->expectsJson()
-            ? response()->json(['ok' => true, 'message' => $form->message('success')])
-            : $this->embedPage($form, success: $form->message('success'));
+            ? response()->json(['ok' => true, 'message' => $form->successMessage()])
+            : $this->embedPage($form, success: $form->successMessage());
     }
 
     /**
@@ -304,15 +309,21 @@ class BuilderFormController extends Controller
         return array_filter($request->except($skip), fn ($value): bool => ! is_object($value));
     }
 
+    /**
+     * Thanked in the language they filled it in: that language's
+     * thank-you, flashed for the page they land on, and that language's
+     * page to go to when the form has one.
+     */
     private function success(Request $request, Form $form): JsonResponse|RedirectResponse
     {
         $redirect = $this->redirectTarget($request, $form);
+        $message = $form->successMessage();
 
         if ($request->expectsJson()) {
-            return response()->json(array_filter(['ok' => true, 'message' => $form->message('success'), 'redirect' => $redirect]));
+            return response()->json(array_filter(['ok' => true, 'message' => $message, 'redirect' => $redirect]));
         }
 
-        return ($redirect !== null ? redirect()->to($redirect) : back())->with('gadya-cms.form.'.$form->slug, $form->message('success'));
+        return ($redirect !== null ? redirect()->to($redirect) : back())->with('gadya-cms.form.'.$form->slug, $message);
     }
 
     private function saved(Request $request, Form $form): JsonResponse|RedirectResponse
@@ -325,7 +336,7 @@ class BuilderFormController extends Controller
     /** Only ever somewhere on this site. */
     private function redirectTarget(Request $request, Form $form): ?string
     {
-        foreach ([$form->setting('redirect'), $request->input('_redirect')] as $to) {
+        foreach ([$form->redirectFor(), $request->input('_redirect')] as $to) {
             if (is_string($to) && str_starts_with($to, '/') && ! str_starts_with($to, '//')) {
                 return $to;
             }

@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Submissions\Pages\ListSubmissions;
+use Gadya\Cms\Forms\Builder\FormExport;
 use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Support\SiteContext;
@@ -206,10 +207,11 @@ class SubmissionResource extends Resource
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->action(function (Collection $records): StreamedResponse {
                 $fields = $records->flatMap(fn (FormSubmission $record): array => array_keys($record->data ?? []))->unique()->values()->all();
+                $attribution = FormExport::attributionColumns($records);
 
-                return response()->streamDownload(function () use ($records, $fields): void {
+                return response()->streamDownload(function () use ($records, $fields, $attribution): void {
                     $out = fopen('php://output', 'w');
-                    fputcsv($out, ['Received', 'Form', 'Status', 'Answered', 'Follow up', 'Notes', 'Page', 'Country', ...array_map(Str::headline(...), $fields)]);
+                    fputcsv($out, ['Received', 'Form', 'Status', 'Answered', 'Follow up', 'Notes', 'Page', 'Country', ...array_map(Str::headline(...), $fields), ...array_values($attribution)]);
 
                     foreach ($records as $record) {
                         fputcsv($out, [
@@ -222,6 +224,7 @@ class SubmissionResource extends Resource
                             $record->path,
                             $record->country,
                             ...array_map(fn (string $field): string => (string) (is_array($record->data[$field] ?? null) ? implode(', ', $record->data[$field]) : ($record->data[$field] ?? '')), $fields),
+                            ...array_map(fn (string $key): string => FormExport::safe((string) (FormExport::attributionOf($record)[$key] ?? '')), array_keys($attribution)),
                         ]);
                     }
 

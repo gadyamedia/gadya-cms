@@ -466,6 +466,41 @@ return [
                 'tries' => 5,
                 'timeout' => 10,
             ],
+
+            /*
+             * Where else a form can hand each enquiry on to, once it is in
+             * the inbox - chosen per form under "Also save to". A model to
+             * create needs no PHP; each map value is a question's key, an
+             * @token (@utm_source, @landing_page, @site, @locale,
+             * @consent.at, @consent.policy_version, ...) or a value as
+             * written. Or name a class implementing FormDestination. See
+             * docs/forms.md.
+             *
+             * 'leads' => [
+             *     'label' => 'Leads',
+             *     'model' => App\Models\Lead::class,
+             *     'map' => ['name' => 'name', 'email' => 'email', 'source' => '@utm_source', 'consented_at' => '@consent.at'],
+             *     'defaults' => ['status' => 'new'],
+             * ],
+             * 'crm' => App\Forms\SendToCrm::class,
+             */
+            'destinations' => [],
+
+            /*
+             * Where each enquiry came from: the campaign (utm_*, gclid,
+             * fbclid, msclkid), the referrer, the landing page, the page it
+             * was sent from, the language and the brand. `site` says which
+             * brand: null for the CMS site's key, a map of host => brand,
+             * or an invokable class given the request. `ip` is `full`,
+             * `masked` (the last part blanked) or `none`; it is always
+             * masked for someone who refused analytics or sends Global
+             * Privacy Control.
+             */
+            'attribution' => [
+                'enabled' => true,
+                'site' => null,
+                'ip' => 'full',
+            ],
         ],
     ],
 
@@ -763,6 +798,13 @@ return [
         'cookie' => 'gadya_consent',
         'cookie_days' => 365,
         'policy_url' => null,
+
+        /*
+         * The version of the privacy policy a consent box agrees to, kept
+         * with each consent. Null works it out: when the policy is a CMS
+         * page, the moment its current wording went live.
+         */
+        'policy_version' => null,
     ],
 
     /*

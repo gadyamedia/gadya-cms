@@ -2,6 +2,7 @@
     $labels = $submission->fieldLabels();
     $files = is_array($submission->files) ? $submission->files : [];
     $links = app(\Gadya\Cms\Forms\Builder\FormFiles::class);
+    $attribution = \Gadya\Cms\Forms\Attribution::labelled((array) (($submission->meta ?? [])['attribution'] ?? []));
 @endphp
 <dl class="gadya-submission">
     @foreach ($submission->data ?? [] as $field => $value)
@@ -25,7 +26,25 @@
     @foreach ((array) (($submission->meta ?? [])['consents'] ?? []) as $field => $consent)
         <div class="gadya-submission__row gadya-submission__row--meta">
             <dt>Agreed to</dt>
-            <dd>"{{ $consent['text'] ?? '' }}" · {{ isset($consent['at']) ? \Illuminate\Support\Carbon::parse($consent['at'])->format('D j M Y, g:ia') : '' }}</dd>
+            <dd>"{{ $consent['text'] ?? '' }}" · {{ isset($consent['at']) ? \Illuminate\Support\Carbon::parse($consent['at'])->format('D j M Y, g:ia') : '' }}@if (filled($consent['policy_version'] ?? null)) · privacy policy of {{ $consent['policy_version'] }}@endif</dd>
+        </div>
+    @endforeach
+    @foreach ($attribution as $label => $value)
+        <div class="gadya-submission__row gadya-submission__row--meta">
+            <dt>{{ $label }}</dt>
+            <dd>{{ $value }}</dd>
+        </div>
+    @endforeach
+    @foreach ((array) (($submission->meta ?? [])['destinations'] ?? []) as $key => $result)
+        <div class="gadya-submission__row gadya-submission__row--meta">
+            <dt>Saved to {{ $result['label'] ?? \Illuminate\Support\Str::headline((string) $key) }}</dt>
+            <dd>
+                @if ($result['ok'] ?? false)
+                    {{ $result['result'] ?? 'Yes' }}
+                @else
+                    Not saved: {{ $result['error'] ?? 'it failed' }}
+                @endif
+            </dd>
         </div>
     @endforeach
     @if ($submission->answered_at)

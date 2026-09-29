@@ -120,6 +120,78 @@
         });
     };
 
+    /*
+     * Where this visit began: the campaign in the address, the site that
+     * sent them and the page they landed on - noted once per tab, on the
+     * first page with a form this script sees, and posted with the form.
+     * It never leaves the browser except with an enquiry, and is not an
+     * identifier. The landing page is only noted when this page is the
+     * first of the visit (nothing, or another site, sent them here);
+     * otherwise the server's note of the first request fills it in.
+     */
+    const firstTouchKey = 'gadya-cms:first-touch';
+    const campaignKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid', 'msclkid'];
+
+    const firstTouch = () => {
+        let kept = null;
+
+        try {
+            kept = JSON.parse(sessionStorage.getItem(firstTouchKey) || 'null');
+        } catch {
+            kept = null;
+        }
+
+        if (kept && typeof kept === 'object') {
+            return kept;
+        }
+
+        const noted = {};
+        const params = new URLSearchParams(window.location.search);
+        let referrerHost = '';
+
+        try {
+            referrerHost = document.referrer ? new URL(document.referrer).host : '';
+        } catch {
+            referrerHost = '';
+        }
+
+        campaignKeys.forEach((key) => {
+            const value = params.get(key);
+
+            if (value) {
+                noted[key] = value.slice(0, 200);
+            }
+        });
+
+        if (referrerHost !== window.location.host) {
+            noted.landing_page = window.location.href.slice(0, 500);
+
+            if (document.referrer) {
+                noted.referrer = document.referrer.slice(0, 500);
+            }
+        }
+
+        try {
+            sessionStorage.setItem(firstTouchKey, JSON.stringify(noted));
+        } catch {
+            /* Private browsing: the server's note stands in. */
+        }
+
+        return noted;
+    };
+
+    const fillAttribution = (form) => {
+        const noted = firstTouch();
+
+        form.querySelectorAll('[data-cms-attribution]').forEach((input) => {
+            const value = noted[input.dataset.cmsAttribution];
+
+            if (typeof value === 'string' && value !== '') {
+                input.value = value;
+            }
+        });
+    };
+
     const wire = (root) => {
         if (root.dataset.cmsBformReady) {
             return;
@@ -149,6 +221,10 @@
         const seenSteps = new Set();
 
         form.noValidate = true;
+
+        if (!preview) {
+            fillAttribution(form);
+        }
 
         /* ---------- counting ---------- */
 

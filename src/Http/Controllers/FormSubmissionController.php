@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Http\Controllers;
 
 use Gadya\Cms\Forms\FormDefinition;
+use Gadya\Cms\Forms\FormLocale;
 use Gadya\Cms\Forms\StoreFormSubmission;
 use Gadya\Cms\Models\Form;
 use Illuminate\Http\JsonResponse;
@@ -25,10 +26,12 @@ class FormSubmissionController extends Controller
          * converted from the configuration takes over from it - same
          * address, same inbox - the moment it is published.
          */
+        app(FormLocale::class)->adopt($request);
+
         $built = config('gadya-cms.forms.builder.enabled', true) ? Form::findLive($form) : null;
 
         if ($built !== null) {
-            return app(BuilderFormController::class)->store($request, $built);
+            return app(BuilderFormController::class)->store($request, app(FormLocale::class)->adoptFor($request, $built));
         }
 
         $definition = FormDefinition::find($form);

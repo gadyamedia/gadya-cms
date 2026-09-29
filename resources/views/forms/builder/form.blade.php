@@ -19,7 +19,7 @@
      @if ($form->setting('local_progress', true) && ! $preview) data-local-progress @endif
      @if ($embed) data-embed @endif
      @if ($preview) data-preview @endif
-     @if ($form->setting('redirect')) data-redirect="{{ $form->setting('redirect') }}" @endif>
+     @if ($form->redirectFor()) data-redirect="{{ $form->redirectFor() }}" @endif>
 
     {!! $editorTools !!}
 
@@ -48,6 +48,13 @@
             <input type="hidden" name="_t" value="{{ $seal }}">
             <input type="hidden" name="_started" value="{{ old('_started') }}" data-cms-started>
             <input type="hidden" name="_step" value="{{ $startStep }}" data-cms-step-input>
+            <input type="hidden" name="_locale" value="{{ $locale }}">
+            @unless ($preview)
+                {{-- Where the visit began, filled in by the script from the tab's first page; see Attribution. --}}
+                @foreach ($attributionKeys as $attributionKey)
+                    <input type="hidden" name="_attribution[{{ $attributionKey }}]" value="" data-cms-attribution="{{ $attributionKey }}">
+                @endforeach
+            @endunless
             @if ($resumeToken)
                 <input type="hidden" name="_resume" value="{{ $resumeToken }}">
             @endif

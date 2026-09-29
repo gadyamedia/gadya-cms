@@ -2,6 +2,8 @@
 
 namespace Gadya\Cms\Filament\Resources\Forms;
 
+use Filament\Actions\Action;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -18,7 +20,12 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Gadya\Cms\Forms\Builder\FormLogic;
 use Gadya\Cms\Forms\Builder\FormRenderer;
+use Gadya\Cms\Forms\Builder\FormSchema;
 use Gadya\Cms\Forms\Builder\SpamGuard;
+use Gadya\Cms\Forms\Destinations\DestinationMap;
+use Gadya\Cms\Forms\Destinations\EloquentDestination;
+use Gadya\Cms\Forms\Destinations\FormDestinations;
+use Gadya\Cms\Forms\SubmissionContext;
 use Gadya\Cms\Models\Form;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Support\HtmlString;
@@ -27,8 +34,8 @@ use Illuminate\Validation\Rules\Unique;
 
 /**
  * A form's edit screen: the questions beside a live preview, then what it
- * says after sending, who hears about it, where else it goes, and the
- * switches.
+ * says after sending, who hears about it, where else it goes - webhooks,
+ * and the site's own records - and the switches.
  */
 final class FormEditSchema
 {
@@ -55,6 +62,10 @@ final class FormEditSchema
                     Tab::make('After sending')->icon('heroicon-o-check-badge')->schema(self::afterSending()),
                     Tab::make('Emails and texts')->icon('heroicon-o-envelope')->schema(FormNotificationSchema::fields()),
                     Tab::make('Webhooks')->icon('heroicon-o-bolt')->schema(self::webhooks()),
+                    Tab::make('Also save to')
+                        ->icon('heroicon-o-circle-stack')
+                        ->visible(fn (): bool => app(FormDestinations::class)->all() !== [])
+                        ->schema(self::destinations()),
                     Tab::make('Settings')->icon('heroicon-o-cog-6-tooth')->schema(self::settings()),
                 ]),
         ]);
@@ -140,6 +151,30 @@ final class FormEditSchema
                     ->rule('regex:/^\/(?!\/)/')
                     ->maxLength(255),
             ])->columns(2),
+            Section::make('In other languages')
+                ->description('For a site in more than one language: the thank-you, and the page to go to, in each. A language left out uses the ones above (or their translation).')
+                ->schema([
+                    Repeater::make('settings.localised')
+                        ->hiddenLabel()
+                        ->schema([
+                            TextInput::make('locale')
+                                ->label('Language code')
+                                ->placeholder('ru')
+                                ->required()
+                                ->maxLength(10)
+                                ->rule('regex:/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})?$/'),
+                            Textarea::make('success')->label('What they see once it is sent')->rows(2)->maxLength(1000)->columnSpan(2),
+                            TextInput::make('redirect')
+                                ->label('Or the page to go to')
+                                ->placeholder('/ru/thank-you')
+                                ->rule('regex:/^\/(?!\/)/')
+                                ->maxLength(255),
+                        ])
+                        ->columns(4)
+                        ->addActionLabel('Add a language')
+                        ->defaultItems(0),
+                ])
+                ->collapsible(),
             Section::make('Buttons and steps')->schema([
                 $message('submit', 'Send button'),
                 $message('next', 'Next button'),
@@ -176,6 +211,82 @@ final class FormEditSchema
                         ->defaultItems(0),
                 ]),
         ];
+    }
+
+    /**
+     * "Also save to": the site's own places for an enquiry - its leads
+     * table, a CRM - chosen per form, each with the mapping from this
+     * form's questions to its fields. Choosing one fills the mapping in by
+     * matching names and kinds of question; the developer's mapping in
+     * config stands for anything left as it is.
+     *
+     * @return list<mixed>
+     */
+    private static function destinations(): array
+    {
+        $registry = app(FormDestinations::class);
+        $maps = [];
+
+        foreach ($registry->all() as $key => $destination) {
+            if ($destination->fields() === []) {
+                continue;
+            }
+
+            $maps[] = Section::make($destination->label())
+                ->description('Which answer goes into each of its fields. Leave a field empty to leave it out.')
+                ->visible(fn (Get $get): bool => in_array($key, (array) $get('settings.destinations'), true))
+                ->schema([
+                    KeyValue::make('settings.destination_maps.'.$key)
+                        ->hiddenLabel()
+                        ->keyLabel('Its field')
+                        ->valueLabel('Comes from')
+                        ->valuePlaceholder('a question\'s name, @utm_source, or a value')
+                        ->helperText(new HtmlString('A question\'s name, a value as written, or one of: <code>'.e(implode(' ', SubmissionContext::tokens())).'</code>'))
+                        ->hintAction(
+                            Action::make('match_'.$key)
+                                ->label('Match to this form\'s questions')
+                                ->icon('heroicon-o-sparkles')
+                                ->action(fn (Set $set, Get $get) => $set('settings.destination_maps.'.$key, self::suggestedMap($key, $get))),
+                        ),
+                ]);
+        }
+
+        return [
+            Section::make('Also save each enquiry to')
+                ->description('Every enquiry is kept in Enquiries and emailed as usual. It can also be saved to the site\'s own records here. If saving there fails, the visitor is still thanked and the enquiry says what went wrong.')
+                ->schema([
+                    Select::make('settings.destinations')
+                        ->hiddenLabel()
+                        ->multiple()
+                        ->options(fn (): array => app(FormDestinations::class)->options())
+                        ->live()
+                        ->afterStateUpdated(function (Set $set, Get $get, ?array $state): void {
+                            foreach ((array) $state as $key) {
+                                if (blank($get('settings.destination_maps.'.$key))) {
+                                    $set('settings.destination_maps.'.$key, self::suggestedMap((string) $key, $get));
+                                }
+                            }
+                        }),
+                ]),
+            ...$maps,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function suggestedMap(string $key, Get $get): array
+    {
+        $destination = app(FormDestinations::class)->get($key);
+
+        if ($destination === null) {
+            return [];
+        }
+
+        $schema = new FormSchema(FormBuilderSchema::fromBuilder((array) ($get('fields') ?? [])));
+        $configured = $destination instanceof EloquentDestination ? $destination->map() : [];
+
+        return DestinationMap::suggest(array_keys($destination->fields()), $schema, $configured);
     }
 
     /**

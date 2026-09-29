@@ -4,6 +4,11 @@ namespace Gadya\Cms\Forms\Builder;
 
 use Gadya\Cms\Analytics\VisitorFingerprint;
 use Gadya\Cms\Analytics\VisitorGeo;
+use Gadya\Cms\Events\FormSubmitted;
+use Gadya\Cms\Forms\Attribution;
+use Gadya\Cms\Forms\Destinations\FormDestinations;
+use Gadya\Cms\Forms\FormLocale;
+use Gadya\Cms\Forms\SubmissionContext;
 use Gadya\Cms\Localisation\Locales;
 use Gadya\Cms\Models\AnalyticsEvent;
 use Gadya\Cms\Models\Form;
@@ -12,6 +17,7 @@ use Gadya\Cms\Models\FormEvent;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Subscriber;
 use Gadya\Cms\Portal\SubmissionPush;
+use Gadya\Cms\Privacy\PolicyVersion;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Http\Request;
@@ -133,6 +139,7 @@ class SubmitBuilderForm
         $files = [];
         $consents = [];
         $callback = null;
+        $policy = null;
 
         foreach ($schema->inputs() as $field) {
             $key = $field['key'];
@@ -176,10 +183,13 @@ class SubmitBuilderForm
 
             if ($field['type'] === 'consent' && $value === 'Yes') {
                 $seen = $shown->field($key) ?? $field;
+                $policy ??= app(PolicyVersion::class)->current();
                 $record = [
                     'text' => Str::limit(trim((string) (filled($seen['text'] ?? null) ? $seen['text'] : $seen['label'])), 1000, ''),
                     'at' => now()->toIso8601String(),
                     'ip' => $request->ip(),
+                    'policy_version' => $policy['version'],
+                    'policy_url' => $policy['url'],
                 ];
 
                 $consents[$key] = $record;
@@ -191,6 +201,7 @@ class SubmitBuilderForm
         }
 
         $duration = $this->duration($request, $original->slug);
+        $locale = app(FormLocale::class)->current();
 
         $submission = FormSubmission::query()->create([
             'site_id' => $this->siteContext->id(),
@@ -203,8 +214,9 @@ class SubmitBuilderForm
                 'types' => array_intersect_key($schema->types(), $data),
                 'labels' => array_intersect_key($schema->labels(), $data),
                 'consents' => $consents,
-                'locale' => app(Locales::class)->current(),
+                'locale' => $locale,
                 'duration_seconds' => $duration,
+                'attribution' => rescue(fn (): array => app(Attribution::class)->capture($request, $locale), [], report: true),
             ], fn ($value): bool => $value !== [] && $value !== null),
             'path' => Str::limit((string) ($request->input('_path') ?: $request->headers->get('referer')), 255, ''),
             'referrer_host' => parse_url((string) $request->headers->get('referer'), PHP_URL_HOST) ?: null,
@@ -216,9 +228,25 @@ class SubmitBuilderForm
         $this->joinMailingList($original, $submission, $schema);
         $this->count($original, $submission, $request, $duration);
         $this->forgetDraft($original, $request);
+        $this->handOn($original, $submission);
         $this->tell($original, $submission);
 
         return $submission;
+    }
+
+    /**
+     * The form's destinations - the site's own leads table, a CRM - then
+     * anyone listening for the event. Straight away, so the site's own
+     * record exists by the time anyone is emailed; each on its own, so
+     * one that fails never stops the rest or reaches the visitor.
+     */
+    protected function handOn(Form $form, FormSubmission $submission): void
+    {
+        $context = SubmissionContext::fromSubmission($submission, $form->title);
+        $data = (array) ($submission->data ?? []);
+
+        rescue(fn () => app(FormDestinations::class)->run($form, $submission, $data, $context), report: true);
+        rescue(fn () => event(new FormSubmitted($submission, $data, $context, form: $form)), report: true);
     }
 
     /**

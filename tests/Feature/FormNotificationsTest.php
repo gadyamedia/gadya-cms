@@ -303,7 +303,8 @@ class FormNotificationsTest extends TestCase
 
         $rows = app(FormExport::class)->rows(FormSubmission::query()->where('form', 'enquiry')->orderBy('id')->get());
 
-        $this->assertSame(['Received', 'Status', 'Answered', 'Follow up', 'Notes', 'Page', 'Country', 'Your name', 'Email', 'Phone', 'Service', 'Details'], $rows[0]);
+        $this->assertSame(['Received', 'Status', 'Answered', 'Follow up', 'Notes', 'Page', 'Country', 'Your name', 'Email', 'Phone', 'Service', 'Details'], array_slice($rows[0], 0, 12));
+        $this->assertSame(['Language', 'Site', 'Browser', 'Address'], array_slice($rows[0], 12), 'Where each enquiry came from follows the answers.');
         $this->assertSame('Catering', $rows[1][10]);
         $this->assertSame("'=HYPERLINK(\"x\")", $rows[2][11], 'A formula typed into a form is never run by a spreadsheet.');
         $this->assertTrue(FormExport::canWriteExcel());

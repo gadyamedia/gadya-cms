@@ -117,6 +117,7 @@ class Locales
             'ht' => 'Haitian Creole',
             'pl' => 'Polish',
             'ru' => 'Russian',
+            'uk' => 'Ukrainian',
             'ar' => 'Arabic',
             'hi' => 'Hindi',
             'gu' => 'Gujarati',
