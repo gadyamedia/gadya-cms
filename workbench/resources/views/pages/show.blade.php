@@ -15,6 +15,7 @@
         @endif
 
         @foreach ($page['sections'] ?? [] as $index => $section)
+            @cmsSection($section, $index)
             <section class="page-section page-section--{{ $section['type'] ?? 'text' }}">
                 @if (! empty($section['title']))
                     <h2 @editable("sections.{$index}.title")>{{ $section['title'] }}</h2>

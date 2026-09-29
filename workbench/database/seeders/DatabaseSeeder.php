@@ -3,9 +3,11 @@
 namespace Workbench\Database\Seeders;
 
 use Gadya\Cms\Content\SiteContentRepository;
+use Gadya\Cms\Forms\Builder\FormSchema;
 use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Comment;
 use Gadya\Cms\Models\Event;
+use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\PageView;
@@ -55,6 +57,8 @@ class DatabaseSeeder extends Seeder
 
         $this->photos($siteId);
 
+        $this->forms($siteId);
+
         $repository = app(SiteContentRepository::class);
         $repository->saveDraft($repository->defaults());
         $this->spanish();
@@ -69,6 +73,47 @@ class DatabaseSeeder extends Seeder
         Redirect::query()->updateOrCreate(['site_id' => $siteId, 'from_path' => '/parties'], ['to_path' => '/birthday-parties', 'hits' => 42, 'last_hit_at' => now()->subHours(3)]);
 
         $this->command?->info('Demo site ready. Sign in at /admin as admin@example.com / password (or editor@ / writer@).');
+    }
+
+    /**
+     * A three-step booking form, built as the client would build it, and
+     * placed on the birthday parties page as a Form section (config/site.php).
+     */
+    private function forms(?int $siteId): void
+    {
+        $party = ['action' => 'show', 'match' => 'all', 'rules' => [['field' => 'package', 'operator' => 'not_equals', 'value' => 'Castle only']]];
+
+        $form = Form::query()->updateOrCreate(['site_id' => $siteId, 'slug' => 'party-booking'], [
+            'title' => 'Party booking',
+            'description' => 'Tell us about the party and we will call to confirm.',
+            'status' => Form::STATUS_PUBLISHED,
+            'published_at' => now(),
+            'fields' => FormSchema::normalise([
+                ['type' => 'date', 'key' => 'party_date', 'label' => 'Party date', 'required' => true, 'width' => 'half', 'rules' => ['future' => true]],
+                ['type' => 'time', 'key' => 'start_time', 'label' => 'Start time', 'required' => true, 'width' => 'half'],
+                ['type' => 'number', 'key' => 'children', 'label' => 'How many children?', 'required' => true, 'rules' => ['min' => 5, 'max' => 30]],
+                ['type' => 'page_break', 'label' => 'The party'],
+                ['type' => 'radio', 'key' => 'package', 'label' => 'Which package?', 'required' => true, 'options' => [['label' => 'Castle only'], ['label' => 'Castle and entertainer'], ['label' => 'The whole works']]],
+                ['type' => 'checkboxes', 'key' => 'extras', 'label' => 'Any extras?', 'options' => [['label' => 'Face painting'], ['label' => 'Party bags'], ['label' => 'Cake']], 'logic' => $party],
+                ['type' => 'long_text', 'key' => 'allergies', 'label' => 'Allergies we should know about', 'help' => 'We bring nut-free snacks as standard.'],
+                ['type' => 'page_break', 'label' => 'Your details'],
+                ['type' => 'name', 'key' => 'name', 'label' => 'Your name', 'required' => true],
+                ['type' => 'email', 'key' => 'email', 'label' => 'Email address', 'required' => true, 'width' => 'half'],
+                ['type' => 'phone', 'key' => 'phone', 'label' => 'Phone number', 'required' => true, 'width' => 'half'],
+                ['type' => 'address', 'key' => 'address', 'label' => 'Where is the party?', 'required' => true],
+                ['type' => 'mailing_list', 'key' => 'news', 'label' => 'Send me party ideas and offers now and then'],
+                ['type' => 'hidden', 'key' => 'campaign'],
+            ]),
+            'messages' => ['first_step' => 'When', 'submit' => 'Send my booking', 'success' => 'Thank you! We will call you within a day to confirm your party.'],
+            'settings' => [
+                'notify' => ['hello@example.test'],
+                'routes' => [['field' => 'package', 'operator' => 'equals', 'value' => 'The whole works', 'emails' => ['events@example.test']]],
+                'autoreply' => ['enabled' => true, 'subject' => 'Your party request with {business}', 'body' => "Hello {name},\n\nThank you - we have your request for {party_date}. We will ring you within a day to confirm.\n\n{business}"],
+                'save_later' => true,
+            ],
+        ]);
+
+        $form->versions()->exists() || $form->recordVersion();
     }
 
     private function photos(?int $siteId): void

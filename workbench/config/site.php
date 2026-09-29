@@ -59,6 +59,8 @@ return [
                     ['title' => '2. Pick a package', 'text' => 'Castle only, castle and entertainer, or the whole works.'],
                     ['title' => '3. We turn up', 'text' => 'Forty minutes before the first guest, and we leave it as we found it.'],
                 ]],
+                /* A form the client built under Content → Forms, placed as a section. */
+                ['type' => 'form', 'title' => 'Book a party', 'text' => 'Three short steps. We confirm by phone within a day.', 'form' => 'party-booking'],
             ],
         ],
         'school-events' => [

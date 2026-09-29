@@ -14,7 +14,7 @@ Then open http://127.0.0.1:8000 and sign in at `/admin` as one of:
 | editor@example.com | password | Editor |
 | writer@example.com | password | Contributor |
 
-Springfield Parties is a small party-hire site that uses every feature: pages with cards and a gallery, a hidden page and a scheduled one, three articles (one scheduled, one AI draft), enquiries in the inbox, a month of visitors, a redirect, and photos drawn on the spot so nothing is downloaded. It speaks Spanish too: `/es` shows the home page and the announcement translated, and everything else falling back to English. The AI screens work once a key is pasted under Settings → AI.
+Springfield Parties is a small party-hire site that uses every feature: pages with cards and a gallery, a hidden page and a scheduled one, three articles (one scheduled, one AI draft), enquiries in the inbox, a month of visitors, a redirect, and photos drawn on the spot so nothing is downloaded. The birthday parties page has a three-step booking form built under Content → Forms and placed as a Form section - steps, a question shown only for the bigger packages, a finish-later link, and an email rule for the whole-works package. It speaks Spanish too: `/es` shows the home page and the announcement translated, and everything else falling back to English. The AI screens work once a key is pasted under Settings → AI.
 
 It lives in `workbench/` (Testbench's convention) and is what the README screenshots come from. `composer build` rebuilds the database; `composer serve` uses Testbench's own server instead of PHP's.
 
