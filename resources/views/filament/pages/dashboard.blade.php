@@ -209,6 +209,10 @@
             </div>
         </div>
 
+        @if (\Gadya\Cms\Filament\GadyaCmsPlugin::get()->hasForms() && config('gadya-cms.forms.builder.enabled', true))
+            @include('gadya-cms::filament.partials.dashboard-forms')
+        @endif
+
         @if (\Gadya\Cms\Filament\GadyaCmsPlugin::get()->hasSearch())
             @include('gadya-cms::filament.partials.dashboard-search')
         @endif

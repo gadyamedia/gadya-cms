@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Console;
 
 use Gadya\Cms\Models\AnalyticsEvent;
+use Gadya\Cms\Models\FormEvent;
 use Gadya\Cms\Models\PageView;
 use Illuminate\Console\Command;
 
@@ -24,6 +25,7 @@ class PruneAnalyticsCommand extends Command
 
         $views = PageView::query()->where('viewed_at', '<', $cutoff)->delete();
         $events = AnalyticsEvent::query()->where('created_at', '<', $cutoff)->delete();
+        $events += rescue(fn (): int => FormEvent::query()->where('created_at', '<', $cutoff)->delete(), 0, report: false);
 
         $this->info("Pruned {$views} page views and {$events} events from before {$cutoff->toDateString()}.");
 
