@@ -2,8 +2,11 @@
 
 namespace Gadya\Cms\Support;
 
+use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Localisation\Locales;
+use Gadya\Cms\Models\Form;
+use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\PageScore;
 use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Privacy\Consent;
@@ -41,6 +44,24 @@ class PortalSummary
             'locales' => app(Locales::class)->summary(),
             ...$this->hours(),
             'consent' => app(Consent::class)->summary(),
+            'forms' => $this->forms(),
+        ];
+    }
+
+    /**
+     * How many forms the site has - built and configured, live ones only -
+     * and how many enquiries arrived through any of them this month.
+     *
+     * @return array{count: int, submissions_last_30_days: int}
+     */
+    private function forms(): array
+    {
+        $siteId = app(SiteContext::class)->id();
+        $built = rescue(fn (): array => Form::query()->where('site_id', $siteId)->live()->pluck('slug')->all(), [], report: false);
+
+        return [
+            'count' => count(array_unique([...$built, ...array_keys(FormDefinition::configLabels())])),
+            'submissions_last_30_days' => (int) rescue(fn (): int => FormSubmission::query()->where('site_id', $siteId)->where('created_at', '>=', now()->subDays(30))->count(), 0, report: false),
         ];
     }
 

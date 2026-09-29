@@ -2,10 +2,13 @@
 
 namespace Gadya\Cms\Tests\Feature;
 
+use Gadya\Cms\Models\Form;
+use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\PageScore;
 use Gadya\Cms\Quality\Visibility;
 use Gadya\Cms\Support\PortalSummary;
+use Gadya\Cms\Support\SiteContext;
 use Gadya\Cms\Tests\TestCase;
 use Gadya\Connect\Models\Connection;
 use Gadya\Connect\Report\ReportBuilder;
@@ -98,5 +101,18 @@ class PortalSummaryTest extends TestCase
         $this->assertSame('best dentist in Hove', $latest['queries'][0]['query']);
 
         Http::assertSent(fn ($request): bool => $request->url() === 'https://portal.test/api/connect/v1/visibility');
+    }
+
+    public function test_the_check_in_counts_the_forms_and_this_months_enquiries(): void
+    {
+        $this->publishDocument();
+        Form::factory()->published()->create(['slug' => 'quote']);
+        Form::factory()->published()->create(['slug' => 'contact']);
+        Form::factory()->create(['slug' => 'still-a-draft']);
+        $siteId = app(SiteContext::class)->id();
+        FormSubmission::query()->create(['site_id' => $siteId, 'form' => 'quote', 'data' => [], 'created_at' => now()->subDays(3)]);
+        FormSubmission::query()->create(['site_id' => $siteId, 'form' => 'contact', 'data' => [], 'created_at' => now()->subDays(40)]);
+
+        $this->assertSame(['count' => 2, 'submissions_last_30_days' => 1], app(PortalSummary::class)->build()['forms'], 'The configured contact form and its built replacement are one form.');
     }
 }
