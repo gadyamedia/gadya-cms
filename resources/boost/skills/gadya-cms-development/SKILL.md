@@ -45,6 +45,9 @@ To upgrade the package or switch on features a site has not taken up, use the `g
 | `Ai\AiSettings` / `Ai\Prompter` | `isConfigured()`, `register()`; prompt any `Laravel\Ai` agent through the panel-chosen provider |
 | `Seo\SeoHead` | `render($pageOrPost)` behind `@cmsSeo` |
 | `Forms\FormDefinition` | the configured forms; `route('gadya-cms.forms.store', 'contact')` |
+| `Models\Form` / `Forms\Builder\FormRenderer` | forms built in the panel: `Form::findLive($slug)`, `<x-gadya-cms::form form="slug" />`, `@cmsFormEmbed('slug')` |
+| `Forms\Builder\FieldTypes` | register a kind of question of the site's own with `FieldType::make()` |
+| `Content\SectionRenderer` | sections the package draws; `@cmsSection($section, $index)` first in the section loop |
 | `Analytics\AnalyticsReport` | `for($days)->headline()/daily()/topPages()/referrers()/events()` |
 | `Filament\GadyaCmsPlugin` | `::get()->hasBlog()`, `hasAi()`, `hasForms()`, `hasSearch()` ... |
 | `Access\Abilities` | `allows($user, 'publish')`, `forRole()`; gates are `gadya-cms.{ability}` |
@@ -84,7 +87,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - Globals (announcement, phone, footer): `@editableGlobal('footer.tagline', 'multiline')`, listed in `gadya-cms.globals`.
 - New page type: `php artisan gadya-cms:make:page-template pages/types/name` first, then adjust.
 - Layout: `@cmsSeo($page)` in head; editor assets only when `EditContext::isEnabled()`; `@cmsToolbar` before `</body>`; `data-analytics-endpoint="{{ route('gadya-cms.events.store') }}"` on body; `data-analytics="booking_start"` on things worth counting (names must be in `analytics.events`).
-- Forms: `<form method="POST" action="{{ route('gadya-cms.forms.store', 'contact') }}">@cmsForm('contact') ...</form> @cmsFormStatus('contact')`; define fields/rules/notify under `forms.forms.contact`.
+- Forms: prefer a form built under Content → Forms, placed with `<x-gadya-cms::form form="slug" />` or a Form section (the section loop needs `@cmsSection($section, $index)` as its first line). Hand-written: `<form method="POST" action="{{ route('gadya-cms.forms.store', 'contact') }}">@cmsForm('contact') ...</form> @cmsFormStatus('contact')` with fields/rules/notify under `forms.forms.contact`. To convert existing forms, use the `gadya-cms-forms` skill.
 - Blog templates ship as `gadya-cms::blog.index/show` extending `blog.layout`; style `cms-blog__*` / `cms-article__*` or publish the views with `--tag=gadya-cms-views`.
 
 ## Configuration rules
@@ -97,7 +100,7 @@ public function show(string $slug, SiteContentRepository $repository, PublicDocu
 - Pages are soft-deleted: `Page::query()` hides the trash, `withTrashed()` shows it, `restoreToDraft()` brings one back editable. A slug a trashed page holds is restored and overwritten rather than colliding.
 - Menus: the main one is `nav` in the document and in the form; more are configured under `navigation.menus` and read with `NavigationTree::forMenu($document, 'footer')`.
 - Route parameters reach a controller method **by position, not by name** - never use `->defaults()` to pass a second value to a shared action; give each route its own method.
-- Roles: `users.roles.{role} = ['label' => ..., 'abilities' => [...]]`; abilities are content, articles, photos, enquiries, publish, settings. The host's `canManageContent()` must include every role. Screens check `Abilities::gate(Abilities::X)` in `canAccess()`.
+- Roles: `users.roles.{role} = ['label' => ..., 'abilities' => [...]]`; abilities are content, articles, photos, enquiries, publish, settings, forms (implied by content). The host's `canManageContent()` must include every role. Screens check `Abilities::gate(Abilities::X)` in `canAccess()`.
 - The AI-assistant checks (`seo.llms`, `seo.markdown`, `seo.ai_crawlers`, `seo.organization`) are on by default; `gadya-cms:agent-ready` scores them.
 
 ## Testing
@@ -125,7 +128,7 @@ The full documentation ships inside this skill, so read the relevant file before
 - `references/live-editor.md` - the layout, every directive, the allow-list, locks, preview links
 - `references/articles-and-ai.md` - the writing screen, the public blog, providers, faking agents in tests
 - `references/seo.md` - `@cmsSeo`, sitemap, robots, redirects
-- `references/forms.md` - configuration, the template, the inbox
+- `references/forms.md` - the form builder, Form sections and `@cmsSection`, `[form:slug]`, emails, Twilio texts, webhooks, figures, configured forms, converting them, the inbox
 - `references/portal.md` - enquiries pushed to the portal, remote commands, requested changes (`ChangeWriter`), `<x-gadya-cms::call-back />`, `<x-gadya-cms::reviews />`
 - `references/email.md` - sending through Gadya Media, the address, Reply-To, the footer
 - `references/analytics.md` - what is counted, events, live updates, reports, `AnalyticsReport`

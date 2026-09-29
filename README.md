@@ -24,7 +24,7 @@ It also counts its own visitors without Google or a cookie banner, keeps what pe
 | **Articles** | A writing screen with a findability score on every save. Categories, tags and their own archive pages, related articles, comments with a moderation queue, scheduled publishing. |
 | **Writing with AI** | Provider, model and key chosen in the panel, stored encrypted. A voice for the business. Whole drafts, rewrites, and search snippets from the page's own words. Any provider Laravel's AI SDK speaks. |
 | **SEO** | `@cmsSeo` renders every head tag with sensible fallbacks. A generated sitemap and robots file. A redirects table the client edits, with hit counts. |
-| **Forms** | Configured fields, a honeypot, an email with reply-to, an automatic reply written in the panel, an inbox with CSV download, and a mailing list that exports to any service. |
+| **Forms** | A form builder the client uses herself: thirty-odd kinds of question, show-and-hide rules, steps, uploads, finish-later links, templates and "describe your form" with AI - placed on any page as a section, in text with `[form:slug]`, on its own page or inside another website. Emails and text alerts with routing rules, webhooks, per-form figures, an inbox with CSV and Excel downloads, and a mailing list that exports to any service. Configured forms keep working beside them. |
 | **Analytics** | First-party, no cookie, no address stored. Live panel over a websocket. CSV download, a weekly email. |
 | **Team** | Invitations by single-use link. Roles with abilities: a contributor writes articles but cannot publish a page. Nobody can remove themselves; the last administrator stays. |
 | **Search & speed** | Search Console queries and landing pages, Lighthouse scores from PageSpeed Insights, and a readiness score for AI assistants - `llms.txt`, AI-crawler rules, JSON-LD, Markdown on request. |
@@ -75,10 +75,11 @@ That is the whole idea. [Installation](docs/installation.md) has the rest of the
 
 ## Laravel Boost
 
-The package ships a Boost guideline and three skills. In an application with `laravel/boost`, run `php artisan boost:update --discover` after installing:
+The package ships a Boost guideline and four skills. In an application with `laravel/boost`, run `php artisan boost:update --discover` after installing:
 
 - `gadya-cms-development` teaches your agent to build with the CMS.
 - `gadya-cms-content` teaches it to help someone edit and publish.
+- `gadya-cms-forms` converts a site's existing forms - configured, hand-written or Livewire - into builder forms the client can edit, with `gadya-cms:forms:scan` and `gadya-cms:forms:convert`.
 - `gadya-cms-upgrade` audits a site with `gadya-cms:audit`, upgrades it to the latest release, and switches on every feature it has not taken up yet. Ask: *"Upgrade gadya/cms to the latest version and turn on everything, using the gadya-cms-upgrade skill."* See [Upgrading](docs/upgrading.md).
 
 ## Try it
@@ -99,7 +100,7 @@ A whole sample site on http://127.0.0.1:8000, admin at `/admin` (admin@example.c
 - [The live editor](docs/live-editor.md) - the layout, directives, the allow-list, locks, preview links
 - [Articles and writing with AI](docs/articles-and-ai.md) - the writing screen, the public blog, setting up a provider, faking it in tests
 - [SEO](docs/seo.md) - head tags, sitemap, robots, redirects
-- [Forms](docs/forms.md) - configuration, the template, the inbox
+- [Forms](docs/forms.md) - the form builder, placing forms on pages, emails, texts and webhooks, figures, configured forms, the inbox
 - [The Gadya portal](docs/portal.md) - instant enquiries, portal commands, requested changes, call-backs, Google reviews
 - [Email](docs/email.md) - sending through Gadya Media without setting up a mail service
 - [Analytics](docs/analytics.md) - what is counted and how, events, live updates, reports

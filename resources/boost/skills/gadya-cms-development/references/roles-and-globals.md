@@ -21,7 +21,8 @@ Roles stay your application's own strings; the package only needs to know what e
 | `photos` | The photo library |
 | `enquiries` | The enquiries inbox |
 | `publish` | Publish changes (panel and toolbar), revision history |
-| `settings` | Redirects, AI settings, Search & speed, Privacy choices |
+| `settings` | Redirects, AI settings, Search & speed, Privacy choices, Text messages, Spam protection |
+| `forms` | Content → Forms: building, changing and placing forms. A role with `content` has it too |
 
 A role given as a plain label (`'editor' => 'Editor'`) keeps the 0.2 behaviour: everything but `settings` and the team. The administrator role always has everything; the team screen is still guarded by your `manage-users` gate.
 

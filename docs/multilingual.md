@@ -62,6 +62,7 @@ A translation is an *overlay* on the default language, one row per language per 
 - a page: `pages.about`
 - a top-level part of the document with words in it: `nav`, `announcement`, `footer`
 - an article, event or term: `post:12`, `event:3`, `term:5`
+- a built form: `form:4` - its title, questions, choices and words
 
 Each row holds only the translated words, in the same shape as the original. When a page is drawn in Spanish, the English document is taken and each string the overlay has a non-empty translation for is replaced. So:
 

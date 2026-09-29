@@ -14,7 +14,7 @@ The dashboard shows where visitors came from and what they did, counted on your 
 <a href="#book" data-analytics="booking_start" data-analytics-label="Brooklyn">Check availability</a>
 ```
 
-Only names in `gadya-cms.analytics.events` are accepted. Telephone links count themselves as `phone_click`; form submissions count as whatever their `analytics_event` says. Campaign parameters (`utm_source`, `utm_medium`, `utm_campaign`) are remembered for the session, so a lead three pages later is still credited to the campaign that brought them.
+Only names in `gadya-cms.analytics.events` are accepted. Built forms count their own views, starts, steps and sends too - see *Figures* in [Forms](forms.md). Telephone links count themselves as `phone_click`; form submissions count as whatever their `analytics_event` says. Campaign parameters (`utm_source`, `utm_medium`, `utm_campaign`) are remembered for the session, so a lead three pages later is still credited to the campaign that brought them.
 
 ## Live
 

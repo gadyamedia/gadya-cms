@@ -11,7 +11,9 @@ Every form submission is sent to the portal (`POST /api/connect/v1/submissions`)
 - `pushed_at` on `gadyacms_form_submissions` says when the portal had it. A refusal that will never change (a 422) is logged and written off rather than retried every five minutes for a week; the enquiry is still in the inbox.
 - Switch it off with `GADYA_CMS_PUSH_SUBMISSIONS=false` (`portal.push_submissions`).
 
-The check-in still carries `leads` - `{count, oldest_hours}` of unopened enquiries - for a portal that has no submissions yet.
+The check-in still carries `leads` - `{count, oldest_hours}` of unopened enquiries - for a portal that has no submissions yet - and `forms`: `{count, submissions_last_30_days}`, the live forms (built and configured) and the enquiries that came through them this month.
+
+A built form marked as a call-back form sends a ticked consent question to the portal as `callback_requested`, with its exact wording, like the button below. A built form's name, email, phone and message are found by the kind of question, whatever it is called.
 
 ## What the portal can ask the site to do
 

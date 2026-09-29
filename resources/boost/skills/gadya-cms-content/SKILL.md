@@ -28,6 +28,9 @@ Use it when the person is an editor, writer or site owner asking how to change s
 | Read or approve comments | **Content → Comments** (nothing shows until you approve it) |
 | Add an open day, a camp, a class | **Content → What's on** |
 | See who is on the mailing list, or export it | **Content → Mailing list** |
+| Build a form, or change one | **Content → Forms** - start from a template or "Describe your form"; publish it, then add a **Form** section to any page (or write `[form:slug]` in longer text) |
+| Who is emailed or texted about a form, the thank-you reply | The form's **Emails and texts** tab; texts need the client's Twilio details under **Settings → Text messages** |
+| How a form is doing | The form's **Figures** |
 | Copy a page or an article to start the next one | **Duplicate**, on its row |
 | Get back a page you deleted | **Content → Pages**, the **Trash** filter |
 | Upload or organise photos | **Content → Photos** (folders, tags, "Describe" for alt text) |

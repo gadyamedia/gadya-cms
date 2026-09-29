@@ -5,13 +5,16 @@ namespace Gadya\Cms\Tests\Feature;
 use Gadya\Cms\Content\PageTypes;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditContext;
+use Gadya\Cms\Filament\Resources\Pages\Pages\EditPage;
 use Gadya\Cms\Models\Form;
+use Gadya\Cms\Models\Page;
 use Gadya\Cms\Support\InstallAudit;
 use Gadya\Cms\Tests\TestCase;
 use Gadya\Cms\Upgrade\SectionLoops;
 use Gadya\Cms\Upgrade\Steps\EnableFormSections;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Blade;
+use Livewire\Livewire;
 
 /**
  * A client putting a form on a page herself: as a section, inside longer
@@ -176,5 +179,21 @@ class FormSectionsTest extends TestCase
         } finally {
             @unlink($template);
         }
+    }
+
+    public function test_the_page_edit_screen_offers_the_forms_and_keeps_the_choice(): void
+    {
+        $page = Page::query()->where('slug', 'about')->sole();
+
+        Livewire::actingAs($this->editor())
+            ->test(EditPage::class, ['record' => $page->getKey()])
+            ->assertSee('Booking')
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $sections = app(SiteContentRepository::class)->draft()['pages']['about']['sections'];
+
+        $this->assertSame('form', $sections[1]['type']);
+        $this->assertSame('booking', $sections[1]['form']);
     }
 }

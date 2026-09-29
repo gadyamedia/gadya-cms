@@ -63,6 +63,7 @@ import '../../vendor/gadya/cms/resources/js/analytics.js';
 | `@cmsToolbar` | The toolbar when editing; the preview bar when previewing |
 | `@cmsSeo($page)` | The head tags - see [SEO](seo.md) |
 | `@gadyaBuiltBy` | The "built by Gadya Media" badge, as the last thing in the footer - see below |
+| `@cmsSection($section, $index)` | First line inside the section loop: draws the sections the package knows (a Form section) - see [Forms](forms.md) |
 
 The directives render nothing for a visitor. For an editor they add `data-cms-path` and `data-cms-type`, which the editor's JavaScript turns into an inline editor (`text`), a side panel (`multiline` and `markdown`) or the photo library (`image`).
 

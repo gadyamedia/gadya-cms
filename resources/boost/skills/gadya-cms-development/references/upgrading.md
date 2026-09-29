@@ -33,6 +33,7 @@ php artisan gadya:upgrade                # on the server after the deploy (--pha
 | Phase | Step | Does |
 | --- | --- | --- |
 | code | `cms.0.15.0.notifications-table` | Adds Laravel's notifications table migration (`make:notifications-table`) for the panel's bell, unless a migration or schema dump already creates it |
+| code | `cms.form-sections` | Adds `@cmsSection($section, $index)` as the first line of every ordinary loop over a page's sections, so a client's Form section is drawn; `gadya-cms:audit` names any loop it could not change |
 | code | `cms.workflow-template` | Says when `.github/workflows/gadya-update.yml` is older than the template this release ships. It never writes it: the portal refreshes it, or copy `vendor/gadya/cms/resources/github/gadya-update.yml` over it |
 | code | `connect.boost-update` | `boost:update --discover`, where Boost is set up |
 | server | `connect.migrate` | `migrate --force`, first; if it fails nothing else runs |
@@ -85,6 +86,7 @@ The published `config/gadya-cms.php` is now merged over the package's defaults a
 - **Opening hours** appears under Appearance for every site. Once they are filled in and published, add `<x-gadya-cms::opening-hours />`, `<x-gadya-cms::open-status />` or `<x-gadya-cms::todays-hours />` where the site shows its hours, and replace hand-written hours in templates and JSON-LD. `@cmsSeo`'s business node picks them up by itself. Check `hours.timezone`.
 - **Food menus** is off: add `->foodMenus()` to the plugin on a restaurant, café or bakery, then `<x-gadya-cms::menu menu="..." />` in the menu page's template.
 - **Privacy choices** is off: on a site that loads Google Analytics, Ads or any pixel (`gadya-cms:audit` lists them), wrap each tag in `<x-gadya-cms::consented-script>`, add `<x-gadya-cms::consent-banner />` before `</body>` and `<x-gadya-cms::privacy-choices-link />` to the footer, then switch it on under Settings → Privacy choices and publish. See [Privacy choices](privacy.md).
+- **Forms** can be built by the client under Content → Forms. `php artisan migrate` creates `gadyacms_forms`, `gadyacms_form_versions`, `gadyacms_form_events`, `gadyacms_form_drafts` and `gadyacms_form_webhook_deliveries`, and adds `form_id`, `form_version`, `files` and `meta` to `gadyacms_form_submissions`. `gadya:upgrade --phase=code` adds `@cmsSection` to the section loop so a Form section is drawn (check `gadya-cms:audit`). Configured forms are unchanged. Roles with `content` can now build forms; list `forms` for a role that should build forms without editing pages. Offer the client the new **Settings → Text messages** (her own Twilio account) and **Settings → Spam protection**. To hand the site's own forms to the client, use the `gadya-cms-forms` skill. See [Forms](forms.md).
 - **Languages** are off: the migration creates `gadyacms_translations`; add `locales.enabled => ['en', 'es']` to `config/gadya-cms.php` to serve Spanish at `/es/...` (a list is the site's whole answer, so keep `en` in it). See [Multilingual](multilingual.md).
 
 ## 0.12.0 → 0.13.0

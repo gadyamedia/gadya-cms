@@ -115,7 +115,7 @@ The fields at the top of a page's edit screen are configuration:
 ],
 ```
 
-Sections (`sections.*`) always carry a `type`, a `title`, a `subtitle`, `text`, and either `items` (title, text, image) or `images` for a gallery.
+Sections (`sections.*`) always carry a `type`, a `title`, a `subtitle`, `text`, and either `items` (title, text, image) or `images` for a gallery. A `form` section carries `form`, the slug of a built form; every page offers it, and `@cmsSection($section, $index)` as the first line of the site's section loop draws it (see [Forms](forms.md)).
 
 ### Fields per page type
 
