@@ -62,7 +62,7 @@ Read `vendor/gadya/cms/CHANGELOG.md` from the old version up to the new one. Als
 
 ## 4. Refresh the skills
 
-`gadya:upgrade --phase=code` ran `php artisan boost:update --discover` where Boost is set up (run it yourself on an older connect). `--discover` picks up skills a release added, including this one on a site that never had it. Check that `boost.json` then lists `gadya-cms-content`, `gadya-cms-development` and `gadya-cms-upgrade` under `skills`.
+`gadya:upgrade --phase=code` ran `php artisan boost:update --discover` where Boost is set up (run it yourself on an older connect). `--discover` picks up skills a release added, including this one on a site that never had it. Check that `boost.json` then lists `gadya-cms-content`, `gadya-cms-development`, `gadya-cms-forms` and `gadya-cms-upgrade` under `skills`.
 
 ## 5. Work down the audit
 
@@ -119,6 +119,10 @@ Add each missing line from the audit to `routes/console.php`. They are idempoten
 
 - Run `php artisan filament:assets` whenever the stylesheet check fails (the server phase of `gadya:upgrade` does it too).
 - Missing gates: define `manage-content` and `manage-users` as `docs/installation.md` shows.
+
+### Forms
+
+Clients can now build their own forms under **Content → Forms** and place them on any page. Make sure the section loop has `@cmsSection($section, $index)` (the `cms.form-sections` code step adds it to an ordinary loop; the audit names any it could not). Converting the site's existing forms is a separate job with its own skill, `gadya-cms-forms`: offer it, do not do it as part of an upgrade unless asked.
 
 ## 6. Verify
 

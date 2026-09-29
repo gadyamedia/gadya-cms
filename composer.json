@@ -71,7 +71,10 @@
     "scripts": {
         "test": "vendor/bin/phpunit",
         "lint": "vendor/bin/pint",
-        "sync-docs": "cp docs/*.md resources/boost/skills/gadya-cms-development/references/",
+        "sync-docs": [
+            "cp docs/*.md resources/boost/skills/gadya-cms-development/references/",
+            "cp docs/forms.md resources/boost/skills/gadya-cms-forms/references/"
+        ],
         "build": "@php vendor/bin/testbench workbench:build --ansi",
         "serve": [
             "Composer\\Config::disableProcessTimeout",

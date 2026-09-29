@@ -11,6 +11,7 @@ use Gadya\Cms\Console\AuditCommand;
 use Gadya\Cms\Console\BackupDrillCommand;
 use Gadya\Cms\Console\CheckLinksCommand;
 use Gadya\Cms\Console\CheckPageSpeedCommand;
+use Gadya\Cms\Console\ConvertFormCommand;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
 use Gadya\Cms\Console\ExportSiteContentCommand;
@@ -30,6 +31,7 @@ use Gadya\Cms\Console\PruneTrashCommand;
 use Gadya\Cms\Console\PublishDueCommand;
 use Gadya\Cms\Console\PushSubmissionsCommand;
 use Gadya\Cms\Console\ResetPasswordCommand;
+use Gadya\Cms\Console\ScanFormsCommand;
 use Gadya\Cms\Console\SendAnalyticsDigestCommand;
 use Gadya\Cms\Console\SendDriftDigestCommand;
 use Gadya\Cms\Console\TakeoutCommand;
@@ -139,6 +141,8 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 CheckLinksCommand::class,
                 AuditCommand::class,
                 PushSubmissionsCommand::class,
+                ScanFormsCommand::class,
+                ConvertFormCommand::class,
             ]);
     }
 

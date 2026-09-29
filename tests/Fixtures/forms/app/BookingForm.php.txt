@@ -1,0 +1,14 @@
+<?php
+
+class BookingForm extends Component
+{
+    public function save(StoreFormSubmission $store): void
+    {
+        $validated = $this->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'party_date' => 'required|date',
+        ]);
+
+        $store->handle(FormDefinition::find('booking'), $validated, request());
+    }
+}

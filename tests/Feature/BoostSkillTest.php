@@ -32,4 +32,18 @@ class BoostSkillTest extends TestCase
             $this->assertStringContainsString('references/'.basename($doc), $skill);
         }
     }
+
+    public function test_the_forms_skill_carries_the_forms_reference(): void
+    {
+        $skill = (string) file_get_contents(__DIR__.'/../../resources/boost/skills/gadya-cms-forms/SKILL.md');
+
+        $this->assertStringContainsString('references/forms.md', $skill);
+        $this->assertStringContainsString('gadya-cms:forms:scan', $skill);
+        $this->assertSame(
+            file_get_contents(__DIR__.'/../../docs/forms.md'),
+            file_get_contents(__DIR__.'/../../resources/boost/skills/gadya-cms-forms/references/forms.md'),
+            'forms.md differs from the forms skill\'s copy; run composer sync-docs.',
+        );
+        $this->assertStringContainsString('gadya-cms-forms', (string) file_get_contents(__DIR__.'/../../resources/boost/skills/gadya-cms-upgrade/SKILL.md'));
+    }
 }
