@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Models;
 
 use Gadya\Cms\Forms\Builder\FormFiles;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -159,7 +160,7 @@ class FormSubmission extends Model
     {
         return $query
             ->whereNotNull('follow_up_at')
-            ->where('follow_up_at', '<=', now())
+            ->where('follow_up_at', '<=', app(SiteTimezone::class)->now())
             ->where('status', '!=', self::STATUS_ARCHIVED);
     }
 

@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Analytics;
 
 use Gadya\Cms\Privacy\Consent;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -31,7 +32,7 @@ class VisitorFingerprint
 
         return hash_hmac(
             'sha256',
-            $request->ip().'|'.$request->userAgent().'|'.now()->toDateString(),
+            $request->ip().'|'.$request->userAgent().'|'.app(SiteTimezone::class)->now()->toDateString(),
             (string) config('app.key'),
         );
     }

@@ -18,6 +18,7 @@ use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Filament\Resources\Subscribers\Pages\ListSubscribers;
 use Gadya\Cms\Models\Subscriber;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use UnitEnum;
@@ -110,13 +111,13 @@ class SubscriberResource extends Resource
                             $subscriber->email,
                             $names[0] ?? '',
                             $names[1] ?? '',
-                            $subscriber->created_at?->toDateString(),
+                            app(SiteTimezone::class)->format($subscriber->created_at, 'Y-m-d'),
                             $subscriber->source,
                         ]);
                     }
 
                     fclose($out);
-                }, 'mailing-list-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
+                }, 'mailing-list-'.app(SiteTimezone::class)->now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
             });
     }
 

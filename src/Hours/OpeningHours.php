@@ -5,6 +5,7 @@ namespace Gadya\Cms\Hours;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeZone;
+use Gadya\Cms\Support\SiteTimezone;
 use Throwable;
 
 /**
@@ -47,6 +48,7 @@ class OpeningHours
         private readonly string $timezone,
         private readonly array $regular,
         private readonly array $exceptions,
+        private readonly ?string $ownTimezone = null,
     ) {}
 
     /**
@@ -85,16 +87,18 @@ class OpeningHours
 
         ksort($exceptions);
 
-        return new self(self::validTimezone($hours['timezone'] ?? null, $fallbackTimezone), $regular, array_values($exceptions));
+        $own = self::validTimezone($hours['timezone'] ?? null, null, strict: true);
+
+        return new self($own ?? (string) self::validTimezone(null, $fallbackTimezone), $regular, array_values($exceptions), $own);
     }
 
     /**
-     * @return array{timezone: string, regular: array<string, list<array{0: string, 1: string}>>, exceptions: list<array{date: string, closed: bool, ranges: list<array{0: string, 1: string}>, label: string|null}>}
+     * @return array{timezone: string|null, regular: array<string, list<array{0: string, 1: string}>>, exceptions: list<array{date: string, closed: bool, ranges: list<array{0: string, 1: string}>, label: string|null}>}
      */
     public function toArray(): array
     {
         return [
-            'timezone' => $this->timezone,
+            'timezone' => $this->ownTimezone ?? (app(SiteTimezone::class)->explicitName() !== null ? null : $this->timezone),
             'regular' => $this->regular,
             'exceptions' => $this->exceptions,
         ];
@@ -108,6 +112,15 @@ class OpeningHours
     public function timezone(): string
     {
         return $this->timezone;
+    }
+
+    /**
+     * The zone these hours were given for themselves, or null when they
+     * follow the site's time zone.
+     */
+    public function ownTimezone(): ?string
+    {
+        return $this->ownTimezone;
     }
 
     /**
@@ -516,9 +529,20 @@ class OpeningHours
         return sprintf('%02d:%02d', $hour, $minute);
     }
 
-    private static function validTimezone(mixed $timezone, ?string $fallback): string
+    /**
+     * The first zone that is real: the hours' own, then what the caller
+     * asks for, then the site's time zone when the site has one of its
+     * own, then the configured hours zone, then the application's.
+     *
+     * With `strict`, only the hours' own counts: null says "no override".
+     */
+    private static function validTimezone(mixed $timezone, ?string $fallback, bool $strict = false): ?string
     {
-        foreach ([$timezone, $fallback, config('gadya-cms.hours.timezone'), config('app.timezone'), 'UTC'] as $candidate) {
+        $candidates = $strict
+            ? [$timezone]
+            : [$timezone, $fallback, rescue(fn (): ?string => app(SiteTimezone::class)->explicitName(), null, report: false), config('gadya-cms.hours.timezone'), config('app.timezone'), 'UTC'];
+
+        foreach ($candidates as $candidate) {
             if (! is_string($candidate) || $candidate === '') {
                 continue;
             }
@@ -532,6 +556,6 @@ class OpeningHours
             }
         }
 
-        return 'UTC';
+        return $strict ? null : 'UTC';
     }
 }

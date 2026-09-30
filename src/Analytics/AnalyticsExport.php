@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Analytics;
 
 use Gadya\Cms\Models\PageView;
+use Gadya\Cms\Support\SiteTimezone;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -14,17 +15,18 @@ class AnalyticsExport
 {
     public function download(int $days): StreamedResponse
     {
-        $since = now()->subDays($days)->startOfDay();
+        $zone = app(SiteTimezone::class);
+        $since = $zone->startOfLocalDay($zone->now()->subDays($days));
 
-        return response()->streamDownload(function () use ($since): void {
+        return response()->streamDownload(function () use ($since, $zone): void {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Date', 'Time', 'Page', 'Referrer', 'Source', 'Medium', 'Campaign', 'Device', 'Country', 'Region', 'City']);
 
-            PageView::query()->since($since)->orderBy('viewed_at')->chunkById(1000, function ($views) use ($out): void {
+            PageView::query()->since($since)->orderBy('viewed_at')->chunkById(1000, function ($views) use ($out, $zone): void {
                 foreach ($views as $view) {
                     fputcsv($out, [
-                        $view->viewed_at->toDateString(),
-                        $view->viewed_at->format('H:i'),
+                        $zone->format($view->viewed_at, 'Y-m-d'),
+                        $zone->format($view->viewed_at, 'H:i'),
                         $view->path,
                         $view->referrer_host,
                         $view->utm_source,
@@ -39,6 +41,6 @@ class AnalyticsExport
             });
 
             fclose($out);
-        }, 'visits-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
+        }, 'visits-'.$zone->now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
     }
 }

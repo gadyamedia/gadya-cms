@@ -19,13 +19,13 @@
             <p>
                 {{ $statement['checked_pages'] }} {{ \Illuminate\Support\Str::plural('page', $statement['checked_pages']) }} were last checked
                 @if ($statement['last_checked_at'])
-                    on {{ $statement['last_checked_at']->format('j F Y') }}
+                    on {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($statement['last_checked_at'], 'j F Y') }}
                 @endif
                 @if ($statement['score'] !== null)
                     and scored {{ $statement['score'] }} out of 100 on the automated checks
                 @endif
                 @if ($statement['since'])
-                    . This record begins {{ $statement['since']->format('j F Y') }}.
+                    . This record begins {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($statement['since'], 'j F Y') }}.
                 @endif
             </p>
 
@@ -52,7 +52,7 @@
                             <tr>
                                 <td>{{ $entry['what'] }}</td>
                                 <td>{{ $entry['where'] }}</td>
-                                <td>{{ $entry['on']?->format('j M Y') }}</td>
+                                <td>{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($entry['on'], 'j M Y') }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -71,6 +71,6 @@
             @endif
         </ul>
 
-        <p class="cms-statement__meta">This statement is generated from this site's own record of checks and corrections, and is rewritten each time a check runs. Last updated {{ ($statement['last_checked_at'] ?? now())->format('j F Y') }}.</p>
+        <p class="cms-statement__meta">This statement is generated from this site's own record of checks and corrections, and is rewritten each time a check runs. Last updated {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($statement['last_checked_at'] ?? now(), 'j F Y') }}.</p>
     </section>
 @endsection

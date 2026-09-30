@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Filament\Pages;
 
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -12,12 +13,14 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Filament\Actions\PublishChangesAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
+use Gadya\Cms\Support\SiteTimezone;
 use UnitEnum;
 
 /**
@@ -49,9 +52,14 @@ class SiteDetails extends Page
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
-    public function mount(SiteContentRepository $repository): void
+    /** @var array<string, mixed>|null */
+    public ?array $timezoneData = [];
+
+    public function mount(SiteContentRepository $repository, SiteTimezone $timezone): void
     {
         $document = $repository->draft();
+
+        $this->timezoneForm->fill(['timezone' => $timezone->explicitName()]);
 
         $this->form->fill([
             'contact_locations' => $document['contact_locations'] ?? [],
@@ -95,6 +103,52 @@ class SiteDetails extends Page
                     ]),
             ])
             ->statePath('data');
+    }
+
+    /**
+     * The business's own time zone. Not part of the draft: it is how every
+     * date and time is shown, so it takes effect as soon as it is saved.
+     */
+    public function timezoneForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Form::make([
+                    Section::make('Time zone')
+                        ->description('Where the business is, for the clock.')
+                        ->schema([
+                            Select::make('timezone')
+                                ->label('Time zone')
+                                ->options(fn (): array => SiteTimezone::groupedOptions())
+                                ->searchable()
+                                ->placeholder(fn (): string => 'Not chosen - using '.app(SiteTimezone::class)->defaultName())
+                                ->helperText('Every date and time in your admin, your emails and your reports is shown in this time zone.')
+                                ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                                    if (filled($value) && ! SiteTimezone::isValid((string) $value)) {
+                                        $fail('That is not a time zone this site knows.');
+                                    }
+                                })
+                                ->nullable(),
+                            View::make('gadya-cms::filament.pages.use-device-timezone'),
+                        ]),
+                ])
+                    ->livewireSubmitHandler('saveTimezone')
+                    ->footer([
+                        Actions::make([
+                            Action::make('saveTimezone')->label('Save time zone')->submit('saveTimezone'),
+                        ]),
+                    ]),
+            ])
+            ->statePath('timezoneData');
+    }
+
+    public function saveTimezone(SiteTimezone $timezone): void
+    {
+        $chosen = $this->timezoneForm->getState()['timezone'] ?? null;
+
+        $timezone->set(filled($chosen) ? (string) $chosen : null);
+
+        Notification::make()->success()->title('Time zone saved')->body('Dates and times now show in '.$timezone->name().'.')->send();
     }
 
     public function save(SiteContentRepository $repository): void

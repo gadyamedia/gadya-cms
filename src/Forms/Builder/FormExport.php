@@ -5,6 +5,7 @@ namespace Gadya\Cms\Forms\Builder;
 use Gadya\Cms\Forms\Attribution;
 use Gadya\Cms\Forms\MergeTags;
 use Gadya\Cms\Models\FormSubmission;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
@@ -33,7 +34,7 @@ class FormExport
     public function download(Collection $submissions, string $name, string $format = 'csv'): StreamedResponse
     {
         $rows = $this->rows($submissions);
-        $filename = Str::slug($name ?: 'enquiries').'-'.now()->format('Y-m-d');
+        $filename = Str::slug($name ?: 'enquiries').'-'.app(SiteTimezone::class)->now()->format('Y-m-d');
 
         if ($format === 'xlsx' && self::canWriteExcel()) {
             return response()->streamDownload(function () use ($rows): void {
@@ -77,9 +78,9 @@ class FormExport
 
         foreach ($submissions as $submission) {
             $rows[] = [
-                $submission->created_at?->toDateTimeString() ?? '',
+                app(SiteTimezone::class)->format($submission->created_at, 'Y-m-d H:i:s'),
                 (string) $submission->status,
-                $submission->answered_at?->toDateTimeString() ?? '',
+                app(SiteTimezone::class)->format($submission->answered_at, 'Y-m-d H:i:s'),
                 $submission->follow_up_at?->toDateString() ?? '',
                 (string) $submission->notes,
                 (string) $submission->path,

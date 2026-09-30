@@ -26,7 +26,7 @@
                     @endif
                     <div class="cms-event-card__body">
                         <p class="cms-event-card__when">
-                            <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $event->when() }}</time>
+                            <time datetime="{{ $event->startsAtLocal()->toIso8601String() }}">{{ $event->when() }}</time>
                         </p>
                         <h2 class="cms-event-card__title"><a href="{{ url($event->publicPath()) }}">{{ $event->title }}</a></h2>
                         @if ($event->location)

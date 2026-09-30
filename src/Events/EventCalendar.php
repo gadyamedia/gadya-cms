@@ -4,6 +4,7 @@ namespace Gadya\Cms\Events;
 
 use Gadya\Cms\Models\Event;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
@@ -61,6 +62,8 @@ class EventCalendar
             'X-WR-CALNAME:'.$this->escape($site),
         ];
 
+        $zone = app(SiteTimezone::class);
+
         foreach ($this->upcoming(200) as $event) {
             $start = $event->starts_at;
             $end = $event->ends_at ?? $start->copy()->addHour();
@@ -73,8 +76,8 @@ class EventCalendar
                 $lines[] = 'DTSTART;VALUE=DATE:'.$start->format('Ymd');
                 $lines[] = 'DTEND;VALUE=DATE:'.$end->copy()->addDay()->format('Ymd');
             } else {
-                $lines[] = 'DTSTART:'.$start->utc()->format('Ymd\THis\Z');
-                $lines[] = 'DTEND:'.$end->utc()->format('Ymd\THis\Z');
+                $lines[] = 'DTSTART:'.$zone->atWallClock($start)->utc()->format('Ymd\THis\Z');
+                $lines[] = 'DTEND:'.$zone->atWallClock($end)->utc()->format('Ymd\THis\Z');
             }
 
             $lines[] = 'SUMMARY:'.$this->escape($event->title);
@@ -123,8 +126,8 @@ class EventCalendar
             '@context' => 'https://schema.org',
             '@type' => 'Event',
             'name' => $event->title,
-            'startDate' => $event->all_day ? $event->starts_at->toDateString() : $event->starts_at->toIso8601String(),
-            'endDate' => $event->ends_at === null ? null : ($event->all_day ? $event->ends_at->toDateString() : $event->ends_at->toIso8601String()),
+            'startDate' => $event->all_day ? $event->starts_at->toDateString() : $event->startsAtLocal()->toIso8601String(),
+            'endDate' => $event->ends_at === null ? null : ($event->all_day ? $event->ends_at->toDateString() : $event->endsAtLocal()->toIso8601String()),
             'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
             'eventStatus' => 'https://schema.org/EventScheduled',
             'description' => Str::limit(trim(strip_tags((string) ($event->summary ?: $event->body))), 300),

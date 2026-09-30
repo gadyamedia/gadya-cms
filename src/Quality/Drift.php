@@ -8,6 +8,7 @@ use Gadya\Cms\Models\Event;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Media;
 use Gadya\Cms\Models\Post;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Collection;
 
 /**
@@ -191,7 +192,7 @@ class Drift
         return [
             'key' => 'quiet-blog',
             'urgency' => 'later',
-            'says' => 'The newest article is from '.$newest->published_at->format('F Y').'.',
+            'says' => 'The newest article is from '.app(SiteTimezone::class)->format($newest->published_at, 'F Y').'.',
             'does' => 'Google reads an untouched site as a closed business. Ask us for a few, or write one from Articles.',
         ];
     }

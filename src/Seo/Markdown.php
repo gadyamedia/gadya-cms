@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Seo;
 
 use Gadya\Cms\Models\Post;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Http\Request;
 use League\HTMLToMarkdown\HtmlConverter;
 
@@ -63,7 +64,7 @@ class Markdown
         $lines = ['# '.$post->title, '', "Source: {$url}"];
 
         if ($post->published_at !== null) {
-            $lines[] = 'Published: '.$post->published_at->toDateString();
+            $lines[] = 'Published: '.app(SiteTimezone::class)->format($post->published_at, 'Y-m-d');
         }
 
         if (filled($post->excerpt)) {

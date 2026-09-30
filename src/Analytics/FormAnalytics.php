@@ -5,6 +5,7 @@ namespace Gadya\Cms\Analytics;
 use Gadya\Cms\Models\Form;
 use Gadya\Cms\Models\FormEvent;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
@@ -26,7 +27,7 @@ class FormAnalytics
      */
     public function for(Form $form, int $days = 30): array
     {
-        $since = now()->subDays($days)->startOfDay();
+        $since = $this->windowStart($days);
         $views = $this->people($form, FormEvent::VIEW, $since);
         $starts = $this->people($form, FormEvent::START, $since);
         $completions = $this->query($form, FormEvent::COMPLETE, $since)->count();
@@ -46,13 +47,23 @@ class FormAnalytics
     }
 
     /**
+     * The first moment of the business's day, `days` days ago.
+     */
+    private function windowStart(int $days): Carbon
+    {
+        $zone = app(SiteTimezone::class);
+
+        return Carbon::instance($zone->startOfLocalDay($zone->now()->subDays($days)));
+    }
+
+    /**
      * Every form with anything to show, busiest first, for the dashboard.
      *
      * @return list<array{form: Form, views: int, completions: int, conversion: float}>
      */
     public function overview(int $days = 30, int $limit = 6): array
     {
-        $since = now()->subDays($days)->startOfDay();
+        $since = $this->windowStart($days);
         $rows = [];
 
         foreach (Form::query()->forCurrentSite()->where('status', '!=', Form::STATUS_ARCHIVED)->get() as $form) {

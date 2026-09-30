@@ -4,6 +4,15 @@ use Gadya\Cms\Content\SlugPagePaths;
 
 return [
     /*
+     * The business's own time zone, which every date and time the CMS and
+     * its admin draw is shown in, and which "today" is measured against.
+     * The client can choose one under Appearance -> Locations; that choice
+     * wins over this. Empty means the application's own zone (app.timezone).
+     * Stored timestamps are always UTC whatever this is.
+     */
+    'timezone' => env('GADYA_TIMEZONE'),
+
+    /*
      * The Filament panel the CMS registers its resources and pages on.
      */
     'panel' => 'admin',

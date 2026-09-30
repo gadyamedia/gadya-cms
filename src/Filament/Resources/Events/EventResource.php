@@ -88,10 +88,11 @@ class EventResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->prefix(rtrim((string) config('app.url'), '/').'/'.trim((string) config('gadya-cms.events.prefix', 'events'), '/').'/')
                         ->columnSpanFull(),
-                    DateTimePicker::make('starts_at')->label('Starts')->seconds(false)->required(),
+                    DateTimePicker::make('starts_at')->label('Starts')->seconds(false)->timezone(config('app.timezone'))->required(),
                     DateTimePicker::make('ends_at')
                         ->label('Ends')
                         ->seconds(false)
+                        ->timezone(config('app.timezone'))
                         ->after('starts_at')
                         ->helperText('Leave blank for something with no set finish.'),
                     Toggle::make('all_day')

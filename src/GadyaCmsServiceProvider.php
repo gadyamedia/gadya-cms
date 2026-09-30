@@ -4,6 +4,7 @@ namespace Gadya\Cms;
 
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentTimezone;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Ai\AiSettings;
 use Gadya\Cms\Console\AgentReadyCommand;
@@ -54,6 +55,7 @@ use Gadya\Cms\Http\Middleware\RecordMissingUrls;
 use Gadya\Cms\Http\Middleware\RememberFirstTouch;
 use Gadya\Cms\Http\Middleware\TrackPageViews;
 use Gadya\Cms\Livewire\MediaPicker;
+use Gadya\Cms\Livewire\SenderPanelView;
 use Gadya\Cms\Localisation\LocalisationServiceProvider;
 use Gadya\Cms\Mail\BrandsOutgoingMail;
 use Gadya\Cms\Mail\PortalTransport;
@@ -79,6 +81,7 @@ use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\PackageConfig;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Gadya\Cms\Upgrade\UpgradeSteps;
 use Gadya\Connect\Portal\PortalClient;
 use Illuminate\Auth\Events\Login;
@@ -184,6 +187,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         $this->app->scoped(EditContext::class);
         $this->app->scoped(SiteContentRepository::class);
         $this->app->scoped(Options::class);
+        $this->app->scoped(SiteTimezone::class);
         $this->app->scoped(AiSettings::class);
         $this->app->scoped(SharedSender::class);
         $this->app->singleton(FieldTypes::class);
@@ -235,6 +239,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         ], 'gadya-cms-assets');
 
         $this->configureMail();
+        $this->configureFilamentTimezone();
 
         $this->registerBladeDirectives();
         $this->registerRateLimiters();
@@ -257,6 +262,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
         Setting::observe(InvalidatePublishedDocument::class);
 
         Livewire::component('gadya-cms.media-picker', MediaPicker::class);
+        Livewire::component('gadya-cms.sender-panel', SenderPanelView::class);
 
         /*
          * The panel's brand skin. Registering it as a Filament asset means it
@@ -419,6 +425,19 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 report: false,
             );
         });
+    }
+
+    /**
+     * Every date and time Filament draws - columns, entries, pickers - is
+     * shown in the business's own time zone, and a picker converts what was
+     * typed back to UTC on save. Given as a closure, so the zone is only
+     * looked up when something actually draws a date, from the options the
+     * request has already read. An application that sets its own
+     * FilamentTimezone in its service provider keeps it: that runs after.
+     */
+    private function configureFilamentTimezone(): void
+    {
+        FilamentTimezone::set(fn (): string => $this->app->make(SiteTimezone::class)->name());
     }
 
     /**

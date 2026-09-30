@@ -4,6 +4,7 @@ namespace Gadya\Cms\Analytics;
 
 use Gadya\Cms\Models\AnalyticsEvent;
 use Gadya\Cms\Models\PageView;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -23,9 +24,15 @@ class AnalyticsReport
         return new self($days);
     }
 
+    /**
+     * The start of the window: the first moment of the business's day,
+     * `days` days ago. "Today" is the business's today, not UTC's.
+     */
     public function since(): Carbon
     {
-        return now()->subDays($this->days)->startOfDay();
+        $zone = app(SiteTimezone::class);
+
+        return Carbon::instance($zone->startOfLocalDay($zone->now()->subDays($this->days)));
     }
 
     /**
@@ -111,14 +118,22 @@ class AnalyticsReport
      */
     public function daily(): array
     {
+        $zone = app(SiteTimezone::class);
+
+        /*
+         * Grouped here rather than in SQL: a day is the business's day, and
+         * the offset from UTC changes the night the clocks do, so one SQL
+         * expression would be wrong on one of the two databases, or for
+         * the week around a change.
+         */
         $rows = PageView::query()
             ->since($this->since())
             ->get(['viewed_at', 'visitor_hash'])
-            ->groupBy(fn (PageView $view): string => $view->viewed_at->toDateString());
+            ->groupBy(fn (PageView $view): string => $zone->format($view->viewed_at, 'Y-m-d'));
 
         return collect(range($this->days - 1, 0))
-            ->map(function (int $offset) use ($rows): array {
-                $date = now()->subDays($offset);
+            ->map(function (int $offset) use ($rows, $zone): array {
+                $date = $zone->now()->subDays($offset);
                 $day = $rows->get($date->toDateString());
 
                 return [

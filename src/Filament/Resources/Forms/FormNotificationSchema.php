@@ -14,7 +14,6 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
 use Gadya\Cms\Forms\Builder\FormLogic;
-use Gadya\Cms\Mail\SenderPanel;
 use Gadya\Cms\Sms\PhoneNumbers;
 use Gadya\Cms\Sms\TextAlerts;
 
@@ -36,8 +35,8 @@ final class FormNotificationSchema
                 ->description('Check who the email comes from, who gets it, and that it arrives - before a real enquiry does.')
                 ->headerActions([SendTestAction::make()])
                 ->schema([
-                    View::make('gadya-cms::filament.mail.sender-panel')
-                        ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 3]),
+                    View::make('gadya-cms::filament.mail.sender-panel-live')
+                        ->viewData(['limit' => 3]),
                 ]),
             Section::make('Who is told about a new enquiry')
                 ->description('Everyone here gets an email the moment one arrives. Replying goes straight to whoever sent it.')

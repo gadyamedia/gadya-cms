@@ -7,6 +7,7 @@ use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Forms\MergeTags;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Notifications\Concerns\CanBeATest;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -72,7 +73,7 @@ class FormSubmitted extends Notification implements ShouldQueue
         }
 
         $mail = $this->markTest($mail)
-            ->line('Sent from '.($this->submission->path ?: 'the site').' on '.$this->submission->created_at->format('D j M Y, g:ia').'.')
+            ->line('Sent from '.($this->submission->path ?: 'the site').' on '.app(SiteTimezone::class)->format($this->submission->created_at, 'D j M Y, g:ia').'.')
             ->action('Open in the admin', SubmissionResource::getUrl())
             ->salutation('Replying to this email goes straight to them.');
 

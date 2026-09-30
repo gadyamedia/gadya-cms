@@ -2,6 +2,8 @@
 
 namespace Gadya\Cms\Models;
 
+use Carbon\CarbonImmutable;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,8 +66,10 @@ class Event extends Model
      */
     public function scopeUpcoming(Builder $query): Builder
     {
+        $now = static::wallClockNow();
+
         return $query->published()
-            ->where(fn (Builder $inner) => $inner->where('ends_at', '>=', now())->orWhere(fn (Builder $noEnd) => $noEnd->whereNull('ends_at')->where('starts_at', '>=', now()->startOfDay())))
+            ->where(fn (Builder $inner) => $inner->where('ends_at', '>=', $now)->orWhere(fn (Builder $noEnd) => $noEnd->whereNull('ends_at')->where('starts_at', '>=', $now->startOfDay())))
             ->orderBy('starts_at');
     }
 
@@ -75,14 +79,45 @@ class Event extends Model
      */
     public function scopePast(Builder $query): Builder
     {
+        $now = static::wallClockNow();
+
         return $query->published()
-            ->where(fn (Builder $inner) => $inner->where('ends_at', '<', now())->orWhere(fn (Builder $noEnd) => $noEnd->whereNull('ends_at')->where('starts_at', '<', now()->startOfDay())))
+            ->where(fn (Builder $inner) => $inner->where('ends_at', '<', $now)->orWhere(fn (Builder $noEnd) => $noEnd->whereNull('ends_at')->where('starts_at', '<', $now->startOfDay())))
             ->orderByDesc('starts_at');
+    }
+
+    /**
+     * Start and end times are what the business typed for its own clock -
+     * 6pm is stored as 18:00 whatever zone that is - so they are compared
+     * with the business's clock, not UTC's, and never shift when the site's
+     * time zone setting changes.
+     */
+    private static function wallClockNow(): CarbonImmutable
+    {
+        return app(SiteTimezone::class)->now();
     }
 
     public function hasFinished(): bool
     {
-        return ($this->ends_at ?? $this->starts_at->endOfDay())->isPast();
+        $zone = app(SiteTimezone::class);
+
+        return $zone->atWallClock($this->ends_at ?? $this->starts_at->copy()->endOfDay())->isPast();
+    }
+
+    /**
+     * When it starts, as a moment with the business's offset, for machines.
+     */
+    public function startsAtLocal(): CarbonImmutable
+    {
+        return app(SiteTimezone::class)->atWallClock($this->starts_at);
+    }
+
+    /**
+     * When it ends, as a moment with the business's offset, for machines.
+     */
+    public function endsAtLocal(): ?CarbonImmutable
+    {
+        return $this->ends_at === null ? null : app(SiteTimezone::class)->atWallClock($this->ends_at);
     }
 
     public function isLive(): bool

@@ -58,7 +58,7 @@
                     {{ $this->accessibility['remediated'] }} {{ \Illuminate\Support\Str::plural('barrier', $this->accessibility['remediated']) }} put right,
                     {{ $this->accessibility['outstanding'] }} outstanding.
                     @if ($this->accessibility['since'])
-                        The record begins {{ $this->accessibility['since']->format('j F Y') }}.
+                        The record begins {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($this->accessibility['since'], 'j F Y') }}.
                     @endif
                 </p>
                 <p class="gadya-dash__muted">This matters if anyone ever asks: it is a dated record of the work, not a badge. Your public statement is written from it and updates itself.</p>

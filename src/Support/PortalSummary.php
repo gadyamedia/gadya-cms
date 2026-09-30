@@ -35,6 +35,7 @@ class PortalSummary
     public function build(): array
     {
         return [
+            'timezone' => app(SiteTimezone::class)->name(),
             'quality' => $this->quality(),
             'accessibility' => $this->accessibility(),
             'drift' => $this->drift(),

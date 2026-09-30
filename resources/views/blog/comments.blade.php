@@ -10,7 +10,7 @@
         <article class="cms-comment">
             <p class="cms-comment__who">
                 <strong>{{ $comment->author_name }}</strong>
-                <time datetime="{{ $comment->created_at->toIso8601String() }}">{{ $comment->created_at->format('j F Y') }}</time>
+                <time datetime="{{ app(\Gadya\Cms\Support\SiteTimezone::class)->local($comment->created_at)?->toIso8601String() }}">{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($comment->created_at, 'j F Y') }}</time>
             </p>
             <p class="cms-comment__body">{!! nl2br(e($comment->body)) !!}</p>
         </article>

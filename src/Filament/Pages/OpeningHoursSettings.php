@@ -25,6 +25,7 @@ use Gadya\Cms\Filament\Actions\PublishChangesAction;
 use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Hours\BusinessHours;
 use Gadya\Cms\Hours\OpeningHours;
+use Gadya\Cms\Support\SiteTimezone;
 use UnitEnum;
 
 /**
@@ -101,12 +102,14 @@ class OpeningHoursSettings extends Page
                                 ->collapsible(),
                         ]),
                     Section::make('Time zone')
+                        ->description('The hours are read in the site\'s time zone unless a zone is picked here, for a business whose hours run in another one.')
                         ->schema([
                             Select::make('timezone')
-                                ->label('Where the business is')
-                                ->options(fn (): array => array_combine(timezone_identifiers_list(), timezone_identifiers_list()))
+                                ->label('Hours run in')
+                                ->options(fn (): array => SiteTimezone::groupedOptions())
+                                ->placeholder(fn (): string => 'The site\'s time zone ('.app(SiteTimezone::class)->name().')')
                                 ->searchable()
-                                ->required(),
+                                ->nullable(),
                         ])
                         ->collapsible()
                         ->collapsed(),
@@ -141,7 +144,7 @@ class OpeningHoursSettings extends Page
         $pairs = fn (array $ranges): array => array_map(fn (array $range): array => ['open' => $range[0], 'close' => $range[1] === '24:00' ? '00:00' : $range[1]], $ranges);
 
         return [
-            'timezone' => $hours->timezone(),
+            'timezone' => $hours->ownTimezone(),
             'regular' => array_map($pairs, $hours->regular()),
             'exceptions' => array_map(fn (array $exception): array => [
                 'date' => $exception['date'],
@@ -185,8 +188,8 @@ class OpeningHoursSettings extends Page
         return Repeater::make($name)
             ->label($label)
             ->schema([
-                TimePicker::make('open')->label('Opens')->seconds(false)->format('H:i')->required(),
-                TimePicker::make('close')->label('Closes')->seconds(false)->format('H:i')->required(),
+                TimePicker::make('open')->label('Opens')->seconds(false)->format('H:i')->timezone(config('app.timezone'))->required(),
+                TimePicker::make('close')->label('Closes')->seconds(false)->format('H:i')->timezone(config('app.timezone'))->required(),
             ])
             ->columns(2)
             ->defaultItems(0)

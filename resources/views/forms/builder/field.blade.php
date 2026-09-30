@@ -237,7 +237,7 @@
                             @if ($kind === 'number' && is_numeric($rules['min'] ?? null)) min="{{ $rules['min'] }}" @endif
                             @if ($kind === 'number' && is_numeric($rules['max'] ?? null)) max="{{ $rules['max'] }}" @endif
                             @if ($kind === 'number') step="any" @endif
-                            @if (in_array($kind, ['date', 'datetime'], true) && ($rules['future'] ?? false)) min="{{ $kind === 'date' ? now()->toDateString() : now()->format('Y-m-d\TH:i') }}" @endif
+                            @if (in_array($kind, ['date', 'datetime'], true) && ($rules['future'] ?? false)) min="{{ $kind === 'date' ? app(\Gadya\Cms\Support\SiteTimezone::class)->now()->toDateString() : app(\Gadya\Cms\Support\SiteTimezone::class)->now()->format('Y-m-d\TH:i') }}" @endif
                             {{ $placeholder }}{{ $aria }}>
                     @endif
             @endswitch

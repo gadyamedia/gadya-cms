@@ -10,6 +10,7 @@ use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Editor\EditingLock;
 use Gadya\Cms\Services\PublishSiteContent;
 use Gadya\Cms\Services\SchedulePublish;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Carbon;
 
 /**
@@ -58,7 +59,7 @@ class PublishChangesAction
 
                     Notification::make()
                         ->success()
-                        ->title('Held until '.$at->format('l j F, g:ia'))
+                        ->title('Held until '.app(SiteTimezone::class)->format($at, 'l j F, g:ia'))
                         ->body('Everything in your draft goes live then. Publish again to change or cancel it.')
                         ->send();
 

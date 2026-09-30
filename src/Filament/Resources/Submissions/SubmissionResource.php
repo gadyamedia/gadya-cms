@@ -22,6 +22,7 @@ use Gadya\Cms\Forms\Builder\FormExport;
 use Gadya\Cms\Forms\FormDefinition;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -96,7 +97,7 @@ class SubmissionResource extends Resource
                     ->label('Follow up')
                     ->date()
                     ->placeholder('—')
-                    ->color(fn (FormSubmission $record): ?string => $record->follow_up_at?->isPast() && $record->status !== FormSubmission::STATUS_ARCHIVED ? 'danger' : null)
+                    ->color(fn (FormSubmission $record): ?string => $record->follow_up_at !== null && app(SiteTimezone::class)->atWallClock($record->follow_up_at)->isPast() && $record->status !== FormSubmission::STATUS_ARCHIVED ? 'danger' : null)
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('created_at')->label('Received')->since()->sortable(),
@@ -215,10 +216,10 @@ class SubmissionResource extends Resource
 
                     foreach ($records as $record) {
                         fputcsv($out, [
-                            $record->created_at->toDateTimeString(),
+                            app(SiteTimezone::class)->format($record->created_at, 'Y-m-d H:i:s'),
                             $record->form,
                             $record->status,
-                            $record->answered_at?->toDateTimeString(),
+                            app(SiteTimezone::class)->format($record->answered_at, 'Y-m-d H:i:s'),
                             $record->follow_up_at?->toDateString(),
                             $record->notes,
                             $record->path,
@@ -229,7 +230,7 @@ class SubmissionResource extends Resource
                     }
 
                     fclose($out);
-                }, 'enquiries-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
+                }, 'enquiries-'.app(SiteTimezone::class)->now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
             })
             ->deselectRecordsAfterCompletion();
     }

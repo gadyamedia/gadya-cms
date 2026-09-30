@@ -14,7 +14,7 @@ use Filament\Schemas\Components\View;
 use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Forms\Builder\FormTestSender;
 use Gadya\Cms\Forms\Builder\TestReport;
-use Gadya\Cms\Mail\SenderPanel;
+use Gadya\Cms\Livewire\SenderPanelView;
 use Gadya\Cms\Sms\TextAlerts;
 
 /**
@@ -66,6 +66,8 @@ final class SendTestAction
                 self::report($configuredForm === null
                     ? $sender->built(FormEditSchema::formFromScreen($livewire), $choices)
                     : $sender->configured($configuredForm, (array) data_get($livewire, 'data', []), $choices));
+
+                $livewire->dispatch(SenderPanelView::SENT);
             });
     }
 
@@ -96,8 +98,8 @@ final class SendTestAction
         $texting = $configuredForm === null && app(TextAlerts::class)->enabled();
 
         return [
-            View::make('gadya-cms::filament.mail.sender-panel')
-                ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 3]),
+            View::make('gadya-cms::filament.mail.sender-panel-live')
+                ->viewData(['limit' => 3]),
             Radio::make('to')
                 ->label('Who gets it?')
                 ->options([

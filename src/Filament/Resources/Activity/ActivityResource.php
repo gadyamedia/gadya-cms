@@ -13,6 +13,7 @@ use Gadya\Cms\Activity\Activity;
 use Gadya\Cms\Filament\Resources\Activity\Pages\ListActivity;
 use Gadya\Cms\Models\AuditLog;
 use Gadya\Cms\Support\SiteContext;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
@@ -42,7 +43,7 @@ class ActivityResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('created_at')->label('When')->dateTime()->since()->tooltip(fn (AuditLog $record): string => $record->created_at->format('D j M Y, g:ia'))->sortable(),
+                TextColumn::make('created_at')->label('When')->dateTime()->since()->tooltip(fn (AuditLog $record): string => app(SiteTimezone::class)->format($record->created_at, 'D j M Y, g:ia'))->sortable(),
                 TextColumn::make('user.name')->label('Who')->placeholder('The site itself')->searchable(),
                 TextColumn::make('event')
                     ->label('Did what')

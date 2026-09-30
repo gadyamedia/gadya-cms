@@ -19,6 +19,7 @@ use Filament\Support\Icons\Heroicon;
 use Gadya\Cms\Access\Abilities;
 use Gadya\Cms\Services\SchedulePublish;
 use Gadya\Cms\Support\Maintenance;
+use Gadya\Cms\Support\SiteTimezone;
 use UnitEnum;
 
 /**
@@ -128,7 +129,7 @@ class SiteStatus extends Page
     {
         $schedule = app(SchedulePublish::class);
 
-        return $schedule->isPending() ? $schedule->at()?->format('l j F Y, g:ia') : null;
+        return $schedule->isPending() ? app(SiteTimezone::class)->format($schedule->at(), 'l j F Y, g:ia') : null;
     }
 
     public static function canAccess(): bool

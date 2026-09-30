@@ -35,7 +35,7 @@
                     @endif
                     <div class="cms-blog__card-body">
                         <p class="cms-blog__meta">
-                            <time datetime="{{ $post->published_at?->toIso8601String() }}">{{ $post->published_at?->format('F j, Y') }}</time>
+                            <time datetime="{{ app(\Gadya\Cms\Support\SiteTimezone::class)->local($post->published_at)?->toIso8601String() }}">{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($post->published_at, 'F j, Y') }}</time>
                             @if ($post->reading_time) · {{ $post->reading_time }} @endif
                         </p>
                         <h2 class="cms-blog__card-title"><a href="{{ url($post->publicPath()) }}">{{ $post->title }}</a></h2>

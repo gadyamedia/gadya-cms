@@ -21,7 +21,7 @@ use Gadya\Cms\Filament\Resources\Forms\SendTestAction;
 use Gadya\Cms\Forms\AutoReplies;
 use Gadya\Cms\Forms\Builder\FormTestSender;
 use Gadya\Cms\Forms\FormDefinition;
-use Gadya\Cms\Mail\SenderPanel;
+use Gadya\Cms\Livewire\SenderPanelView;
 use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Options\Options;
 use UnitEnum;
@@ -133,8 +133,8 @@ class Emails extends Page
                 ? 'There is nothing to set up, and nothing to pay for.'
                 : 'Your email is sent by this site\'s own mail service.')
             ->schema([
-                View::make('gadya-cms::filament.mail.sender-panel')
-                    ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 20]),
+                View::make('gadya-cms::filament.mail.sender-panel-live')
+                    ->viewData(['limit' => 20]),
             ]);
     }
 
@@ -157,8 +157,8 @@ class Emails extends Page
                 ->modalDescription('Proves the site can send email at all. To try a form\'s own emails, use Send a test on that form.')
                 ->modalSubmitActionLabel('Send it')
                 ->schema([
-                    View::make('gadya-cms::filament.mail.sender-panel')
-                        ->viewData(fn (): array => ['panel' => app(SenderPanel::class)->describe(), 'limit' => 3]),
+                    View::make('gadya-cms::filament.mail.sender-panel-live')
+                        ->viewData(['limit' => 3]),
                 ])
                 ->action(fn () => $this->sendTest()),
         ];
@@ -176,6 +176,8 @@ class Emails extends Page
         }
 
         SendTestAction::report(app(FormTestSender::class)->generic($address, (string) ($user?->name ?: 'someone')));
+
+        $this->dispatch(SenderPanelView::SENT);
     }
 
     public function save(AutoReplies $replies, Options $options): void

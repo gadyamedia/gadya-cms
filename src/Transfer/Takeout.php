@@ -5,6 +5,7 @@ namespace Gadya\Cms\Transfer;
 use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Post;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -109,7 +110,7 @@ class Takeout
                 Str::slug((string) $post->slug) ?: 'article-'.$post->id => implode("\n", [
                     '# '.$post->title,
                     '',
-                    $post->published_at === null ? 'Not published.' : 'Published '.$post->published_at->format('j F Y').'.',
+                    $post->published_at === null ? 'Not published.' : 'Published '.app(SiteTimezone::class)->format($post->published_at, 'j F Y').'.',
                     '',
                     (string) $post->excerpt,
                     '',
@@ -138,7 +139,7 @@ class Takeout
 
         foreach ($submissions as $submission) {
             $rows[] = array_merge(
-                [$submission->created_at?->toDateTimeString(), (string) $submission->form, (string) $submission->path],
+                [app(SiteTimezone::class)->format($submission->created_at, 'Y-m-d H:i:s'), (string) $submission->form, (string) $submission->path],
                 array_map(fn (string $column): string => $this->flat(data_get($submission->data, $column)), $columns),
             );
         }
@@ -195,6 +196,6 @@ class Takeout
 
     private function today(): string
     {
-        return now()->format('j F Y');
+        return app(SiteTimezone::class)->now()->format('j F Y');
     }
 }

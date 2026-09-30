@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Portal\Commands;
 
 use Gadya\Cms\Support\Maintenance;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Carbon;
 
 /**
@@ -44,7 +45,7 @@ class ComingSoonOn
 
         return [
             'output' => 'Coming soon mode is on: visitors see "'.$this->maintenance->heading().'"'
-                .($until === null ? '' : ' until '.$until->format('j F Y, g:ia'))
+                .($until === null ? '' : ' until '.app(SiteTimezone::class)->format($until, 'j F Y, g:ia'))
                 .'. Anyone signed in still sees the site.',
             'result' => [
                 'enabled' => $this->maintenance->isOn(),

@@ -37,7 +37,7 @@
         <h1>{{ $heading }}</h1>
         <p>{{ $message }}</p>
         @if ($until)
-            <p class="when">Back {{ $until->format('l j F') }} at {{ $until->format('g:ia') }}</p>
+            <p class="when">Back {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($until, 'l j F') }} at {{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($until, 'g:ia') }}</p>
         @endif
         @if ($asks)
             <form method="GET" action="{{ url('/') }}">

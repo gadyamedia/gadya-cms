@@ -33,8 +33,19 @@
         </div>
     @endforeach
 
+    @if ($recent !== [] || (($refreshable ?? false) && $panel['via'] === 'shared'))
+        <div class="gadya-sender__heading">
+            <p class="gadya-sender__subtitle">Sent lately</p>
+            @if ($refreshable ?? false)
+                <button type="button" class="gadya-sender__refresh" wire:click="refresh" wire:loading.attr="disabled" wire:target="refresh">
+                    <span wire:loading.remove wire:target="refresh">Refresh</span>
+                    <span wire:loading wire:target="refresh">Refreshing...</span>
+                </button>
+            @endif
+        </div>
+    @endif
+
     @if ($recent !== [])
-        <p class="gadya-sender__subtitle">Sent lately</p>
         <div class="gadya-setup__table-wrap">
             <table class="gadya-setup__table">
                 <thead>
@@ -43,7 +54,7 @@
                 <tbody>
                     @foreach ($recent as $email)
                         <tr>
-                            <td>{{ \Illuminate\Support\Carbon::parse($email['sent_at'])->timezone(config('app.timezone'))->format('j M, g:ia') }}</td>
+                            <td>{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($email['sent_at'], 'j M, g:ia') }}</td>
                             <td>{{ $email['to'] }}@if (($email['recipients'] ?? 1) > 1) <span class="gadya-dash__muted">and {{ $email['recipients'] - 1 }} more</span>@endif</td>
                             <td>{{ $email['subject'] }}@if (($email['purpose'] ?? null) === 'test') <span class="gadya-dash__muted">(a test)</span>@endif</td>
                             <td>

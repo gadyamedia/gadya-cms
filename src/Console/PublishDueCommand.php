@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Console;
 
 use Gadya\Cms\Services\SchedulePublish;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Console\Command;
 
 class PublishDueCommand extends Command
@@ -22,7 +23,7 @@ class PublishDueCommand extends Command
         }
 
         if (! $schedule->publishIfDue()) {
-            $this->line('A publish is scheduled for '.$at->format('D j M Y, g:ia').'; not yet.');
+            $this->line('A publish is scheduled for '.app(SiteTimezone::class)->format($at, 'D j M Y, g:ia').'; not yet.');
 
             return self::SUCCESS;
         }

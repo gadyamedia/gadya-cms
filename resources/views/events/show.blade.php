@@ -6,7 +6,7 @@
             <p class="cms-event__crumb"><a href="{{ route('gadya-cms.events.index') }}">{{ config('gadya-cms.events.title', 'What’s on') }}</a></p>
             <h1 class="cms-event__title">{{ $event->title }}</h1>
             <p class="cms-event__when">
-                <time datetime="{{ $event->starts_at->toIso8601String() }}">{{ $event->when() }}</time>
+                <time datetime="{{ $event->startsAtLocal()->toIso8601String() }}">{{ $event->when() }}</time>
                 @if ($event->hasFinished()) <span class="cms-event__over">This one has been and gone.</span> @endif
             </p>
             @if ($event->location)

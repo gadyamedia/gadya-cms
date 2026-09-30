@@ -8,7 +8,7 @@
                 @foreach ($post->categories as $category)
                     · <a href="{{ url($category->publicPath()) }}">{{ $category->name }}</a>
                 @endforeach
-                · <time datetime="{{ $post->published_at?->toIso8601String() }}">{{ $post->published_at?->format('F j, Y') }}</time>
+                · <time datetime="{{ app(\Gadya\Cms\Support\SiteTimezone::class)->local($post->published_at)?->toIso8601String() }}">{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($post->published_at, 'F j, Y') }}</time>
                 @if ($post->reading_time) · {{ $post->reading_time }} @endif
             </p>
             <h1 class="cms-article__title">{{ $post->title }}</h1>

@@ -20,6 +20,7 @@ use Gadya\Cms\Options\Options;
 use Gadya\Cms\Services\SchedulePublish;
 use Gadya\Cms\Support\ImageCapabilities;
 use Gadya\Cms\Support\Maintenance;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
@@ -161,7 +162,7 @@ class Dashboard extends Page
         $schedule = app(SchedulePublish::class);
 
         if ($schedule->isPending()) {
-            $notices[] = 'Everything in your draft goes live on '.$schedule->at()?->format('l j F, g:ia').'. Publish again to change or cancel that.';
+            $notices[] = 'Everything in your draft goes live on '.app(SiteTimezone::class)->format($schedule->at(), 'l j F, g:ia').'. Publish again to change or cancel that.';
         }
 
         if (app(Maintenance::class)->isOn()) {

@@ -4,6 +4,7 @@ namespace Gadya\Cms\Services;
 
 use Gadya\Cms\Activity\Activity;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Carbon;
 
 /**
@@ -46,7 +47,7 @@ class SchedulePublish
         $this->options->set('publish.at', $at->toIso8601String());
         $this->options->set('publish.label', $label);
 
-        $this->activity->record('site.publish_scheduled', $at->format('D j M Y, g:ia'));
+        $this->activity->record('site.publish_scheduled', app(SiteTimezone::class)->format($at, 'D j M Y, g:ia'));
     }
 
     public function cancel(): void

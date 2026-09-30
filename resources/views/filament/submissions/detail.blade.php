@@ -26,7 +26,7 @@
     @foreach ((array) (($submission->meta ?? [])['consents'] ?? []) as $field => $consent)
         <div class="gadya-submission__row gadya-submission__row--meta">
             <dt>Agreed to</dt>
-            <dd>"{{ $consent['text'] ?? '' }}" · {{ isset($consent['at']) ? \Illuminate\Support\Carbon::parse($consent['at'])->format('D j M Y, g:ia') : '' }}@if (filled($consent['policy_version'] ?? null)) · privacy policy of {{ $consent['policy_version'] }}@endif</dd>
+            <dd>"{{ $consent['text'] ?? '' }}" · {{ isset($consent['at']) ? app(\Gadya\Cms\Support\SiteTimezone::class)->format($consent['at'], 'D j M Y, g:ia') : '' }}@if (filled($consent['policy_version'] ?? null)) · privacy policy of {{ $consent['policy_version'] }}@endif</dd>
         </div>
     @endforeach
     @foreach ($attribution as $label => $value)
@@ -50,7 +50,7 @@
     @if ($submission->answered_at)
         <div class="gadya-submission__row gadya-submission__row--meta">
             <dt>Answered</dt>
-            <dd>{{ $submission->answered_at->format('D j M Y') }} · {{ $submission->created_at->diffForHumans($submission->answered_at, ['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }} after it arrived</dd>
+            <dd>{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($submission->answered_at, 'D j M Y') }} · {{ $submission->created_at->diffForHumans($submission->answered_at, ['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }} after it arrived</dd>
         </div>
     @endif
     @if ($submission->follow_up_at)
@@ -67,6 +67,6 @@
     @endif
     <div class="gadya-submission__row gadya-submission__row--meta">
         <dt>Sent</dt>
-        <dd>{{ $submission->created_at->format('D j M Y, g:ia') }} from {{ $submission->path ?: 'the site' }}@if ($submission->country) · {{ \Gadya\Cms\Analytics\VisitorGeo::flag($submission->country) }} {{ $submission->country }}@endif</dd>
+        <dd>{{ app(\Gadya\Cms\Support\SiteTimezone::class)->format($submission->created_at, 'D j M Y, g:ia') }} from {{ $submission->path ?: 'the site' }}@if ($submission->country) · {{ \Gadya\Cms\Analytics\VisitorGeo::flag($submission->country) }} {{ $submission->country }}@endif</dd>
     </div>
 </dl>

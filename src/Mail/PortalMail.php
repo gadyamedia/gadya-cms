@@ -18,8 +18,12 @@ class PortalMail
 {
     public const CACHE_KEY = 'gadya-cms.mail.portal-status';
 
-    /** Long enough that opening the screen twice is one call, short enough to be current. */
-    private const CACHE_MINUTES = 10;
+    /**
+     * Long enough that a screen redrawing is one call, short enough that
+     * what was sent a minute ago shows. The panel's Refresh button, and
+     * a test send, skip it altogether.
+     */
+    public const CACHE_SECONDS = 60;
 
     public function __construct(
         private readonly PortalClient $portal,
@@ -37,7 +41,7 @@ class PortalMail
 
         $status = Cache::remember(
             self::CACHE_KEY,
-            now()->addMinutes(self::CACHE_MINUTES),
+            now()->addSeconds(self::CACHE_SECONDS),
             fn (): ?array => $this->fetch(),
         );
 
