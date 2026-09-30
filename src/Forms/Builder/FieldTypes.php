@@ -5,6 +5,7 @@ namespace Gadya\Cms\Forms\Builder;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -169,7 +170,7 @@ class FieldTypes
             FieldType::make('date', 'Date')->group('Date and time')->icon('heroicon-o-calendar')
                 ->rules(fn (array $field): array => ['' => array_values(array_filter([
                     'date_format:Y-m-d',
-                    ($field['rules']['future'] ?? false) ? 'after_or_equal:today' : null,
+                    ($field['rules']['future'] ?? false) ? 'after_or_equal:'.app(SiteTimezone::class)->now()->toDateString() : null,
                 ]))])
                 ->settings(fn (): array => [Toggle::make('rules.future')->label('Today or later only')]),
             FieldType::make('time', 'Time')->group('Date and time')->icon('heroicon-o-clock')
@@ -177,7 +178,7 @@ class FieldTypes
             FieldType::make('datetime', 'Date and time')->group('Date and time')->icon('heroicon-o-calendar-days')
                 ->rules(fn (array $field): array => ['' => array_values(array_filter([
                     'date_format:Y-m-d\TH:i',
-                    ($field['rules']['future'] ?? false) ? 'after_or_equal:today' : null,
+                    ($field['rules']['future'] ?? false) ? 'after_or_equal:'.app(SiteTimezone::class)->now()->toDateString() : null,
                 ]))])
                 ->settings(fn (): array => [Toggle::make('rules.future')->label('Today or later only')])
                 ->normaliseUsing(fn (mixed $value): string => str_replace('T', ' ', (string) $value)),

@@ -23,6 +23,8 @@ On the public site:
 ],
 ```
 
+Start and end times are the business's own wall-clock times ("Saturday, 6pm"): they are kept exactly as typed and never shift when the [site's time zone](operations.md#the-sites-time-zone) is set or changed. "What is on" and "already happened" are decided by the business's clock, and the calendar file and structured data turn the time into a real moment using that zone.
+
 Read them yourself with `Gadya\Cms\Events\EventCalendar`: `upcoming()`, `past()`, `findLive($slug)`, `ics()`, `structuredData($event)`.
 
 Upcoming events are added to the sitemap automatically. A draft event is invisible to visitors and visible to an editor with the live editor on, like a draft article.

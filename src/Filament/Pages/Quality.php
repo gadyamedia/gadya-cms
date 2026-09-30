@@ -16,6 +16,7 @@ use Gadya\Cms\Quality\ApplyFix;
 use Gadya\Cms\Quality\Drift;
 use Gadya\Cms\Quality\Failures;
 use Gadya\Cms\Quality\Visibility;
+use Gadya\Cms\Support\SiteTimezone;
 use Gadya\Cms\Transfer\Takeout;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -67,7 +68,7 @@ class Quality extends Page
                 ->modalSubmitActionLabel('Pack it up')
                 ->action(function (Takeout $takeout): ?BinaryFileResponse {
                     try {
-                        $path = $takeout->write(storage_path('app/takeout/'.Str::slug((string) config('app.name')).'-'.now()->format('Y-m-d').'.zip'));
+                        $path = $takeout->write(storage_path('app/takeout/'.Str::slug((string) config('app.name')).'-'.app(SiteTimezone::class)->now()->format('Y-m-d').'.zip'));
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Could not pack it up')->body($exception->getMessage())->send();
 

@@ -2,6 +2,17 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **A site time zone.** The admin showed "30 Sep, 7:57am" for something done at 3:57am in New Jersey, and the enquiry email said "1:21am" for one made at 9:21pm the evening before: the sites run on UTC and every date was drawn in it. **Appearance → Locations → Time zone** (the `site.timezone` option; `GADYA_TIMEZONE` as the default) sets the business's own zone, with the common US zones first and **Use this device's time zone**. Filament's display zone follows it, so every date column, entry and picker shows local time and pickers save back as UTC; so do the enquiry email, the exports and takeout, article and comment dates, the coming-soon notice, the accessibility statement, and the "today", "yesterday" and last-N-days windows and per-day charts of the analytics and form stats (right across the nights the clocks change, on SQLite and MySQL). New `Gadya\Cms\Support\SiteTimezone`. Opening hours default to it, keeping an optional zone of their own. Stored timestamps, `app.timezone` and PHP's zone are never touched, and nothing changes for a site until it chooses a zone. Events keep the wall-clock times they were typed with. `gadya-cms:audit` gains an optional "The site's time zone is set", the suggested schedule lines for jobs with a time of day carry `->timezone(SiteTimezone::current())`, and the portal is told the zone at check-in. See [the site's time zone](docs/operations.md#the-sites-time-zone).
+
+### Changed
+
+- **Who is this sent by? is current.** The portal's answer is kept for 60 seconds, not ten minutes, so a message sent a minute ago shows. A **Refresh** beside "Sent lately" asks again at once, and the panel asks again when it is opened and after a test send. Sending still never waits on the portal.
+- "Visitors, once a day each" counts by the business's day.
+
 ## 0.17.4
 
 ### Fixed

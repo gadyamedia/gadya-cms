@@ -12,7 +12,7 @@ What people typed into Google to find the site, and the pages they landed on.
 4. Press **Fetch from Google now**, and schedule the nightly fetch:
 
 ```php
-Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
+Schedule::command('gadya-cms:search-console')->dailyAt('05:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 ```
 
 Google's data lags by two days, so the 28-day window ends the day before yesterday. Snapshots live in `gadyacms_search_snapshots`; `SearchConsole::topQueries()`, `topPages()` and `totals()` read them.

@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Console;
 
+use Gadya\Cms\Support\SiteTimezone;
 use Gadya\Cms\Transfer\Takeout;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
@@ -18,7 +19,7 @@ class TakeoutCommand extends Command
 
     public function handle(Takeout $takeout): int
     {
-        $path = (string) ($this->option('path') ?: storage_path('app/takeout/'.Str::slug((string) config('app.name')).'-'.now()->format('Y-m-d').'.zip'));
+        $path = (string) ($this->option('path') ?: storage_path('app/takeout/'.Str::slug((string) config('app.name')).'-'.app(SiteTimezone::class)->now()->format('Y-m-d').'.zip'));
 
         try {
             $written = $takeout->write($path);

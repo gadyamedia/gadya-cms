@@ -69,7 +69,7 @@ Menus, sections, items and each size carry a `key` (a ULID) that never changes t
 
 - **Every week** - each day takes one or more sets of times (lunch and dinner). No times means closed. A closing time earlier than the opening time runs past midnight: a Friday of 6pm to 2am is still Friday night at 1:30 on Saturday morning. Opening and closing at midnight is open all day.
 - **Holidays and special days** - a date, what it is for ("Thanksgiving"), and either *Closed all day* or its own times. A date here replaces that day's usual hours.
-- **Time zone** - where the business is (`hours.timezone`, America/New_York by default), not where the server is.
+- **Time zone** - where the business is, not where the server is. By default the hours follow the [site's time zone](operations.md#the-sites-time-zone), so changing it moves them too. Pick a zone here only for hours that run in another one; it is kept with the hours. A site with no zone of its own uses `hours.timezone` (America/New_York). The opening and closing times are clock times and are never converted.
 
 The hours are part of the site document (the `hours` key), so they are saved to the draft, published with **Publish changes**, and kept in the revision history.
 

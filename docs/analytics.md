@@ -22,12 +22,14 @@ With a broadcaster configured (`composer require laravel/reverb && php artisan r
 
 ## Reports
 
+Every range starts at the business's midnight in the [site's time zone](operations.md#the-sites-time-zone): "today" is the business's today, the chart groups visits by the business's day, and the CSV gives each visit's date and time there.
+
 - **Download CSV** - every visit in the range, with day, page, referrer, campaign, device and place. No visitor identifier.
 - **Email me this** - the summary, now, to the signed-in person.
 - **Weekly email** - a list of addresses that get the last seven days every Monday, sent by `gadya-cms:analytics-digest`. Schedule it:
 
 ```php
-Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
+Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 ```
 
 ## The map

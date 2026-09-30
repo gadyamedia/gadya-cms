@@ -40,16 +40,20 @@ class InstallAudit
         'pages.paths', 'media.variants', 'seo.organization', 'analytics.events', 'maintenance',
     ];
 
-    /** The jobs the package expects the scheduler to run. */
+    /**
+     * The jobs the package expects the scheduler to run. Those with a time
+     * of day run on the business's clock, so the digest arrives at 8am
+     * where the business is (`SiteTimezone` is Gadya\Cms\Support\SiteTimezone).
+     */
     public const SCHEDULE = [
         'gadya-cms:publish-due' => "Schedule::command('gadya-cms:publish-due')->everyFiveMinutes();",
         'gadya-cms:prune-trash' => "Schedule::command('gadya-cms:prune-trash')->daily();",
-        'gadya-cms:check-links' => "Schedule::command('gadya-cms:check-links')->weeklyOn(2, '03:00');",
+        'gadya-cms:check-links' => "Schedule::command('gadya-cms:check-links')->weeklyOn(2, '03:00')->timezone(\\Gadya\\Cms\\Support\\SiteTimezone::current());",
         'gadya-cms:prune-activity' => "Schedule::command('gadya-cms:prune-activity')->weekly();",
-        'gadya-cms:prune-analytics' => "Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');",
-        'gadya-cms:analytics-digest' => "Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');",
-        'gadya-cms:search-console' => "Schedule::command('gadya-cms:search-console')->dailyAt('05:00');",
-        'gadya-cms:pagespeed' => "Schedule::command('gadya-cms:pagespeed')->weeklyOn(2, '04:00');",
+        'gadya-cms:prune-analytics' => "Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00')->timezone(\\Gadya\\Cms\\Support\\SiteTimezone::current());",
+        'gadya-cms:analytics-digest' => "Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00')->timezone(\\Gadya\\Cms\\Support\\SiteTimezone::current());",
+        'gadya-cms:search-console' => "Schedule::command('gadya-cms:search-console')->dailyAt('05:00')->timezone(\\Gadya\\Cms\\Support\\SiteTimezone::current());",
+        'gadya-cms:pagespeed' => "Schedule::command('gadya-cms:pagespeed')->weeklyOn(2, '04:00')->timezone(\\Gadya\\Cms\\Support\\SiteTimezone::current());",
     ];
 
     public function __construct(private readonly Filesystem $files) {}
@@ -382,6 +386,13 @@ class InstallAudit
                 WorkflowTemplate::installed() === null
                     ? 'php artisan gadya-cms:install publishes '.WorkflowTemplate::PATH.', which the Gadya portal runs to update the site.'
                     : 'Refresh it from the Gadya portal, or copy vendor/gadya/cms/resources/github/gadya-update.yml over '.WorkflowTemplate::PATH.'.',
+                optional: true,
+            ),
+            $this->check(
+                'Install',
+                'The site\'s time zone is set',
+                app(SiteTimezone::class)->explicitName() !== null,
+                'Set the Time zone under Appearance → Locations (or GADYA_TIMEZONE in .env). Until then dates and times show in '.app(SiteTimezone::class)->name().', which is fine if that is where the business is.',
                 optional: true,
             ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),

@@ -37,13 +37,13 @@ In `routes/console.php`. Nothing below is required, but a scheduled publish neve
 
 ```php
 Schedule::command('gadya-cms:publish-due')->everyFiveMinutes();
-Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
-Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
-Schedule::command('gadya-cms:check-links')->weeklyOn(2, '03:00');
-Schedule::command('gadya-cms:pagespeed')->weeklyOn(2, '04:00');
+Schedule::command('gadya-cms:search-console')->dailyAt('05:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
+Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
+Schedule::command('gadya-cms:check-links')->weeklyOn(2, '03:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
+Schedule::command('gadya-cms:pagespeed')->weeklyOn(2, '04:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 Schedule::command('gadya-cms:drift-digest')->twiceMonthly(1, 15, '08:00');
 Schedule::command('gadya-cms:backup-drill')->monthlyOn(3, '05:00');
-Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');
+Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 Schedule::command('gadya-cms:prune-trash')->daily();
 Schedule::command('gadya-cms:prune-activity')->weekly();
 ```

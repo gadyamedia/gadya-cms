@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Console;
 
+use Gadya\Cms\Support\SiteTimezone;
 use Gadya\Cms\Transfer\SiteExporter;
 use Illuminate\Console\Command;
 use Throwable;
@@ -26,7 +27,7 @@ class ExportSiteCommand extends Command
         }
 
         $withMedia = (bool) $this->option('with-media');
-        $path = (string) ($this->option('path') ?: storage_path('app/site-export-'.now()->format('Y-m-d-His').($withMedia ? '.zip' : '.json')));
+        $path = (string) ($this->option('path') ?: storage_path('app/site-export-'.app(SiteTimezone::class)->now()->format('Y-m-d-His').($withMedia ? '.zip' : '.json')));
 
         try {
             $written = $exporter->write($path, $withMedia);

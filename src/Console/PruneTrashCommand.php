@@ -4,6 +4,7 @@ namespace Gadya\Cms\Console;
 
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Post;
+use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Console\Command;
 
 /**
@@ -25,7 +26,9 @@ class PruneTrashCommand extends Command
         $pages = Page::onlyTrashed()->where('deleted_at', '<', $cutoff)->forceDelete();
         $posts = Post::onlyTrashed()->where('deleted_at', '<', $cutoff)->forceDelete();
 
-        $this->info("Emptied {$pages} pages and {$posts} articles deleted before {$cutoff->toDateString()}.");
+        $cutoffDate = app(SiteTimezone::class)->format($cutoff, 'Y-m-d');
+
+        $this->info("Emptied {$pages} pages and {$posts} articles deleted before {$cutoffDate}.");
 
         return self::SUCCESS;
     }

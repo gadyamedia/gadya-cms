@@ -106,8 +106,13 @@ fix. A site whose mailer is `log` is told the test was written to the log and
 not sent. Through the shared sender the test carries `purpose: test`, so it is
 marked as a test in the portal's sent list.
 
+Times in the list, like every time in the CMS's emails ("Sent from /contact
+on Tue 29 Sep 2026, 9:21pm"), are in the [site's time zone](operations.md#the-sites-time-zone).
+
 The address and the list come from the portal, asked for when that screen
-is opened and remembered for ten minutes. The site could work its own
+is opened and remembered for a minute. **Refresh** beside "Sent lately" asks
+again at once, and the panel asks again by itself when it is opened and after
+a test send - not on every keystroke in the form around it. The site could work its own
 address out from its name, but the portal is what decides it - two clients
 called the same thing cannot share a mailbox - so the panel asks rather
 than assumes. Sending never waits on that question: a message on its way

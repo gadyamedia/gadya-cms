@@ -111,9 +111,9 @@ Read the configuration back anywhere with `GadyaCmsPlugin::get()`.
 In `routes/console.php`:
 
 ```php
-Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00');
-Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00');
-Schedule::command('gadya-cms:search-console')->dailyAt('05:00');
+Schedule::command('gadya-cms:prune-analytics')->weeklyOn(1, '03:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
+Schedule::command('gadya-cms:analytics-digest')->weeklyOn(1, '08:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
+Schedule::command('gadya-cms:search-console')->dailyAt('05:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 Schedule::command('gadya-cms:publish-due')->everyFiveMinutes();
 Schedule::command('gadya-cms:prune-trash')->daily();
 ```
