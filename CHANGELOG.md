@@ -2,6 +2,14 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.17.4
+
+### Fixed
+
+- **The update workflow failed on a site whose composer scripts call Laravel Boost.** `composer update` ran the site's `post-update-cmd` (`php artisan boost:update`) in an environment with no `.env`, where Boost does not load, and the whole update died with "There are no commands defined in the boost namespace". Template 4 prepares the environment before the update, runs the update and the upgrade steps as a local environment (and only those: the tests keep the environment the site's `phpunit.xml` gives them), and carries on without scripts when one fails after the packages are already updated. A real resolution conflict still fails.
+
+Refresh each site's workflow from **Sites → Upgrades → Refresh updaters**: rollouts now need template 4.
+
 ## 0.17.3
 
 ### Fixed

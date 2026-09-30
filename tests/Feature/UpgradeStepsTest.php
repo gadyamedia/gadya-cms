@@ -100,7 +100,7 @@ class UpgradeStepsTest extends TestCase
     {
         $step = app(CheckUpdateWorkflow::class);
 
-        $this->assertSame(3, WorkflowTemplate::shipped());
+        $this->assertSame(4, WorkflowTemplate::shipped());
         $this->assertTrue($step->shouldRun());
         $this->assertStringContainsString('There is no .github/workflows/gadya-update.yml', $step->run());
         $this->assertFileDoesNotExist(base_path(WorkflowTemplate::PATH));

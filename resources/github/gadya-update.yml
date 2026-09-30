@@ -1,4 +1,4 @@
-# gadya-update-template: 3
+# gadya-update-template: 4
 #
 # Updates the Gadya packages and puts the result in git.
 #
@@ -85,33 +85,6 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist --no-progress
 
-      # The first package is the one whose version decides where the update
-      # goes (gadya/cms by default).
-      - name: The version before
-        id: before
-        run: |
-          first=$(echo "$PACKAGES" | awk '{print $1}')
-          echo "package=${first}" >> "$GITHUB_OUTPUT"
-          echo "version=$(composer show "$first" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
-
-      - name: Update
-        env:
-          PACKAGE: ${{ steps.before.outputs.package }}
-        run: |
-          set -euo pipefail
-          if [ -n "$CONSTRAINT" ]; then
-            composer require "${PACKAGE}:${CONSTRAINT}" -W --no-interaction --no-progress
-          fi
-          # Word splitting is wanted here: one argument per package.
-          # shellcheck disable=SC2086
-          composer update $PACKAGES -W --no-interaction --no-progress
-
-      - name: The version after
-        id: after
-        env:
-          PACKAGE: ${{ steps.before.outputs.package }}
-        run: echo "version=$(composer show "$PACKAGE" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
-
       # A fresh checkout has no .env and so no app key, and the site's tests
       # (and some artisan commands) refuse to run without one. The files made
       # here are kept out of the commit.
@@ -122,15 +95,61 @@ jobs:
             if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
           fi
           if ! grep -qE '^APP_KEY=.+' .env; then
+            # key:generate only replaces a line that is there.
+            grep -q '^APP_KEY=' .env || printf '\nAPP_KEY=\n' >> .env
             php artisan key:generate --force --no-interaction
           fi
           printf '%s\n' '.env' '/node_modules' '/public/build' >> .git/info/exclude
+
+      # The first package is the one whose version decides where the update
+      # goes (gadya/cms by default).
+      - name: The version before
+        id: before
+        run: |
+          first=$(echo "$PACKAGES" | awk '{print $1}')
+          echo "package=${first}" >> "$GITHUB_OUTPUT"
+          echo "version=$(composer show "$first" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      # Dev tools the site's own composer scripts call (Laravel Boost, say)
+      # only load in a local environment, so the update runs as one. Only this
+      # step and the upgrade steps: the tests keep the environment the site's
+      # phpunit.xml gives them.
+      - name: Update
+        env:
+          PACKAGE: ${{ steps.before.outputs.package }}
+          APP_ENV: local
+          APP_DEBUG: 'true'
+        run: |
+          set -euo pipefail
+          if [ -n "$CONSTRAINT" ]; then
+            composer require "${PACKAGE}:${CONSTRAINT}" -W --no-interaction --no-progress
+          fi
+          # Word splitting is wanted here: one argument per package.
+          # shellcheck disable=SC2086
+          if ! composer update $PACKAGES -W --no-interaction --no-progress; then
+            # A site's own post-update script can fail after the packages and
+            # the lock are already updated. Resolving again without scripts
+            # succeeds if that is all it was, and fails for a real conflict.
+            echo "::warning::A composer script failed after the update; carrying on without scripts."
+            # shellcheck disable=SC2086
+            composer update $PACKAGES -W --no-interaction --no-progress --no-scripts
+            php artisan package:discover --ansi || true
+          fi
+
+      - name: The version after
+        id: after
+        env:
+          PACKAGE: ${{ steps.before.outputs.package }}
+        run: echo "version=$(composer show "$PACKAGE" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       # gadya:upgrade --phase=code comes with gadya/connect 0.6. A site on an
       # older connect gets what this workflow did before it existed.
       - name: Upgrade steps
         id: upgrade
         continue-on-error: true
+        env:
+          APP_ENV: local
+          APP_DEBUG: 'true'
         run: |
           set -uo pipefail
           if php artisan help gadya:upgrade --no-interaction > /dev/null 2>&1; then
