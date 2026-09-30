@@ -60,6 +60,27 @@ class FormResourceTest extends TestCase
         $this->assertSame(1, $form->versions()->count());
     }
 
+    public function test_the_preview_sits_in_a_frame_so_its_required_questions_cannot_stop_the_save_button(): void
+    {
+        $form = Form::factory()->published()->create(['slug' => 'contact-us']);
+        $form->recordVersion();
+
+        $html = Livewire::actingAs($this->editor())
+            ->test(EditForm::class, ['record' => $form->getKey()])
+            ->assertSeeHtml('sandbox="allow-scripts"')
+            ->html();
+
+        /*
+         * Were the preview's inputs part of this page, an empty required
+         * one - on a tab nobody can see - would make the browser refuse
+         * the admin's own form, and "Save changes" would do nothing.
+         */
+        $outsideTheFrame = (string) preg_replace('/srcdoc="[^"]*"/s', '', $html);
+
+        $this->assertStringContainsString('srcdoc="', $html);
+        $this->assertStringNotContainsString('cms-bform', $outsideTheFrame);
+    }
+
     public function test_a_form_nobody_could_fill_in_is_not_saved(): void
     {
         Livewire::actingAs($this->editor())

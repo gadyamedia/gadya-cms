@@ -21,6 +21,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 use Workbench\App\Models\User;
 
@@ -135,17 +136,28 @@ class DatabaseSeeder extends Seeder
 
         foreach ($photos as $filename => [$colour, $label]) {
             $base = Str::beforeLast($filename, '.');
-            $image = $manager->create(1600, 1000)->fill($colour)->text($label, 800, 500, function ($font) {
-                $font->size(64);
-                $font->color('#ffffff');
-                $font->align('center');
-                $font->valign('middle');
-            });
+            /* Intervention 4 renamed create() and dropped text(): there the photos are plain colour. */
+            $canvas = fn (int $width, int $height) => method_exists($manager, 'createImage')
+                ? $manager->createImage($width, $height)
+                : $manager->create($width, $height);
 
-            $disk->put("{$directory}/{$base}.webp", (string) $image->toWebp(80));
-            $disk->put("{$directory}/thumbnails/{$base}.webp", (string) $manager->create(400, 250)->fill($colour)->toWebp(70));
-            $disk->put("{$directory}/variants/{$base}-480.webp", (string) $manager->create(480, 300)->fill($colour)->toWebp(75));
-            $disk->put("{$directory}/variants/{$base}-960.webp", (string) $manager->create(960, 600)->fill($colour)->toWebp(78));
+            $image = $canvas(1600, 1000)->fill($colour);
+
+            try {
+                $image->text($label, 800, 500, function ($font) {
+                    $font->size(64);
+                    $font->color('#ffffff');
+                    $font->align('center');
+                    $font->valign('middle');
+                });
+            } catch (\Throwable) {
+                /* Intervention 4 draws text another way; a plain colour will do for a demo. */
+            }
+
+            $disk->put("{$directory}/{$base}.webp", (string) $image->encode(new WebpEncoder(quality: 80)));
+            $disk->put("{$directory}/thumbnails/{$base}.webp", (string) $canvas(400, 250)->fill($colour)->encode(new WebpEncoder(quality: 70)));
+            $disk->put("{$directory}/variants/{$base}-480.webp", (string) $canvas(480, 300)->fill($colour)->encode(new WebpEncoder(quality: 75)));
+            $disk->put("{$directory}/variants/{$base}-960.webp", (string) $canvas(960, 600)->fill($colour)->encode(new WebpEncoder(quality: 78)));
 
             Media::query()->updateOrCreate(['filename' => $filename], [
                 'site_id' => $siteId,

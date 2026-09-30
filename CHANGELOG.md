@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.17.1
+
+### Fixed
+
+- **"Save changes" on a form's edit screen did nothing.** The live preview on the Questions tab was part of the admin's own form, so its required questions - empty, and on a tab nobody could see - made the browser refuse to send the form, silently. Every form with a required question was affected, on every tab. The preview now sits in a frame of its own: it looks and answers as before, and no longer takes part in the admin's form.
+- The demo site builds again with Intervention Image 4 (`composer build`).
+
 ## 0.17.0
 
 ### Added

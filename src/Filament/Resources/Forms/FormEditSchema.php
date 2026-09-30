@@ -28,6 +28,7 @@ use Gadya\Cms\Forms\Destinations\FormDestinations;
 use Gadya\Cms\Forms\SubmissionContext;
 use Gadya\Cms\Models\Form;
 use Gadya\Cms\Support\SiteContext;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
@@ -53,7 +54,7 @@ final class FormEditSchema
                                 ->description('How it looks on the site. Questions with rules show and hide as you answer.')
                                 ->schema([
                                     View::make('gadya-cms::filament.forms.preview')
-                                        ->viewData(fn ($livewire): array => ['html' => self::preview($livewire)]),
+                                        ->viewData(fn ($livewire): array => ['document' => self::previewDocument(self::preview($livewire))]),
                                 ])
                                 ->columnSpan(['default' => 1, 'xl' => 2]),
                         ]),
@@ -83,6 +84,24 @@ final class FormEditSchema
             new HtmlString('<p>The preview will appear once the form has a question.</p>'),
             report: false,
         );
+    }
+
+    /**
+     * The preview as a page of its own, for the frame that shows it: the
+     * form brings its own style and script, and tells the admin how tall
+     * it has grown so the frame can follow.
+     */
+    public static function previewDocument(HtmlString $form): string
+    {
+        $nonce = Vite::cspNonce();
+        $attribute = $nonce !== null ? ' nonce="'.e($nonce).'"' : '';
+
+        return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            .'<style'.$attribute.'>html,body{margin:0}body{padding:1rem;font:16px/1.5 system-ui,sans-serif;color:#111827;background:#fff}</style></head><body>'
+            .$form->toHtml()
+            .'<script'.$attribute.'>(function(){var send=function(){parent.postMessage({gadyaFormPreviewHeight:document.documentElement.scrollHeight},"*")};'
+            .'if(window.ResizeObserver){new ResizeObserver(send).observe(document.body)}window.addEventListener("load",send);send()})()</script>'
+            .'</body></html>';
     }
 
     /**
