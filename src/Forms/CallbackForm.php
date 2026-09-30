@@ -2,6 +2,7 @@
 
 namespace Gadya\Cms\Forms;
 
+use Gadya\Cms\Support\ClientIp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -67,7 +68,7 @@ final class CallbackForm
         return [
             'text' => Str::limit(self::consentText(), 1000, ''),
             'at' => now()->toIso8601String(),
-            'ip' => $request->ip(),
+            'ip' => ClientIp::for($request),
         ];
     }
 }

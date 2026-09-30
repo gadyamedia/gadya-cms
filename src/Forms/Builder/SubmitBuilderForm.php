@@ -18,6 +18,7 @@ use Gadya\Cms\Models\FormSubmission;
 use Gadya\Cms\Models\Subscriber;
 use Gadya\Cms\Portal\SubmissionPush;
 use Gadya\Cms\Privacy\PolicyVersion;
+use Gadya\Cms\Support\ClientIp;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Http\Request;
@@ -187,7 +188,7 @@ class SubmitBuilderForm
                 $record = [
                     'text' => Str::limit(trim((string) (filled($seen['text'] ?? null) ? $seen['text'] : $seen['label'])), 1000, ''),
                     'at' => now()->toIso8601String(),
-                    'ip' => $request->ip(),
+                    'ip' => ClientIp::for($request),
                     'policy_version' => $policy['version'],
                     'policy_url' => $policy['url'],
                 ];

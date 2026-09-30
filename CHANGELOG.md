@@ -4,8 +4,14 @@ All notable changes to `gadya/cms` are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- **Visitors behind Cloudflare were counted as one.** The visitor identifier, the forms rate limit (six a minute), the consent record's address and the address kept with a submission all used the Cloudflare server's address, so everyone on the same phone and browser reaching the same Cloudflare location was one visitor, shared one limit, and had a legally meaningless consent address. They now use the visitor's own address, read from `CF-Connecting-IP` only when the request really came from a Cloudflare address (`Gadya\Cms\Support\ClientIp`; `gadya-cms.client_ip`). `gadya-cms:audit` gains an optional "Visitors' real addresses reach the site".
+- **Monitors, API clients and link previews counted as visitors.** The bot filter is now `BotDetector`: uptime and monitoring services, HTTP libraries, link-preview and social fetchers, AI and SEO crawlers, Gadya's own checks, requests with no user agent and browser prefetches. Extend it with `gadya-cms.analytics.bot_patterns`.
+
 ### Added
 
+- **`gadya-cms:analytics:clean-monitors`** removes views a monitor inflated in the past: a visitor-day of at least 200 views, 95% of one page, with no campaign and at most one referrer. A dry run unless `--force`; `--days=`, `--min-views=`, `--path=`. See [Analytics](docs/analytics.md).
 - **A site time zone.** The admin showed "30 Sep, 7:57am" for something done at 3:57am in New Jersey, and the enquiry email said "1:21am" for one made at 9:21pm the evening before: the sites run on UTC and every date was drawn in it. **Appearance → Locations → Time zone** (the `site.timezone` option; `GADYA_TIMEZONE` as the default) sets the business's own zone, with the common US zones first and **Use this device's time zone**. Filament's display zone follows it, so every date column, entry and picker shows local time and pickers save back as UTC; so do the enquiry email, the exports and takeout, article and comment dates, the coming-soon notice, the accessibility statement, and the "today", "yesterday" and last-N-days windows and per-day charts of the analytics and form stats (right across the nights the clocks change, on SQLite and MySQL). New `Gadya\Cms\Support\SiteTimezone`. Opening hours default to it, keeping an optional zone of their own. Stored timestamps, `app.timezone` and PHP's zone are never touched, and nothing changes for a site until it chooses a zone. Events keep the wall-clock times they were typed with. `gadya-cms:audit` gains an optional "The site's time zone is set", the suggested schedule lines for jobs with a time of day carry `->timezone(SiteTimezone::current())`, and the portal is told the zone at check-in. See [the site's time zone](docs/operations.md#the-sites-time-zone).
 
 ### Changed

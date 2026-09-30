@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Forms\Builder;
 
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Support\ClientIp;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -106,7 +107,7 @@ class SpamGuard
             $answer = Http::asForm()->timeout(8)->post(self::TURNSTILE_VERIFY, [
                 'secret' => $secret,
                 'response' => $response,
-                'remoteip' => $request->ip(),
+                'remoteip' => ClientIp::for($request),
             ]);
         } catch (Throwable) {
             return true;

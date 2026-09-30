@@ -3,6 +3,7 @@
 namespace Gadya\Cms\Analytics;
 
 use Gadya\Cms\Privacy\Consent;
+use Gadya\Cms\Support\ClientIp;
 use Gadya\Cms\Support\SiteTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -32,7 +33,7 @@ class VisitorFingerprint
 
         return hash_hmac(
             'sha256',
-            $request->ip().'|'.$request->userAgent().'|'.app(SiteTimezone::class)->now()->toDateString(),
+            (ClientIp::for($request) ?? '').'|'.$request->userAgent().'|'.app(SiteTimezone::class)->now()->toDateString(),
             (string) config('app.key'),
         );
     }
@@ -50,9 +51,6 @@ class VisitorFingerprint
 
     public static function isBot(Request $request): bool
     {
-        return (bool) preg_match(
-            '/bot|crawl|spider|slurp|lighthouse|headless|preview|fetch|scan|monitor|curl|wget/i',
-            (string) $request->userAgent(),
-        );
+        return BotDetector::isBot($request);
     }
 }

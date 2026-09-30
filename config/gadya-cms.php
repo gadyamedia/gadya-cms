@@ -313,6 +313,19 @@ return [
     ],
 
     /*
+     * The visitor's own address, for the daily visitor identifier, the forms
+     * rate limit and the consent record. Behind Cloudflare the request's
+     * address is an edge server, so `CF-Connecting-IP` is used - but only
+     * when the request really came from one of Cloudflare's ranges (or one
+     * listed here), so nobody can forge it. A site that configures Laravel's
+     * trusted proxies needs nothing. See docs/analytics.md.
+     */
+    'client_ip' => [
+        'trust_cloudflare' => env('GADYA_CMS_TRUST_CLOUDFLARE', true),
+        'extra_trusted_ranges' => [],
+    ],
+
+    /*
      * First-party analytics. Counted on this server, from this site's own
      * traffic: no third-party script, no cookie, and no visitor's address
      * ever stored - only a daily-rotating hash of one, which counts people
@@ -323,6 +336,12 @@ return [
 
         /* How far back the dashboard keeps data before pruning it. */
         'retention_days' => 180,
+
+        /*
+         * Extra user-agent patterns to count as bots, on top of the built-in
+         * list (regex fragments, case-insensitive): ['acmecheck', 'internal-tool/'].
+         */
+        'bot_patterns' => [],
 
         /* The window "on the site now" covers. */
         'live_minutes' => 5,

@@ -395,6 +395,13 @@ class InstallAudit
                 'Set the Time zone under Appearance → Locations (or GADYA_TIMEZONE in .env). Until then dates and times show in '.app(SiteTimezone::class)->name().', which is fine if that is where the business is.',
                 optional: true,
             ),
+            $this->check(
+                'Install',
+                'Visitors\' real addresses reach the site',
+                ! request()->headers->has('CF-Connecting-IP') || ClientIp::honoursCloudflare(),
+                'The site is behind Cloudflare but does not use its CF-Connecting-IP header, so visitors are counted by a Cloudflare address and share one form limit. Set gadya-cms.client_ip.trust_cloudflare to true (GADYA_CMS_TRUST_CLOUDFLARE=true), or configure Laravel\'s trusted proxies.',
+                optional: true,
+            ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
             $this->check('Install', 'AI readiness score is 80 or more (now '.$readiness.')', $readiness >= 80, 'php artisan gadya-cms:agent-ready lists what to fix; most are page descriptions to write in the panel.', optional: true),
         ];

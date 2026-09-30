@@ -4,6 +4,7 @@ namespace Gadya\Cms\Forms;
 
 use Closure;
 use Gadya\Cms\Privacy\Consent;
+use Gadya\Cms\Support\ClientIp;
 use Gadya\Cms\Support\SiteContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -153,7 +154,7 @@ class Attribution
     public function ip(Request $request): ?string
     {
         $mode = (string) config('gadya-cms.forms.builder.attribution.ip', 'full');
-        $ip = $request->ip();
+        $ip = ClientIp::for($request);
 
         if ($ip === null || $mode === 'none') {
             return null;

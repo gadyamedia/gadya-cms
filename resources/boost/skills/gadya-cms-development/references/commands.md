@@ -25,6 +25,7 @@
 | `gadya-cms:agent-ready` | Score readiness for search engines and AI assistants (`--live`) |
 | `gadya-cms:analytics-digest` | Email the summary to the people who signed up for it (`--days=7`) |
 | `gadya-cms:prune-analytics` | Delete page views and events past the retention window (`--days=`) |
+| `gadya-cms:analytics:clean-monitors` | Find, and with `--force` remove, past views inflated by a monitor (`--days=`, `--min-views=`, `--path=`) |
 | `gadya-cms:prune-trash` | Empty the trash of pages and articles nobody restored (`--days=`) |
 | `gadya-cms:prune-activity` | Delete old activity entries and long-fixed broken links (`--days=`) |
 | `gadya-cms:push-submissions` | Send the Gadya portal any enquiries from the last week it has not had (`--limit=100`). Scheduled every five minutes by the package itself on a paired site. |

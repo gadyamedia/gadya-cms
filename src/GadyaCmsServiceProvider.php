@@ -12,6 +12,7 @@ use Gadya\Cms\Console\AuditCommand;
 use Gadya\Cms\Console\BackupDrillCommand;
 use Gadya\Cms\Console\CheckLinksCommand;
 use Gadya\Cms\Console\CheckPageSpeedCommand;
+use Gadya\Cms\Console\CleanMonitorViewsCommand;
 use Gadya\Cms\Console\ConvertFormCommand;
 use Gadya\Cms\Console\DoctorCommand;
 use Gadya\Cms\Console\ExportSiteCommand;
@@ -78,6 +79,7 @@ use Gadya\Cms\Options\Options;
 use Gadya\Cms\Portal\ChangeRequests;
 use Gadya\Cms\Portal\RemoteCommands;
 use Gadya\Cms\Privacy\Consent;
+use Gadya\Cms\Support\ClientIp;
 use Gadya\Cms\Support\Maintenance;
 use Gadya\Cms\Support\PackageConfig;
 use Gadya\Cms\Support\SiteContext;
@@ -132,6 +134,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
                 ImportLegacyContentCommand::class,
                 ImportLegacyMediaCommand::class,
                 PruneAnalyticsCommand::class,
+                CleanMonitorViewsCommand::class,
                 SendAnalyticsDigestCommand::class,
                 MakePageTemplateCommand::class,
                 MakeMediaVariantsCommand::class,
@@ -518,7 +521,7 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
     private function registerRateLimiters(): void
     {
         RateLimiter::for('gadya-cms-inline', fn (Request $request): Limit => Limit::perMinute(120)
-            ->by($request->user()?->getAuthIdentifier() ?: $request->ip()));
+            ->by($request->user()?->getAuthIdentifier() ?: ClientIp::for($request)));
 
         /*
          * Checking one step of a long form is not sending it: those get a
@@ -526,9 +529,9 @@ class GadyaCmsServiceProvider extends PackageServiceProvider
          * tries before its last page.
          */
         RateLimiter::for('gadya-cms-forms', fn (Request $request): Limit => $request->filled('_validate_step')
-            ? Limit::perMinute(60)->by('step|'.$request->ip())
-            : Limit::perMinute(6)->by($request->ip()));
+            ? Limit::perMinute(60)->by('step|'.ClientIp::for($request))
+            : Limit::perMinute(6)->by(ClientIp::for($request)));
 
-        RateLimiter::for('gadya-cms-events', fn (Request $request): Limit => Limit::perMinute(60)->by($request->ip()));
+        RateLimiter::for('gadya-cms-events', fn (Request $request): Limit => Limit::perMinute(60)->by(ClientIp::for($request)));
     }
 }
