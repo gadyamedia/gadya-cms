@@ -50,7 +50,7 @@
                                 <span class="gadya-setup__pill gadya-setup__pill--{{ ($email['failed'] ?? false) ? 'wrong' : 'ok' }}">
                                     {{ ($email['failed'] ?? false) ? 'Did not send' : 'Sent' }}
                                 </span>
-                                @if (($email['failed'] ?? false) && filled($email['reason'] ?? null))
+                                @if (filled($email['reason'] ?? null))
                                     <br><span class="gadya-dash__muted">{{ $email['reason'] }}</span>
                                 @endif
                             </td>

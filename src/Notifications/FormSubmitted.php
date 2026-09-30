@@ -71,9 +71,18 @@ class FormSubmitted extends Notification implements ShouldQueue
             $mail->replyTo($replyTo, $this->submission->sender());
         }
 
-        return $this->markTest($mail)
+        $mail = $this->markTest($mail)
             ->line('Sent from '.($this->submission->path ?: 'the site').' on '.$this->submission->created_at->format('D j M Y, g:ia').'.')
             ->action('Open in the admin', SubmissionResource::getUrl())
             ->salutation('Replying to this email goes straight to them.');
+
+        /*
+         * Under Gadya's name rather than the framework's: the same words,
+         * drawn by the package's own view. The message keeps every line, so
+         * whatever reads it - a test, a listener - still finds them.
+         */
+        return config('gadya-cms.mail.branded', true)
+            ? $mail->view(['gadya-cms::mail.enquiry', 'gadya-cms::mail.enquiry-text'], $mail->data())
+            : $mail;
     }
 }

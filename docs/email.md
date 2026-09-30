@@ -71,7 +71,12 @@ carries it.
 | `mail.mailbox` | the portal's name for the site | `GADYA_MAIL_MAILBOX` |
 | `mail.reply_to` | `seo.organization.email` | `GADYA_MAIL_REPLY_TO` |
 | `mail.footer` | `true` | `GADYA_MAIL_FOOTER` |
+| `mail.branded` | `true` | `GADYA_MAIL_BRANDED` |
 | `mail.max_attachment_megabytes` | `10` | |
+
+## The enquiry email is Gadya's
+
+The email that tells staff about a new enquiry carries Gadya's logo on a dark band at the top, the enquiry in a plain card, and "Emails powered by Gadya" at the foot, instead of the framework's generic notification. Text a visitor typed is shown as words: it is never run, and a link or picture they type is not drawn. Set `mail.branded` to `false` for the plain notification. The reply to the visitor is never branded: that email is the business writing, in its own words.
 
 ## In the panel
 

@@ -572,6 +572,14 @@ return [
         'footer' => env('GADYA_MAIL_FOOTER', true),
 
         /*
+         * The email that tells staff about a new enquiry: Gadya's logo on
+         * top and "Emails powered by Gadya" at the foot. False sends the
+         * plain Laravel notification instead. The visitor's own reply is
+         * never branded: that is the business writing.
+         */
+        'branded' => env('GADYA_MAIL_BRANDED', true),
+
+        /*
          * Seconds to wait for the portal to take a message. Kept short:
          * without a queue this wait happens inside a visitor's form
          * submission, and a failed send is retried, not lost.

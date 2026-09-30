@@ -2,6 +2,13 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.17.2
+
+### Changed
+
+- **The email that tells staff about an enquiry is Gadya's, not Laravel's.** Gadya's logo on a dark band at the top, the enquiry in a plain card, "Emails powered by Gadya" at the foot, and a plain-text version to match. What a visitor typed is shown as words, never run. `mail.branded` (`GADYA_MAIL_BRANDED`) switches it back to the plain notification; the reply to the visitor is never branded.
+- The **Who is this sent by?** panel shows why an email was only partly delivered, and to which address.
+
 ## 0.17.1
 
 ### Fixed
