@@ -6,7 +6,7 @@ namespace Gadya\Cms\Upgrade;
  * Gadya's update workflow: the template this release ships, and the one
  * the site's repository holds. The first line says which it is:
  *
- *     # gadya-update-template: 2
+ *     # gadya-update-template: 3
  *
  * The first template said nothing, so a file without the line is 1.
  */

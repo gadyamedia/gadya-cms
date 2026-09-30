@@ -2,6 +2,15 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.17.3
+
+### Fixed
+
+- **The update workflow could not run a site's tests.** A fresh checkout has no `.env`, so no app key, and nearly every test failed with "No application encryption key has been specified" - and so nothing was ever merged. The workflow (now template 3) makes the `.env` from `.env.example`, generates the key, builds the site's assets when it has a `package-lock.json`, and keeps all of it out of the commit.
+- **A repository that forbids Actions from opening pull requests no longer strands the update.** The branch is pushed under a name the portal knows (`chore/gadya-update-<rollout>`) and the portal opens the pull request itself.
+
+Refresh each site's workflow from **Sites → Upgrades → Refresh updaters**.
+
 ## 0.17.2
 
 ### Changed

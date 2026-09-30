@@ -1,4 +1,4 @@
-# gadya-update-template: 2
+# gadya-update-template: 3
 #
 # Updates the Gadya packages and puts the result in git.
 #
@@ -112,6 +112,20 @@ jobs:
           PACKAGE: ${{ steps.before.outputs.package }}
         run: echo "version=$(composer show "$PACKAGE" --format=json 2>/dev/null | jq -r '.versions[0] // empty' | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
+      # A fresh checkout has no .env and so no app key, and the site's tests
+      # (and some artisan commands) refuse to run without one. The files made
+      # here are kept out of the commit.
+      - name: Prepare the environment
+        run: |
+          set -euo pipefail
+          if [ ! -f .env ]; then
+            if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
+          fi
+          if ! grep -qE '^APP_KEY=.+' .env; then
+            php artisan key:generate --force --no-interaction
+          fi
+          printf '%s\n' '.env' '/node_modules' '/public/build' >> .git/info/exclude
+
       # gadya:upgrade --phase=code comes with gadya/connect 0.6. A site on an
       # older connect gets what this workflow did before it existed.
       - name: Upgrade steps
@@ -138,6 +152,20 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # The tests draw real pages, and a page that asks for its stylesheet
+      # fails without the built assets.
+      - uses: actions/setup-node@v4
+        if: steps.changed.outputs.changed == 'true' && hashFiles('package-lock.json') != ''
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build the assets
+        if: steps.changed.outputs.changed == 'true' && hashFiles('package-lock.json') != ''
+        run: |
+          npm ci
+          npm run build --if-present
 
       - name: Tests
         id: tests
@@ -215,14 +243,24 @@ jobs:
             git commit -q -m "$TITLE" -m "$body" -m "$(trailer false)"
           fi
 
-          head="chore/gadya-update-$(date +%Y%m%d%H%M%S)"
-          git push origin "HEAD:${head}"
-          url=$(gh pr create --head "$head" --base "$BRANCH" --title "$TITLE" \
-            --body "$(printf '%s\n\n- %s %s → %s\n- Tests: %s\n- Upgrade steps: %s\n\nRead `vendor/gadya/cms/CHANGELOG.md` for what changed, and `docs/upgrading.md` for anything a release asks of you.\n\n%s' \
-              "Updated from the Gadya Media portal." "$PACKAGE" "${BEFORE:-none}" "${AFTER:-none}" "$tests" "$UPGRADE" "$(trailer false)")")
+          # The branch is named for the rollout, so the portal can find it
+          # even when this run cannot open the pull request itself.
+          head="chore/gadya-update-${ROLLOUT_ID:-$(date +%Y%m%d%H%M%S)}"
+          git push --force origin "HEAD:${head}"
           echo "merged=false" >> "$GITHUB_OUTPUT"
-          echo "pull_request=${url}" >> "$GITHUB_OUTPUT"
+          echo "branch=${head}" >> "$GITHUB_OUTPUT"
           echo "trailer=$(trailer false)" >> "$GITHUB_OUTPUT"
+
+          # GitHub lets a repository (or its organisation) forbid Actions from
+          # opening pull requests. That must not lose the update: the branch is
+          # pushed, and the portal opens the pull request with its own token.
+          if url=$(gh pr create --head "$head" --base "$BRANCH" --title "$TITLE" \
+            --body "$(printf '%s\n\n- %s %s → %s\n- Tests: %s\n- Upgrade steps: %s\n\nRead `vendor/gadya/cms/CHANGELOG.md` for what changed, and `docs/upgrading.md` for anything a release asks of you.\n\n%s' \
+              "Updated from the Gadya Media portal." "$PACKAGE" "${BEFORE:-none}" "${AFTER:-none}" "$tests" "$UPGRADE" "$(trailer false)")" 2>"$RUNNER_TEMP/gh-pr.err"); then
+            echo "pull_request=${url}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Could not open the pull request here ($(tr '\n' ' ' < "$RUNNER_TEMP/gh-pr.err")). The branch ${head} is pushed; the Gadya Media portal opens the pull request."
+          fi
 
       - name: Summary
         if: always()
@@ -233,6 +271,7 @@ jobs:
           TESTS: ${{ steps.tests.outcome }}
           TRAILER: ${{ steps.publish.outputs.trailer }}
           PULL_REQUEST: ${{ steps.publish.outputs.pull_request }}
+          PUSHED_BRANCH: ${{ steps.publish.outputs.branch }}
         run: |
           if [ -z "$TRAILER" ]; then
             # Nothing was committed: nothing changed, or it stopped before the commit.
@@ -246,6 +285,8 @@ jobs:
               echo "Already up to date: nothing to commit."
             elif [ -n "$PULL_REQUEST" ]; then
               echo "Waiting in a pull request: ${PULL_REQUEST}"
+            elif [ -n "$PUSHED_BRANCH" ]; then
+              echo "Waiting on the branch ${PUSHED_BRANCH}: the portal opens the pull request."
             fi
             if [ -s "$RUNNER_TEMP/gadya-upgrade.json" ]; then
               echo
@@ -259,5 +300,5 @@ jobs:
       - name: Fail the run when the tests or the upgrade steps failed
         if: steps.changed.outputs.changed == 'true' && (steps.tests.outcome != 'success' || steps.upgrade.outcome != 'success')
         run: |
-          echo "The update is waiting in a pull request: the tests or the upgrade steps failed."
+          echo "The update is waiting for a person (a pull request, or its branch): the tests or the upgrade steps failed."
           exit 1

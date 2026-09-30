@@ -100,7 +100,7 @@ class UpgradeStepsTest extends TestCase
     {
         $step = app(CheckUpdateWorkflow::class);
 
-        $this->assertSame(2, WorkflowTemplate::shipped());
+        $this->assertSame(3, WorkflowTemplate::shipped());
         $this->assertTrue($step->shouldRun());
         $this->assertStringContainsString('There is no .github/workflows/gadya-update.yml', $step->run());
         $this->assertFileDoesNotExist(base_path(WorkflowTemplate::PATH));
@@ -110,7 +110,7 @@ class UpgradeStepsTest extends TestCase
 
         $this->assertSame(1, WorkflowTemplate::installed(), 'The first template carried no number.');
         $this->assertTrue($step->shouldRun());
-        $this->assertStringContainsString('is template 1; gadya/cms ships template 2', $step->run());
+        $this->assertStringContainsString('is template 1; gadya/cms ships template '.WorkflowTemplate::shipped(), $step->run());
         $this->assertStringStartsWith('# Updates', File::get(base_path(WorkflowTemplate::PATH)), 'GitHub does not let a workflow write workflows.');
 
         File::copy(WorkflowTemplate::templatePath(), base_path(WorkflowTemplate::PATH));

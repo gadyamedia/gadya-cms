@@ -43,8 +43,8 @@ class UpdateWorkflowTest extends TestCase
         $workflow = Yaml::parse($template);
         $inputs = $workflow['on']['workflow_dispatch']['inputs'];
 
-        $this->assertStringStartsWith("# gadya-update-template: 2\n", $template, 'The portal reads the number from the first line.');
-        $this->assertSame(2, WorkflowTemplate::shipped());
+        $this->assertStringStartsWith("# gadya-update-template: 3\n", $template, 'The portal reads the number from the first line.');
+        $this->assertSame(3, WorkflowTemplate::shipped());
         $this->assertSame('Gadya update ${{ inputs.rollout_id }}', $workflow['run-name'], 'The portal finds its run by the rollout in the name.');
         $this->assertSame(['packages', 'constraint', 'merge', 'rollout_id', 'always_pull_request'], array_keys($inputs));
         $this->assertSame('gadya/cms gadya/connect', $inputs['packages']['default']);
@@ -53,6 +53,33 @@ class UpdateWorkflowTest extends TestCase
         $this->assertSame('patch', $inputs['merge']['default']);
         $this->assertSame('', $inputs['rollout_id']['default']);
         $this->assertFalse($inputs['always_pull_request']['default']);
+    }
+
+    public function test_the_tests_run_in_an_environment_that_can_boot_the_site(): void
+    {
+        $steps = collect(Yaml::parse((string) File::get(WorkflowTemplate::templatePath()))['jobs']['update']['steps']);
+        $names = $steps->pluck('name')->filter()->values()->all();
+        $environment = (string) $steps->firstWhere('name', 'Prepare the environment')['run'];
+
+        /* A fresh checkout has no .env, so no app key, and every test that boots the site fails. */
+        $this->assertStringContainsString('cp .env.example .env', $environment);
+        $this->assertStringContainsString('key:generate', $environment);
+        $this->assertStringContainsString('.git/info/exclude', $environment, 'What it makes must never be committed.');
+
+        $this->assertLessThan(array_search('Upgrade steps', $names, true), array_search('Prepare the environment', $names, true));
+        $this->assertLessThan(array_search('Tests', $names, true), array_search('Build the assets', $names, true), 'Pages that ask for their stylesheet need it built first.');
+    }
+
+    public function test_a_pull_request_the_repository_forbids_does_not_lose_the_update(): void
+    {
+        $steps = collect(Yaml::parse((string) File::get(WorkflowTemplate::templatePath()))['jobs']['update']['steps']);
+        $publish = (string) $steps->firstWhere('name', 'Commit, then push or open a pull request')['run'];
+
+        /* GitHub lets a repository forbid Actions from opening pull requests; the branch must still be pushed, named for the rollout. */
+        $this->assertStringContainsString('chore/gadya-update-${ROLLOUT_ID:-', $publish);
+        $this->assertLessThan(strpos($publish, 'gh pr create'), strpos($publish, 'git push --force origin "HEAD:${head}"'));
+        $this->assertStringContainsString('if url=$(gh pr create', $publish, 'A refused pull request is a warning, not a failed step.');
+        $this->assertStringContainsString('the portal opens the pull request', $publish);
     }
 
     public function test_the_template_runs_the_upgrade_steps_only_where_connect_has_them(): void
