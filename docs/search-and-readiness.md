@@ -1,10 +1,34 @@
 # Search Console, page speed and AI readiness
 
-**Settings → Search & speed** connects two Google services; the dashboard shows all three cards below once the plugin has `search()` on (the default).
+**Settings → Search & speed** connects two Google services; the dashboard shows its Search section and the cards below once the plugin has `search()` on (the default).
 
 ## Google Search Console
 
-What people typed into Google to find the site, and the pages they landed on.
+What people typed into Google to find the site, and the pages they landed on. There are two ways to connect it.
+
+### Connect with one button (the normal way)
+
+On a site paired with the Gadya Media portal, open **Settings → Search & speed** and press **Connect Google Search Console**. The client signs in with Google, ticks the Search Console box, and is sent back to the same screen. That is all: no key, no service account, nothing to share or set up.
+
+- **Use the Google account that owns or manages the site in Search Console.** If that account has no property for the site the screen says so, with a **Try another account** button.
+- **Gadya only reads.** The access is read-only (`webmasters.readonly`); it cannot change anything in Search Console. The portal keeps the sign-in, encrypted, so the site never holds a Google credential. What it stores is the totals, the daily numbers and the top searches, pages, countries and devices, and nothing else.
+- **Sync now** asks Google for the latest numbers (once every ten minutes). The portal also does it every morning.
+- **Reconnect** appears if Google stops letting us read the data, usually because access was removed or a password changed. The numbers already collected stay on the dashboard meanwhile.
+- **Disconnect** (with a confirmation) makes the portal let go of the Google account and delete what it kept. It can be connected again any time.
+
+The button is only offered on an https site (Google sends people back to it) that is paired with the portal, once the portal has Google switched on. Anywhere else the screen shows just the advanced method below. A portal that cannot be reached is a plain message, never an error page.
+
+Everything the page shows from the portal is kept for 15 minutes, so redrawing a screen never calls it. Google's data runs about three days behind, so the dashboard says "Data up to" the last day it has.
+
+### The dashboard
+
+With Search Console connected the dashboard gains a **Search** section: clicks, appearances, average position and click-through rate, each against the period before; a chart of each by day; the top searches and pages; countries; and phones, computers and tablets. Choose 7, 28 or 90 days (the ranges the portal keeps lists for). Times show in the [site's time zone](operations.md#the-sites-time-zone). Before it is connected the section is an invitation with the same button, not an error.
+
+`gadya-cms:audit` lists "Google Search Console is connected" as optional, and **Get found** mentions it.
+
+### Advanced: use your own Google service account
+
+Only if the site is not paired with the portal, or the client would rather not connect through Gadya Media. It sits in a collapsed section on the same screen, and works exactly as before.
 
 1. In Google Cloud, create a service account and download its JSON key.
 2. In Search Console, add the service account's email as a user (Full or Restricted) on the property.
@@ -15,7 +39,9 @@ What people typed into Google to find the site, and the pages they landed on.
 Schedule::command('gadya-cms:search-console')->dailyAt('05:00')->timezone(\Gadya\Cms\Support\SiteTimezone::current());
 ```
 
-Google's data lags by two days, so the 28-day window ends the day before yesterday. Snapshots live in `gadyacms_search_snapshots`; `SearchConsole::topQueries()`, `topPages()` and `totals()` read them.
+### Which source is used
+
+`SearchConsole::source()` decides, so nothing else in the CMS needs to know. When the portal says Google is connected (or needs signing in again, which still has data) it is the source, `portal`. Otherwise, when a property and key are saved, it is `service_account`; otherwise `null`. `gadya-cms:search-console` works for both: from the portal it reads the stored numbers (no call to Google) and fills the same snapshot, `gadyacms_search_snapshots`, that `SearchConsole::topQueries()`, `topPages()` and `totals()` read. The window ends the day before yesterday for a service account and three days back for the portal, which is how Google reports.
 
 ## Page speed
 

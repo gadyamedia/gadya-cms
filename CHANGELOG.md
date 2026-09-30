@@ -2,6 +2,14 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Connect Google Search Console with one button.** **Settings → Search & speed** gains a card: the client presses **Connect Google Search Console**, signs in with Google and comes back with their search data, with no key, service account or sharing. The Gadya Media portal does the signing in and holds the access (read-only); the site only talks to the portal over the signed connect API. The card shows connected, needs reconnecting (**Reconnect**), no property found (**Try another account**), **Sync now** and **Disconnect**, turns each `?google=` return into a plain message, and says so on a non-https copy instead of calling the portal. The portal's answers are kept for 15 minutes, so a redraw never calls it, and a failure is a notification, never an error page. New `Gadya\Cms\Search\PortalSearchConsole`.
+- **A Search section on the dashboard**: clicks, appearances, average position and click-through rate against the period before, daily charts, top searches and pages, countries and devices, over 7, 28 or 90 days, with an invitation to connect when there is nothing yet.
+- `SearchConsole` has two sources, `portal` and `service_account` (`SearchConsole::source()`); the portal is used when connected, and the client's own key as before otherwise. `gadya-cms:search-console` fills the same snapshot from either. The own-key form moves to a collapsed **Advanced: use your own Google service account**. `gadya-cms:audit` gains an optional "Google Search Console is connected", and **Get found** mentions it. See [Search Console](docs/search-and-readiness.md#google-search-console).
+
 ## 0.18.0
 
 ### Fixed

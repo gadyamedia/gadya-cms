@@ -79,3 +79,7 @@ $report->events();
 $report->devices();
 $report->live();       // the last few minutes
 ```
+
+## Search numbers from Google
+
+The figures above are counted on the site. What people searched for on Google before they arrived is not something the site can see, so the dashboard's **Search** section asks Google Search Console through the Gadya Media portal. A client connects it with one button; see [Google Search Console](search-and-readiness.md#google-search-console).
