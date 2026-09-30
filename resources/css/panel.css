@@ -1204,3 +1204,109 @@
     color: #92400e;
     font-size: 0.875rem;
 }
+
+/* ------------------------------------------------ Google Search Console */
+
+.gadya-gsc__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    align-items: flex-start;
+}
+
+.gadya-gsc__lead {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gadya-dash-ink);
+}
+
+.gadya-gsc__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.gadya-gsc__button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--gadya-cms-primary);
+    color: #fff;
+    text-decoration: none;
+}
+
+.gadya-gsc__pill {
+    display: inline-flex;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.gadya-gsc__pill--ok { background: #dcfce7; color: #15803d; }
+.gadya-gsc__pill--warn { background: #fef3c7; color: #b45309; }
+
+.gadya-gsc__warning {
+    margin: 0;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.5rem;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.875rem;
+}
+
+.gadya-gsc__warning a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.gadya-gsc__warning--flush {
+    border-radius: 0;
+}
+
+.gadya-gsc__delta {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.gadya-gsc__delta--good { color: #15803d; }
+.gadya-gsc__delta--poor { color: #b91c1c; }
+.gadya-gsc__delta--none { color: var(--gadya-dash-muted); font-weight: 400; }
+
+.gadya-gsc__delta .gadya-dash__muted { font-weight: 400; }
+
+.gadya-gsc__chartbox {
+    border: 1px solid var(--gadya-dash-line);
+    border-radius: 0.75rem;
+    background: var(--gadya-dash-surface);
+    overflow: hidden;
+}
+
+.gadya-gsc__charttitle {
+    border-top: 0;
+    padding-top: 0.875rem;
+}
+
+.gadya-gsc-section > .gadya-dash__tiles,
+.gadya-gsc-section > .gadya-dash__grid {
+    margin: 1.25rem 1.25rem 0;
+}
+
+.gadya-gsc-section > .gadya-dash__note {
+    margin-top: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+    .gadya-dash__tiles--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.dark .gadya-gsc__warning { background: #422006; color: #fde68a; }
+.dark .gadya-gsc__delta--good { color: #86efac; }
+.dark .gadya-gsc__delta--poor { color: #fca5a5; }

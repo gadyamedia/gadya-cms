@@ -17,6 +17,7 @@ use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Models\Revision;
 use Gadya\Cms\Notifications\AnalyticsDigest;
 use Gadya\Cms\Options\Options;
+use Gadya\Cms\Search\PortalSearchConsole;
 use Gadya\Cms\Services\SchedulePublish;
 use Gadya\Cms\Support\ImageCapabilities;
 use Gadya\Cms\Support\Maintenance;
@@ -107,6 +108,44 @@ class Dashboard extends Page
             now()->addDay(),
             fn (): string => (string) file_get_contents($path),
         );
+    }
+
+    /** Days of Google search numbers shown; Google's own ranges, so the lists match. */
+    public int $searchDays = 28;
+
+    /**
+     * @return array<int, int>
+     */
+    public function getSearchRangeOptions(): array
+    {
+        return PortalSearchConsole::RANGES;
+    }
+
+    public function setSearchRange(int $days): void
+    {
+        $this->searchDays = in_array($days, $this->getSearchRangeOptions(), true) ? $days : 28;
+    }
+
+    /**
+     * Where Google Search Console stands, from the portal. Both this and the
+     * figures are kept for fifteen minutes, so the dashboard's polling and
+     * every re-render are answered from the cache, never the portal.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getSearchStatusProperty(): ?array
+    {
+        return app(PortalSearchConsole::class)->status();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getSearchPerformanceProperty(): ?array
+    {
+        $portal = app(PortalSearchConsole::class);
+
+        return $portal->hasData() ? $portal->performance($this->searchDays) : null;
     }
 
     public function getReportProperty(): AnalyticsReport

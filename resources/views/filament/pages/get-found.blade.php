@@ -41,7 +41,11 @@
                         <li>Open <strong>Sitemaps</strong> in the left menu, paste <strong>{{ $this->sitemapUrl }}</strong> under <em>Add a new sitemap</em> and press <strong>Submit</strong>. The status should read <em>Success</em>.</li>
                         <li>Optional: open <strong>URL inspection</strong>, paste your home page address and press <strong>Request indexing</strong>.</li>
                         @if (\Gadya\Cms\Filament\GadyaCmsPlugin::get()->hasSearch())
-                            <li>Connect Search Console under <a href="{{ \Gadya\Cms\Filament\Pages\SearchSettings::getUrl() }}">Search &amp; speed</a> to see what people search for on the dashboard.</li>
+                            @if (app(\Gadya\Cms\Search\SearchConsole::class)->isConfigured())
+                                <li>Google Search Console is connected, so what people search for shows on the dashboard. Manage it under <a href="{{ \Gadya\Cms\Filament\Pages\SearchSettings::getUrl() }}">Search &amp; speed</a>.</li>
+                            @else
+                                <li>Optional: press <strong>Connect Google Search Console</strong> under <a href="{{ \Gadya\Cms\Filament\Pages\SearchSettings::getUrl() }}">Search &amp; speed</a> to see what people search for on the dashboard.</li>
+                            @endif
                         @endif
                     </ol>
                 </div>

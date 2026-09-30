@@ -214,6 +214,7 @@
         @endif
 
         @if (\Gadya\Cms\Filament\GadyaCmsPlugin::get()->hasSearch())
+            @include('gadya-cms::filament.partials.dashboard-search-console')
             @include('gadya-cms::filament.partials.dashboard-search')
         @endif
 

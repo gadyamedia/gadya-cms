@@ -11,7 +11,7 @@
     <div class="gadya-dash__card gadya-dash__card--flush">
         <div class="gadya-dash__head"><p class="gadya-dash__title">In Google search</p><span>Clicks</span></div>
         @if (! $console->isConfigured())
-            <p class="gadya-dash__empty">Connect Search Console under <a href="{{ \Gadya\Cms\Filament\Pages\SearchSettings::getUrl() }}">Settings → Search &amp; speed</a> to see what people searched for.</p>
+            <p class="gadya-dash__empty">Connect Google Search Console under <a href="{{ \Gadya\Cms\Filament\Pages\SearchSettings::getUrl() }}">Settings → Search &amp; speed</a> to see what people searched for.</p>
         @elseif ($console->topQueries()->isEmpty())
             <p class="gadya-dash__empty">Nothing fetched yet. Press <em>Fetch from Google now</em> under Search &amp; speed, or wait for the nightly fetch.</p>
         @else

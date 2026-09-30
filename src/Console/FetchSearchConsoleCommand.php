@@ -15,7 +15,7 @@ class FetchSearchConsoleCommand extends Command
     public function handle(SearchConsole $console): int
     {
         if (! $console->isConfigured()) {
-            $this->components->warn('Search Console is not set up; nothing fetched. Add the property and key under Settings → Search & speed.');
+            $this->components->warn('Search Console is not set up; nothing fetched. Connect Google Search Console, or add the property and key, under Settings → Search & speed.');
 
             return self::SUCCESS;
         }

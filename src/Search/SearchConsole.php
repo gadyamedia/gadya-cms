@@ -12,17 +12,54 @@ use RuntimeException;
 
 /**
  * What Google says people searched for to find the site, and which pages
- * they landed on. Fetched from the Search Console API on a schedule and
- * shown on the dashboard beside the site's own numbers.
+ * they landed on. Fetched on a schedule and kept as snapshots, so the
+ * dashboard shows it beside the site's own numbers without waiting.
+ *
+ * It has two sources, and the rest of the CMS never needs to know which.
+ * When the client has connected their Google account through the Gadya
+ * Media portal, the numbers come from the portal. Otherwise they come
+ * straight from Google with the client's own service account key, as they
+ * always did. The portal wins when it has data; a site that has not
+ * connected, is not paired, or whose portal cannot be reached simply falls
+ * back to the key.
  */
 class SearchConsole
 {
     public const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 
+    public const SOURCE_PORTAL = 'portal';
+
+    public const SOURCE_SERVICE_ACCOUNT = 'service_account';
+
     public function __construct(
         private readonly Options $options,
         private readonly SiteContext $siteContext,
+        private readonly PortalSearchConsole $portal,
     ) {}
+
+    /**
+     * Where the numbers come from: the portal when Google is connected
+     * there, the client's own key when one is saved, or nowhere yet.
+     */
+    public function source(): ?string
+    {
+        if ($this->portal->hasData()) {
+            return self::SOURCE_PORTAL;
+        }
+
+        return $this->hasOwnKey() ? self::SOURCE_SERVICE_ACCOUNT : null;
+    }
+
+    public function usesPortal(): bool
+    {
+        return $this->source() === self::SOURCE_PORTAL;
+    }
+
+    /** The client's own property and service account key, the advanced method. */
+    public function hasOwnKey(): bool
+    {
+        return $this->property() !== null && $this->account() !== null;
+    }
 
     public function property(): ?string
     {
@@ -40,7 +77,7 @@ class SearchConsole
 
     public function isConfigured(): bool
     {
-        return $this->property() !== null && $this->account() !== null;
+        return $this->source() !== null;
     }
 
     /**
@@ -69,6 +106,10 @@ class SearchConsole
      */
     public function fetch(int $days = 28): array
     {
+        if ($this->usesPortal()) {
+            return $this->fetchFromPortal($days);
+        }
+
         $account = $this->account();
         $property = $this->property();
 
@@ -121,6 +162,45 @@ class SearchConsole
     }
 
     /**
+     * The same snapshot, filled from the portal's stored numbers instead of
+     * a call to Google: the portal has already done the asking.
+     *
+     * @return array{queries: int, pages: int}
+     */
+    private function fetchFromPortal(int $days): array
+    {
+        $performance = $this->portal->performance($days, fresh: true);
+
+        if ($performance === null) {
+            throw new RuntimeException('Gadya Media did not answer, so there is nothing new to keep. Try again in a minute.');
+        }
+
+        $to = $performance['to'] ?? now()->subDays(3)->toDateString();
+        $from = $performance['from'] ?? now()->subDays(3 + $performance['days'])->toDateString();
+
+        foreach (['query' => $performance['queries'], 'page' => $performance['pages']] as $kind => $rows) {
+            SearchSnapshot::query()->where('site_id', $this->siteContext->id())->where('kind', $kind)->delete();
+
+            foreach ($rows as $row) {
+                SearchSnapshot::query()->create([
+                    'site_id' => $this->siteContext->id(),
+                    'kind' => $kind,
+                    'key' => mb_substr($row[$kind], 0, 500),
+                    'clicks' => $row['clicks'],
+                    'impressions' => $row['impressions'],
+                    'ctr' => $row['ctr'],
+                    'position' => $row['position'],
+                    'period_start' => $from,
+                    'period_end' => $to,
+                    'fetched_at' => now(),
+                ]);
+            }
+        }
+
+        return ['queries' => count($performance['queries']), 'pages' => count($performance['pages'])];
+    }
+
+    /**
      * @return Collection<int, SearchSnapshot>
      */
     public function topQueries(int $limit = 10): Collection
@@ -148,6 +228,13 @@ class SearchConsole
      */
     public function totals(): array
     {
+        /* The portal knows the real totals; the snapshot only holds the top rows. */
+        $performance = $this->usesPortal() ? $this->portal->performance(28) : null;
+
+        if ($performance !== null && $performance['synced_at'] !== null) {
+            return ['clicks' => $performance['totals']['clicks'], 'impressions' => $performance['totals']['impressions']];
+        }
+
         $rows = $this->snapshots('query', 1000);
 
         return ['clicks' => (int) $rows->sum('clicks'), 'impressions' => (int) $rows->sum('impressions')];

@@ -8,6 +8,7 @@ use Gadya\Cms\Filament\GadyaCmsPlugin;
 use Gadya\Cms\Mail\SharedSender;
 use Gadya\Cms\Privacy\Consent;
 use Gadya\Cms\Privacy\TrackerScan;
+use Gadya\Cms\Search\SearchConsole;
 use Gadya\Cms\Seo\AgentReadiness;
 use Gadya\Cms\Upgrade\SectionLoops;
 use Gadya\Cms\Upgrade\WorkflowTemplate;
@@ -400,6 +401,13 @@ class InstallAudit
                 'Visitors\' real addresses reach the site',
                 ! request()->headers->has('CF-Connecting-IP') || ClientIp::honoursCloudflare(),
                 'The site is behind Cloudflare but does not use its CF-Connecting-IP header, so visitors are counted by a Cloudflare address and share one form limit. Set gadya-cms.client_ip.trust_cloudflare to true (GADYA_CMS_TRUST_CLOUDFLARE=true), or configure Laravel\'s trusted proxies.',
+                optional: true,
+            ),
+            $this->check(
+                'Install',
+                'Google Search Console is connected',
+                rescue(fn (): bool => app(SearchConsole::class)->isConfigured(), false, report: false),
+                'Optional. Press Connect Google Search Console under Settings → Search & speed to see what people search for on the dashboard (docs/search-and-readiness.md).',
                 optional: true,
             ),
             $this->check('Install', 'Boost skills match this version', $this->skillsAreCurrent(), 'php artisan boost:update --discover'),
