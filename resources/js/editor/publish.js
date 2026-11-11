@@ -1,26 +1,33 @@
-import { hasFailedSaves, whenSaved } from './save-queue.js';
+import { hasFailedSaves, retryFailed, whenSaved } from './save-queue.js';
+import { tell } from './structure.js';
 
 /*
- * Clicking Publish straight after typing blurs the field, which starts its
- * save at the same moment the form posts - so the old draft went live and
- * the client had to press Publish a second time. The form now waits for
- * every save to land first, and refuses to publish over a failed one.
+ * Publish, Publish anyway and Exit editing first let every save land, so
+ * the words typed just before the click are part of it, then send the form.
+ *
+ * The form is sent with the native submit(), not requestSubmit(): with no
+ * save waiting, the wait ends while the browser is still delivering this
+ * same submit event, and a requestSubmit() then is silently ignored. That
+ * is why Publish "did nothing" unless a save happened to be in flight.
  */
-document.querySelectorAll('[data-cms-publish]').forEach((form) => {
+const sendAfterSaves = (form, { confirmFirst = null, whenFailed }) => {
     form.addEventListener('submit', async (event) => {
-        if (form.dataset.cmsSaved === 'true') {
+        event.preventDefault();
+
+        if (form.dataset.cmsSending === 'true') {
             return;
         }
 
-        event.preventDefault();
-
-        /* "Publish anyway" says whose changes go live with it before it does. */
-        if (form.dataset.cmsConfirm && !window.confirm(form.dataset.cmsConfirm)) {
+        if (confirmFirst && !window.confirm(confirmFirst)) {
             return;
         }
 
         const button = form.querySelector('button[type="submit"]');
-        button.disabled = true;
+        form.dataset.cmsSending = 'true';
+
+        if (button) {
+            button.disabled = true;
+        }
 
         if (document.activeElement instanceof HTMLElement) {
             document.activeElement.blur();
@@ -28,40 +35,35 @@ document.querySelectorAll('[data-cms-publish]').forEach((form) => {
 
         await whenSaved();
 
+        /* A save that failed earlier is tried once more before giving up on it. */
         if (hasFailedSaves()) {
-            button.disabled = false;
+            await retryFailed();
+        }
+
+        if (hasFailedSaves() && !whenFailed()) {
+            form.dataset.cmsSending = 'false';
+
+            if (button) {
+                button.disabled = false;
+            }
 
             return;
         }
 
-        form.dataset.cmsSaved = 'true';
-        form.requestSubmit();
+        HTMLFormElement.prototype.submit.call(form);
     });
-});
+};
 
-/*
- * "Exit editing" waits for the last edit to land too, so leaving the
- * editor straight after typing never drops what was just typed.
- */
-document.querySelectorAll('[data-cms-exit]').forEach((form) => {
-    form.addEventListener('submit', async (event) => {
-        if (form.dataset.cmsSaved === 'true') {
-            return;
-        }
+document.querySelectorAll('[data-cms-publish]').forEach((form) => sendAfterSaves(form, {
+    /* "Publish anyway" says whose changes go live with it before it does. */
+    confirmFirst: form.dataset.cmsConfirm ?? null,
+    whenFailed: () => {
+        tell('Not published: some changes still did not save. Check your connection, then publish again.');
 
-        event.preventDefault();
+        return false;
+    },
+}));
 
-        if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
-        }
-
-        await whenSaved();
-
-        if (hasFailedSaves() && !window.confirm('Some changes did not save. Leave the editor anyway?')) {
-            return;
-        }
-
-        form.dataset.cmsSaved = 'true';
-        form.requestSubmit();
-    });
-});
+document.querySelectorAll('[data-cms-exit]').forEach((form) => sendAfterSaves(form, {
+    whenFailed: () => window.confirm('Some changes did not save. Leave the editor anyway?'),
+}));

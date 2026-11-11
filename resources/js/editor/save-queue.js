@@ -2,7 +2,8 @@ import { endpoint, token } from './endpoints.js';
 
 const pending = new Map();
 const active = new Set();
-const failed = new Set();
+/* Each failed save keeps what it was trying to save, so it can be tried again rather than lost. */
+const failed = new Map();
 const waiters = [];
 
 const announce = (message, failing = false) => {
@@ -30,7 +31,7 @@ const settle = () => {
         return;
     }
 
-    announce(failed.size > 0 ? 'Some changes did not save. Check your connection, then click the field and try again.' : 'All changes saved', failed.size > 0);
+    announce(failed.size > 0 ? 'Some changes did not save. They will be tried again when you publish, or when the connection is back.' : 'All changes saved', failed.size > 0);
     waiters.splice(0).forEach((resolve) => resolve());
 };
 
@@ -55,7 +56,7 @@ const send = async (path, value) => {
         failed.delete(path);
         window.dispatchEvent(new CustomEvent('cms:saved', { detail: { path, html: body.html } }));
     } catch (error) {
-        failed.add(path);
+        failed.set(path, value);
         window.dispatchEvent(new CustomEvent('cms:save-failed', { detail: { path, error } }));
     }
 };
@@ -101,3 +102,24 @@ export const whenSaved = () => {
 };
 
 export const hasFailedSaves = () => failed.size > 0;
+
+/*
+ * Send every save that failed once more - before publishing, and as soon as
+ * the browser is back online - and resolve once they have all landed or
+ * failed again.
+ */
+export const retryFailed = () => {
+    [...failed.entries()].forEach(([path, value]) => {
+        if (!pending.has(path)) {
+            queueSave(path, value);
+        }
+    });
+
+    return whenSaved();
+};
+
+window.addEventListener('online', () => {
+    if (failed.size > 0) {
+        retryFailed();
+    }
+});
