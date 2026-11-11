@@ -242,6 +242,9 @@ class SiteTimezoneEverywhereTest extends TestCase
 
     public function test_an_events_clock_times_never_shift_when_the_zone_changes(): void
     {
+        /* The calendar file lists upcoming events only, so look from before this one. */
+        $this->travelTo('2026-09-01 12:00:00');
+
         $event = Event::query()->create([
             'site_id' => app(SiteContext::class)->id(),
             'title' => 'Open evening',
