@@ -42,23 +42,25 @@ class UpdateTheme
             throw new RuntimeException('The body font is not on the curated list.');
         }
 
-        $document = $this->repository->draft();
+        $this->repository->withDraftLock(function () use ($colors, $fonts, $logo, $allowedColorKeys): void {
+            $document = $this->repository->draft();
 
-        $document['theme'] = [
-            'colors' => array_intersect_key($colors, array_flip($allowedColorKeys)),
-            'fonts' => [
-                'display' => $fonts['display'],
-                'sans' => $fonts['sans'],
-            ],
-        ];
+            $document['theme'] = [
+                'colors' => array_intersect_key($colors, array_flip($allowedColorKeys)),
+                'fonts' => [
+                    'display' => $fonts['display'],
+                    'sans' => $fonts['sans'],
+                ],
+            ];
 
-        if ($logo !== null && $logo !== '') {
-            $document['logo'] = $logo;
-        } else {
-            unset($document['logo']);
-        }
+            if ($logo !== null && $logo !== '') {
+                $document['logo'] = $logo;
+            } else {
+                unset($document['logo']);
+            }
 
-        $this->repository->saveDraft($document);
+            $this->repository->saveDraft($document);
+        });
     }
 
     public function reset(): void

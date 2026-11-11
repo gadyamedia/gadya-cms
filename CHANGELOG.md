@@ -2,6 +2,19 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.20.2
+
+### Fixed
+
+- **Publish did nothing unless a save was still going.** Publish waited for saves to land and then sent the form again with `requestSubmit()`; with nothing to wait for, that ran while the browser was still delivering the same submit and was silently ignored, so the button greyed and nothing published. Publish, Publish anyway and Exit editing now send the form directly once saves have landed.
+- **A failed save could never be saved again.** The editor remembered the words as sent, so clicking the field and away did nothing and Publish stayed refused until the page was reloaded, losing the words. A failed save keeps what it was saving: Publish tries it again first, and so does the browser coming back online.
+- Switching or saving a look on Look & feel redraws the page, so the list of looks (and Everyday) is current.
+
+### Added
+
+- **Holiday and seasonal looks** on **Look & feel**: switch the site's colours and type in one go, from looks the site sets up (`theme_looks`) or ones the client saves (**Save this look**), with the look she had kept as **Everyday** for going back. See [Holiday and seasonal looks](docs/roles-and-globals.md#holiday-and-seasonal-looks).
+- **A line under each colour** on Look & feel saying where it shows (`theme_color_hints`).
+
 ## 0.20.1
 
 ### Fixed

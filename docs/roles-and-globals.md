@@ -74,3 +74,19 @@ A site that wants the panel to look different from the site sets `brand.follow_s
 ```
 
 `follows` maps each panel colour to one of the site's own, for a palette that names its colours its own way. Anything left out follows a site colour of the same name (`primary`, `secondary`, `background`, `ink`, `accent`) and falls back to the configured value when the palette has none.
+
+## Holiday and seasonal looks
+
+**Look & feel** switches the whole site's colours and type in one go - a Christmas look for December - and back again after. Give a site ready-made looks written for its own colour keys, and a line under each colour saying where it shows, so the client knows what she is changing:
+
+```php
+'theme_looks' => [
+    'christmas' => ['label' => 'Christmas', 'colors' => ['primary' => '#c8102e'], 'fonts' => ['display' => 'Lobster']],
+],
+'theme_color_hints' => [
+    'primary' => 'Buttons and the main headline.',
+],
+```
+
+A look may name only some colours; the rest keep the original design's, and fonts come from the curated lists. Switching puts the look in the draft - it shows once she publishes - and the first switch keeps the look she had as **Everyday**, so going back is one click. She can save looks of her own (**Save this look**) and forget them; they are kept in the site's options (`Gadya\Cms\Content\ThemeLooks`), not in the document, so they never publish.
+

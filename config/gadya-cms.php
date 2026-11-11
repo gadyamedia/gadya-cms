@@ -285,6 +285,21 @@ return [
      * the list short is the point: the client cannot make the site
      * unreadable, and every option is a font the site already loads well.
      */
+    /*
+     * Ready-made looks on Look & feel - a Christmas look, say - each a set of
+     * the site's own colour keys and a pair of fonts from the lists below. A
+     * look may name only some colours; the rest keep the original design's.
+     *
+     *     'christmas' => ['label' => 'Christmas', 'colors' => ['primary' => '#c8102e'], 'fonts' => ['display' => 'Lobster']],
+     */
+    'theme_looks' => [],
+
+    /*
+     * A line under each colour on Look & feel saying where it shows on the
+     * site, keyed like the colours: 'primary' => 'Buttons and links.'
+     */
+    'theme_color_hints' => [],
+
     'fonts' => [
         'display' => [
             'Yeseva One' => ['family' => 'Yeseva One', 'fallback' => 'Georgia, serif', 'bunny' => 'yeseva-one', 'weights' => [400]],
