@@ -8,6 +8,7 @@ use Gadya\Cms\Localisation\Translations;
 use Gadya\Cms\Models\Page;
 use Gadya\Cms\Models\Setting;
 use Gadya\Cms\Support\SiteContext;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,40 @@ class SiteContentRepository
     /** The document key holding the per-slug page map. */
     public const PAGES_KEY = 'pages';
 
+    /** How deep this request is inside withDraftLock(), so a locked change can call another. */
+    private int $draftLockDepth = 0;
+
     public function __construct(private readonly SiteContext $siteContext) {}
+
+    /**
+     * Run a read-change-write of the draft on its own. Every change reads the whole draft and writes the
+     * whole draft back, so two at once - the live editor saving one field while it saves another, adds a
+     * card or takes a photo - each wrote back a draft missing the other's change, and the client's edit
+     * was silently lost. Changes now wait for one another, a few seconds at most.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $change
+     * @return T
+     *
+     * @throws LockTimeoutException when another change holds the draft too long
+     */
+    public function withDraftLock(callable $change): mixed
+    {
+        if ($this->draftLockDepth > 0) {
+            return $change();
+        }
+
+        return Cache::lock('gadya-cms:draft-write:'.($this->siteContext->id() ?? 0), 30)->block((int) config('gadya-cms.editor.draft_lock_wait', 15), function () use ($change): mixed {
+            $this->draftLockDepth++;
+
+            try {
+                return $change();
+            } finally {
+                $this->draftLockDepth--;
+            }
+        });
+    }
 
     /**
      * @return array<string, mixed>

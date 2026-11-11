@@ -2,9 +2,11 @@
 
 namespace Gadya\Cms\Http\Controllers;
 
+use Gadya\Cms\Content\SiteContentRepository;
 use Gadya\Cms\Editor\EditingLock;
 use Gadya\Cms\Http\Requests\StructureRequest;
 use Gadya\Cms\Services\UpdateDraftStructure;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use InvalidArgumentException;
@@ -15,7 +17,7 @@ use InvalidArgumentException;
  */
 class StructureController extends Controller
 {
-    public function update(StructureRequest $request, UpdateDraftStructure $structure, EditingLock $lock): JsonResponse
+    public function update(StructureRequest $request, UpdateDraftStructure $structure, EditingLock $lock, SiteContentRepository $repository): JsonResponse
     {
         if ($lock->holder() !== null && ! $lock->isHeldBy($request->user())) {
             return response()->json(['message' => "{$lock->holder()} is editing right now. Wait until they finish."], 423);
@@ -26,7 +28,7 @@ class StructureController extends Controller
         $list = $request->string('list')->toString();
 
         try {
-            match ($request->string('operation')->toString()) {
+            $repository->withDraftLock(fn () => match ($request->string('operation')->toString()) {
                 'add-item' => $structure->addItem($sectionPath, $request->array('item')),
                 'remove-item' => $structure->removeItem($sectionPath, $request->integer('index')),
                 'reorder-items' => $structure->reorderItems($sectionPath, array_map('intval', $request->array('order'))),
@@ -37,10 +39,14 @@ class StructureController extends Controller
                 'remove-section' => $structure->removeSection($page, $request->integer('index')),
                 'add-link' => $structure->addLink($list),
                 'remove-link' => $structure->removeLink($list, $request->integer('index')),
-            };
+            });
         } catch (InvalidArgumentException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
+        } catch (LockTimeoutException) {
+            return response()->json(['message' => 'Another change is still saving. Try again in a moment.'], 409);
         }
+
+        $lock->acquire($request->user());
 
         return response()->json(['saved' => true]);
     }

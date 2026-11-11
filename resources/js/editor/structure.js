@@ -1,4 +1,5 @@
 import { endpoint, token } from './endpoints.js';
+import { whenSaved } from './save-queue.js';
 
 /*
  * A change to the shape of the draft - an item, a section, a photo slot, a
@@ -6,6 +7,13 @@ import { endpoint, token } from './endpoints.js';
  * the client is told why when it cannot be done.
  */
 export const changeStructure = async (payload) => {
+    /*
+     * Words typed just before - the blur that starts their save is the same
+     * click that asked for this change - land first, so this change never
+     * reads a draft without them.
+     */
+    await whenSaved();
+
     const response = await fetch(endpoint('structure'), {
         method: 'POST',
         headers: {

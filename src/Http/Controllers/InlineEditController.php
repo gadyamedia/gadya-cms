@@ -4,8 +4,10 @@ namespace Gadya\Cms\Http\Controllers;
 
 use Gadya\Cms\Content\EditableFields;
 use Gadya\Cms\Content\SiteMarkdown;
+use Gadya\Cms\Editor\EditingLock;
 use Gadya\Cms\Http\Requests\InlineEditRequest;
 use Gadya\Cms\Services\UpdateDraftField;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use RuntimeException;
@@ -19,9 +21,13 @@ class InlineEditController extends Controller
                 $request->string('path')->toString(),
                 $request->string('value')->toString(),
             );
+        } catch (LockTimeoutException) {
+            return response()->json(['message' => 'Another change is still saving. Try again in a moment.'], 409);
         } catch (RuntimeException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
+
+        app(EditingLock::class)->acquire($request->user());
 
         $path = $request->string('path')->toString();
 

@@ -23,6 +23,11 @@ class UpdateDraftField
             throw new RuntimeException("The path [{$path}] is not editable.");
         }
 
+        $this->repository->withDraftLock(fn () => $this->write($path, $value));
+    }
+
+    private function write(string $path, string $value): void
+    {
         $document = $this->repository->draft();
 
         if (! $this->canWrite($document, $path)) {

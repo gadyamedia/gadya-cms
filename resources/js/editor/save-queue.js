@@ -5,20 +5,32 @@ const active = new Set();
 const failed = new Set();
 const waiters = [];
 
-const announce = (message) => {
+const announce = (message, failing = false) => {
     const status = document.querySelector('[data-cms-status]');
 
     if (status) {
         status.textContent = message;
+        status.classList.toggle('gadya-cms-toolbar__status--failing', failing);
     }
 };
+
+/*
+ * Leaving the page while a save is still on its way, or after one failed,
+ * loses that edit without a word: the browser asks first.
+ */
+window.addEventListener('beforeunload', (event) => {
+    if (pending.size > 0 || active.size > 0 || failed.size > 0) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
 
 const settle = () => {
     if (active.size > 0 || pending.size > 0) {
         return;
     }
 
-    announce(failed.size > 0 ? 'Could not save — check your connection' : 'All changes saved');
+    announce(failed.size > 0 ? 'Some changes did not save. Check your connection, then click the field and try again.' : 'All changes saved', failed.size > 0);
     waiters.splice(0).forEach((resolve) => resolve());
 };
 

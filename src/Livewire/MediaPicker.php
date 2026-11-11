@@ -7,6 +7,7 @@ use Gadya\Cms\Models\Media;
 use Gadya\Cms\Services\StoreMediaUpload;
 use Gadya\Cms\Services\UpdateDraftField;
 use Gadya\Cms\Support\ImageCapabilities;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -79,6 +80,10 @@ class MediaPicker extends Component
 
         try {
             $action->handle($this->targetPath, $media->filename);
+        } catch (LockTimeoutException) {
+            $this->addError('targetPath', 'Another change is still saving. Choose the photo again in a moment.');
+
+            return;
         } catch (RuntimeException $exception) {
             $this->addError('targetPath', $exception->getMessage());
 
