@@ -1,3 +1,4 @@
+import { onBind } from './bind.js';
 import { queueSave } from './save-queue.js';
 
 const originalValues = new WeakMap();
@@ -24,10 +25,6 @@ const activate = (element) => {
     element.setAttribute('contenteditable', 'plaintext-only');
     element.setAttribute('spellcheck', 'true');
 
-    if (element.tagName === 'A') {
-        element.addEventListener('click', (event) => event.preventDefault());
-    }
-
     element.addEventListener('blur', () => commit(element));
     element.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
@@ -42,4 +39,4 @@ const activate = (element) => {
     });
 };
 
-document.querySelectorAll('[data-cms-type="text"]').forEach(activate);
+onBind('[data-cms-type="text"]', activate);

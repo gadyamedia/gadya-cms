@@ -168,9 +168,11 @@
     align-items: center;
 }
 
+/* margin: auto centres a modal dialog; a site's CSS reset (Tailwind's preflight) takes it away. */
 .gadya-cms-dialog {
     width: 100%;
     max-width: 56rem;
+    margin: auto;
     border: 0;
     border-radius: 1.5rem;
     padding: 1.5rem;
@@ -319,4 +321,217 @@
     display: flex;
     align-items: center;
     gap: .5rem;
+}
+
+/*
+ * Laying out a page from the page: the dashed "add a section here" line, the
+ * bar on each section, the design picker, the client's own links and the
+ * buttons on list items. Editors only; none of it reaches a visitor.
+ */
+.gadya-cms-section-add {
+    display: flex;
+    justify-content: center;
+    padding: .75rem 1rem;
+    border-block: 2px dashed var(--gadya-cms-primary);
+    font: 14px/1.4 system-ui, sans-serif;
+}
+
+.gadya-cms-section-add button,
+.gadya-cms-photo-slot,
+.gadya-cms-link-add {
+    border: 2px dashed var(--gadya-cms-primary);
+    border-radius: 999px;
+    background: var(--gadya-cms-surface);
+    color: var(--gadya-cms-primary);
+    font: 700 13px/1.4 system-ui, sans-serif;
+    padding: .35rem 1rem;
+    cursor: pointer;
+}
+
+.gadya-cms-photo-slot {
+    display: grid;
+    place-items: center;
+    min-height: 10rem;
+    border-radius: 1rem;
+}
+
+.gadya-cms-section-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    margin: 0 auto 1.25rem;
+    font: 700 13px/1.4 system-ui, sans-serif;
+}
+
+.gadya-cms-section-tools span {
+    opacity: .6;
+}
+
+.gadya-cms-section-tools button {
+    border: 2px solid currentColor;
+    border-radius: 999px;
+    background: var(--gadya-cms-surface);
+    padding: .15rem .75rem;
+    cursor: pointer;
+}
+
+.gadya-cms-section-tools button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.gadya-cms-section-tools .gadya-cms-section-tools__remove,
+.gadya-cms-link-item__remove,
+.gadya-cms-link-item__warning {
+    color: #dc2626;
+}
+
+.gadya-cms-designs {
+    width: min(56rem, calc(100vw - 2rem));
+    margin: auto;
+    border: 0;
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    background: var(--gadya-cms-surface);
+    color: var(--gadya-cms-ink);
+    font: 15px/1.5 system-ui, sans-serif;
+    box-shadow: 0 25px 60px rgb(0 0 0 / .3);
+}
+
+.gadya-cms-designs::backdrop {
+    background: rgb(0 0 0 / .45);
+}
+
+.gadya-cms-designs h2 {
+    margin: 0 0 .25rem;
+    font-size: 1.35rem;
+}
+
+.gadya-cms-designs__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.gadya-cms-designs__option {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    border: 3px solid rgb(0 0 0 / .1);
+    border-radius: 1rem;
+    background: transparent;
+    color: inherit;
+    padding: .85rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gadya-cms-designs__option:hover,
+.gadya-cms-designs__option:focus-visible {
+    border-color: var(--gadya-cms-primary);
+}
+
+.gadya-cms-designs__option small {
+    font-size: .8rem;
+    opacity: .75;
+}
+
+.gadya-cms-designs__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+}
+
+/* Miniature drawings of each design, so the choice is visual. */
+.gadya-cms-designs__preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .35rem;
+    height: 5.5rem;
+    border-radius: .75rem;
+    background: rgb(0 0 0 / .05);
+    padding: .5rem;
+}
+
+.gadya-cms-designs__preview span {
+    border: 2px solid var(--gadya-cms-primary);
+    border-radius: .4rem;
+    background: var(--gadya-cms-surface);
+}
+
+.gadya-cms-designs__preview--cards span {
+    background: linear-gradient(var(--gadya-cms-primary) 0 55%, var(--gadya-cms-surface) 55%);
+    opacity: .85;
+}
+
+.gadya-cms-designs__preview--text-grid span {
+    background: repeating-linear-gradient(var(--gadya-cms-surface) 0 6px, rgb(0 0 0 / .12) 6px 8px);
+}
+
+.gadya-cms-designs__preview--menu {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.gadya-cms-designs__preview--gallery span {
+    border: 0;
+    background: var(--gadya-cms-primary);
+    opacity: .7;
+}
+
+.gadya-cms-designs__preview--form {
+    grid-template-columns: 1fr;
+}
+
+.gadya-cms-link-item {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem;
+}
+
+.gadya-cms-link-item__url {
+    max-width: 16rem;
+    overflow: hidden;
+    border: 1px dashed currentColor;
+    border-radius: .4rem;
+    padding: .05rem .4rem;
+    font: 600 11px/1.5 system-ui, sans-serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: .75;
+}
+
+.gadya-cms-link-item__warning {
+    font: 700 11px/1.4 system-ui, sans-serif;
+}
+
+.gadya-cms-link-item__remove {
+    border: 0;
+    background: transparent;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.gadya-cms-item-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .4rem;
+    margin-top: 1.25rem;
+}
+
+.gadya-cms-toolbar__notice {
+    margin: 0;
+    font-weight: 700;
+    color: #15803d;
+}
+
+/* An empty field still has something to click: its placeholder, in italics. */
+[data-cms-placeholder]:empty::before {
+    content: attr(data-cms-placeholder);
+    font-style: italic;
+    opacity: .55;
 }

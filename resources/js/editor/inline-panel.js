@@ -1,3 +1,4 @@
+import { onBind } from './bind.js';
 import { queueSave } from './save-queue.js';
 
 /*
@@ -72,8 +73,11 @@ window.addEventListener('cms:saved', (event) => {
     });
 });
 
-document.querySelectorAll('[data-cms-type="multiline"], [data-cms-type="markdown"]').forEach((element) => {
+onBind('[data-cms-type="multiline"], [data-cms-type="markdown"]', (element) => {
     element.addEventListener('click', (event) => {
+        /* Words inside a photo's area are for typing into, not for choosing the photo. */
+        event.stopPropagation();
+
         const markdown = element.dataset.cmsType === 'markdown';
 
         /* A link inside a Markdown field is for editing, not for following, while editing. */

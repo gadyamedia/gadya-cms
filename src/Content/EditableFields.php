@@ -26,6 +26,18 @@ class EditableFields
     }
 
     /**
+     * Fields the live editor always offers, whatever the site lists: the words and address of a link the
+     * client adds to the header, the footer or any list item. Addresses are checked when they are drawn
+     * (`SafeLink`), so allowing them costs nothing in safety.
+     */
+    public const BUILT_IN = [
+        'links.*.*.label' => 'text',
+        'links.*.*.url' => 'text',
+        'pages.*.sections.*.items.*.link_label' => 'text',
+        'pages.*.sections.*.items.*.link_url' => 'text',
+    ];
+
+    /**
      * @return array<string, string>
      */
     public function patterns(): array
@@ -33,7 +45,7 @@ class EditableFields
         /** @var array<string, string> $patterns */
         $patterns = config('gadya-cms.editable_fields', []);
 
-        return $patterns;
+        return [...self::BUILT_IN, ...$patterns];
     }
 
     private function matches(string $pattern, string $path): bool

@@ -75,6 +75,10 @@ php artisan gadya-cms:audit       # then fix each "!" it lists
 
 On a site whose gadya/connect is older than 0.6 (no `gadya:upgrade`), run `migrate`, `filament:assets`, `optimize:clear` and `boost:update --discover` instead.
 
+## 0.19.0 → 0.20.0
+
+Nothing is required: every page keeps working as it was. To let the client lay out pages and add her own links, add `<x-gadya-cms::add-section>` and `<x-gadya-cms::section-tools>` to the section loop, `<x-gadya-cms::links>` to the header and footer, `<x-gadya-cms::item-button>` to list items, and wrap the loop in `<x-gadya-cms::region>` so changes redraw without a reload. See [Laying out a page from the page](live-editor.md#laying-out-a-page-from-the-page). A photo uploaded from the live editor is now processed at once, so it no longer waits on the queue.
+
 ## 0.14.8 → 0.15.0
 
 The published `config/gadya-cms.php` is now merged over the package's defaults at every depth, so a key a release adds - even inside an array the site has published - takes its default, and copying it is only needed to change it. `gadya-cms:audit` lists keys the file lacks as optional. Lists and the site-owned maps are still taken whole from the site; see [Configuration](commands.md#configuration). Refresh the update workflow to template 2 from the portal (or copy `vendor/gadya/cms/resources/github/gadya-update.yml` over `.github/workflows/gadya-update.yml`), and update gadya/connect to 0.6 for `gadya:upgrade`.

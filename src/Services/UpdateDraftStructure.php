@@ -129,6 +129,118 @@ class UpdateDraftStructure
     }
 
     /**
+     * The section designs "+ Add a section here" offers on a page: those in `pages.section_designs` that
+     * the page's type allows.
+     *
+     * @return array<string, array{label: string, description: string}>
+     */
+    public function designsFor(?string $pageType): array
+    {
+        /** @var array<string, array{label: string, description: string}> $designs */
+        $designs = (array) config('gadya-cms.pages.section_designs', []);
+        $allowed = app(PageTypes::class)->sectionTypesFor($pageType);
+
+        return array_filter($designs, fn (mixed $design, string $type): bool => is_array($design) && in_array($type, $allowed, true), ARRAY_FILTER_USE_BOTH);
+    }
+
+    /**
+     * Put a new section in a chosen design at a chosen spot, from the live editor. It starts with one
+     * sample item to type over, and a page that has never had sections, such as a home page, gets its
+     * first. Returns where the section landed.
+     */
+    public function insertSection(string $pageSlug, string $type, int $position, string $title = 'New section'): int
+    {
+        $document = $this->repository->draft();
+        $page = Arr::get($document, "pages.{$pageSlug}");
+
+        if (! is_array($page)) {
+            throw new InvalidArgumentException("[{$pageSlug}] is not an editable page.");
+        }
+
+        if (! array_key_exists($type, $this->designsFor($page['type'] ?? null))) {
+            throw new InvalidArgumentException("[{$type}] cannot be added to this page.");
+        }
+
+        $sections = is_array($page['sections'] ?? null) ? array_values($page['sections']) : [];
+        $position = max(0, min($position, count($sections)));
+        $starter = ['title' => 'New item', 'text' => 'Describe it here.', 'key' => (string) Str::ulid()];
+
+        array_splice($sections, $position, 0, [match ($type) {
+            'gallery' => ['title' => $title, 'type' => $type, 'images' => []],
+            'form' => ['title' => $title, 'type' => $type, 'form' => ''],
+            default => ['title' => $title, 'type' => $type, 'items' => [$starter]],
+        }]);
+
+        $this->writeSections($document, $pageSlug, $sections);
+
+        return $position;
+    }
+
+    /**
+     * Swap a section with its neighbour, one step up (-1) or down (+1).
+     */
+    public function moveSection(string $pageSlug, int $index, int $step): void
+    {
+        $document = $this->repository->draft();
+        $sections = array_values($this->sectionsAt($document, $pageSlug));
+        $target = $index + $step;
+
+        if (! array_key_exists($index, $sections) || ! array_key_exists($target, $sections)) {
+            throw new InvalidArgumentException('That section cannot move any further.');
+        }
+
+        [$sections[$index], $sections[$target]] = [$sections[$target], $sections[$index]];
+
+        $this->writeSections($document, $pageSlug, $sections);
+    }
+
+    /**
+     * An empty photo slot at the end of a gallery, for the photo library to fill. The inline editor only
+     * fills a slot that exists, so a gallery grows this way.
+     */
+    public function addPhotoSlot(string $sectionPath): void
+    {
+        $document = $this->repository->draft();
+        $section = Arr::get($document, $sectionPath);
+
+        if (! is_array($section) || ($section['type'] ?? null) !== 'gallery') {
+            throw new InvalidArgumentException("[{$sectionPath}] is not a photo gallery.");
+        }
+
+        Arr::set($document, $sectionPath.'.images', [...array_values((array) ($section['images'] ?? [])), '']);
+        $this->repository->saveDraft($document);
+    }
+
+    /**
+     * Add a link to one of the site's link lists (`links.{list}`, drawn by `<x-gadya-cms::links>`). It starts
+     * with words and no address, and visitors only see it once it has somewhere to go.
+     */
+    public function addLink(string $list): void
+    {
+        $document = $this->repository->draft();
+        $links = array_values((array) Arr::get($document, "links.{$list}", []));
+        $links[] = ['label' => 'New link', 'url' => ''];
+
+        Arr::set($document, "links.{$list}", $links);
+        $this->repository->saveDraft($document);
+    }
+
+    public function removeLink(string $list, int $index): void
+    {
+        $document = $this->repository->draft();
+        $links = array_values((array) Arr::get($document, "links.{$list}", []));
+
+        if (! array_key_exists($index, $links)) {
+            throw new InvalidArgumentException('That link is already gone.');
+        }
+
+        array_splice($links, $index, 1);
+
+        Arr::set($document, "links.{$list}", $links);
+        $this->repository->saveDraft($document);
+    }
+
+    /**
      * @param  array<string, mixed>  $document
      * @return array<int, array<string, mixed>>
      */

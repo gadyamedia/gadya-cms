@@ -5,6 +5,11 @@
     $panelUrl = \Filament\Facades\Filament::getPanel(config('gadya-cms.panel', 'admin'))->getUrl();
     $locales = app(\Gadya\Cms\Localisation\Locales::class);
     $multilingual = $locales->isMultilingual();
+    $editedPage = str_starts_with((string) app(\Gadya\Cms\Editor\EditContext::class)->basePath(), 'pages.')
+        ? substr((string) app(\Gadya\Cms\Editor\EditContext::class)->basePath(), 6)
+        : null;
+    $publishNotice = session('status');
+    $publishError = session('errors')?->first('publish');
 @endphp
 
 <div class="gadya-cms-toolbar" data-cms-toolbar data-cms-prefix="{{ config('gadya-cms.editor.prefix', 'cms') }}"@if ($multilingual) data-cms-base="{{ $locales->prefix($locales->current()) }}" data-cms-locale="{{ $locales->current() }}"@endif>
@@ -20,6 +25,13 @@
 
         @if ($heldByOther)
             <p class="gadya-cms-error">{{ $holder }} is editing right now</p>
+        @endif
+
+        {{-- Pressing Publish reloads the page: say what happened, or the client cannot tell it worked. --}}
+        @if ($publishError)
+            <p class="gadya-cms-error" role="alert">{{ $publishError }}</p>
+        @elseif (is_string($publishNotice) && $publishNotice !== '')
+            <p class="gadya-cms-toolbar__notice" role="status">{{ $publishNotice }}</p>
         @endif
 
         <div class="gadya-cms-toolbar__actions">
@@ -44,3 +56,7 @@
 <dialog class="gadya-cms-dialog" data-cms-media-dialog>
     <livewire:gadya-cms.media-picker />
 </dialog>
+
+@if ($editedPage !== null && ! $heldByOther)
+    @include('gadya-cms::editor.section-picker', ['page' => $editedPage])
+@endif

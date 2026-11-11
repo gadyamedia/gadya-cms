@@ -1,10 +1,12 @@
-import { endpoint, token } from './endpoints.js';
+import { onBind } from './bind.js';
+import { refresh } from './refresh.js';
+import { changeStructure, tell } from './structure.js';
 
 /*
  * "Choose another form" on a Form section, for an editor: the section's
- * form is swapped in the draft, and the page reloads to show it.
+ * form is swapped in the draft, and the section is redrawn to show it.
  */
-document.querySelectorAll('[data-cms-form-tools][data-cms-section]').forEach((tools) => {
+onBind('[data-cms-form-tools][data-cms-section]', (tools) => {
     const choice = tools.querySelector('[data-cms-form-choice]');
     const button = tools.querySelector('[data-cms-form-choose]');
 
@@ -15,23 +17,12 @@ document.querySelectorAll('[data-cms-form-tools][data-cms-section]').forEach((to
     button.addEventListener('click', async () => {
         button.disabled = true;
 
-        const response = await fetch(endpoint('structure'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-CSRF-TOKEN': token(),
-            },
-            body: JSON.stringify({ operation: 'choose-form', section_path: tools.dataset.cmsSection, form: choice.value }),
-        }).catch(() => null);
-
-        if (!response || !response.ok) {
+        try {
+            await changeStructure({ operation: 'choose-form', section_path: tools.dataset.cmsSection, form: choice.value });
+            await refresh();
+        } catch (failure) {
             button.disabled = false;
-            window.dispatchEvent(new CustomEvent('cms:save-failed', { detail: { path: tools.dataset.cmsSection } }));
-
-            return;
+            tell(failure.message);
         }
-
-        window.location.reload();
     });
 });

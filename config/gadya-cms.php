@@ -227,6 +227,21 @@ return [
         'types' => [],
 
         'section_types' => ['cards', 'text-grid', 'gallery', 'menu', 'application'],
+
+        /*
+         * The designs offered by "+ Add a section here" in the live editor,
+         * each with a few words on what it is good for. Only types also in
+         * `section_types` are offered, and a new section starts with one
+         * sample item so the design shows straight away.
+         */
+        'section_designs' => [
+            'cards' => ['label' => 'Photo cards', 'description' => 'A picture with a title and a few words under each. Good for packages, specials and offers.'],
+            'text-grid' => ['label' => 'Text boxes', 'description' => 'A heading and a paragraph in each box. Good for hours, rules and what to bring.'],
+            'menu' => ['label' => 'List', 'description' => 'A tidy list with one line of detail each. Good for prices or add-ons.'],
+            'gallery' => ['label' => 'Photo gallery', 'description' => 'A grid of pictures, nothing else.'],
+            'form' => ['label' => 'Form', 'description' => 'One of your forms from Content → Forms, such as a booking request or a waiver.'],
+        ],
+
         'creatable_types' => ['content', 'legal'],
         'reserved_slugs' => ['admin', 'cms', 'up', 'storage', 'livewire', 'blog', 'home'],
 

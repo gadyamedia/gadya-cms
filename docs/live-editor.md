@@ -83,6 +83,58 @@ A legal page, a policy or a long answer needs a list, a bold phrase or a link, w
 
 The client writes `**bold**`, `[a link](https://...)` and lines starting with `- `; the side panel shows her those three reminders. For an editor the element carries its Markdown source, so the panel opens on what she wrote rather than on the rendered page, and after saving the server sends back the HTML, so the page shows exactly what visitors will. Raw HTML is stripped and `javascript:` links are refused, whoever typed them.
 
+## Laying out a page from the page
+
+The client adds, moves and removes whole sections herself, in the designs the site offers, without the admin. Put the controls in the section loop, and mark the loop as a region so a change redraws it in place:
+
+```blade
+<x-gadya-cms::region name="sections">
+    <x-gadya-cms::add-section :position="0" />
+
+    @foreach ($page['sections'] as $sectionIndex => $section)
+        @cmsSection($section, $sectionIndex)
+        <section>
+            <x-gadya-cms::section-tools :index="$sectionIndex" :first="$loop->first" :last="$loop->last" />
+            ...the section in its design...
+        </section>
+        <x-gadya-cms::add-section :position="$sectionIndex + 1" />
+    @endforeach
+</x-gadya-cms::region>
+```
+
+- `<x-gadya-cms::add-section>` is "+ Add a section here". It opens the design picker the toolbar draws, which shows each design in `pages.section_designs` (photo cards, text boxes, list, photo gallery, form) that the page's type allows. A new section lands at that spot with one sample item to type over. A page that never had sections, such as a home page, gets its first.
+- `<x-gadya-cms::section-tools>` moves a section up or down, or removes it.
+- A gallery grows one photo at a time: `<x-gadya-cms::add-photo :section="$sectionIndex" />` adds an empty slot, which the photo library fills. Draw an empty slot as something to click while editing (`@editable("sections.{$sectionIndex}.images.{$imageIndex}", 'image')`) and skip it for visitors.
+- Every change goes to the draft, and is refused while someone else holds the [lock](#locks).
+
+## Links the client adds
+
+A waiver, a social page, a booking form elsewhere: the client puts links where she wants them.
+
+```blade
+{{-- In the header and the footer: her own list of links, typed on the page. --}}
+<x-gadya-cms::links list="footer" :site="$site" link-class="footer-link" />
+
+{{-- On any card, text box or list item: an optional button. --}}
+<x-gadya-cms::item-button :item="$item" path="sections.{{ $sectionIndex }}.items.{{ $itemIndex }}" class="button" />
+```
+
+A list is kept at `links.{list}` in the document; "+ Add link" adds one, and its words and address are typed in place. An item button keeps `link_label` and `link_url` on the item. Both are always editable, whatever `editable_fields` lists. Visitors see a link only once it has words and an address, and only a web address, a path on the site, an anchor, an email or a phone link is drawn; a bare domain gets `https://`, and a `javascript:` address is never drawn (`Gadya\Cms\Support\SafeLink`). Links that leave the site open in a new tab.
+
+## Without a reload
+
+After a change of shape - a section, card, photo slot or link added, moved or removed, a photo chosen - the editor fetches the page again and swaps in only the regions whose markup changed, so the client stays where she was. Wrap any part of the page a change can touch in `<x-gadya-cms::region name="...">` (it takes no room in the layout, and visitors get its contents alone); `<x-gadya-cms::links>` is a region of its own. A page with no regions reloads instead, and comes back to the same scroll position.
+
+A swapped region is a fresh piece of the page: the editor sets up its editing, and announces it so the site's own scripts can wake anything in it that they set up when the page loaded.
+
+```js
+window.addEventListener('cms:region-replaced', ({ detail }) => {
+    detail.element.querySelectorAll('[data-reveal]').forEach((element) => element.classList.add('is-visible'));
+});
+```
+
+While editing, words or a photo inside a link are for editing: clicking them never follows the link, and clicking words inside an editable photo's area types into them rather than opening the photo library.
+
 ## The built-by badge
 
 `@gadyaBuiltBy` goes last in the site's footer and puts the Gadya Media badge in its bottom-right corner, loading the badge script for you. It is drawn in the site's own ink:

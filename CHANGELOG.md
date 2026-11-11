@@ -2,6 +2,27 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## Unreleased
+
+### Added
+
+- **Lay out a page from the page.** While editing, "+ Add a section here" sits between sections and opens a picker that draws each design in miniature - photo cards, text boxes, list, photo gallery, form - with a line on what each is good for (`pages.section_designs`, narrowed to what the page's type allows). The new section lands at that spot with a sample item to type over; a page that never had sections, such as a home page, gets its first. Each section's bar moves it up or down or removes it, and a gallery grows one empty photo slot at a time for the library to fill. New components: `<x-gadya-cms::add-section>`, `<x-gadya-cms::section-tools>`, `<x-gadya-cms::add-photo>`; new structure operations `add-section`, `move-section`, `remove-section` and `add-photo`. See [Laying out a page from the page](docs/live-editor.md#laying-out-a-page-from-the-page).
+- **Links the client adds herself.** `<x-gadya-cms::links list="footer" :site="$site" />` is her own list of links for the header or the footer - a waiver, a social page - with "+ Add link" and the words and address typed in place, kept at `links.{list}`. `<x-gadya-cms::item-button>` gives any card, text box or list item an optional button (`link_label`, `link_url`). Both are always editable, without listing them in `editable_fields`. Only web, site, anchor, email and phone addresses are drawn, a bare domain gets `https://`, an unfinished link stays hidden and links off the site open in a new tab (`Gadya\Cms\Support\SafeLink`). New structure operations `add-link` and `remove-link`.
+- **No reload after a change of shape.** Adding, moving or removing a section, card, photo slot or link, choosing a photo and choosing a form now redraw only the regions of the page that changed (`<x-gadya-cms::region>`), so the client stays where she was. Each swapped region is set up for editing and announced with `cms:region-replaced`, for the site's own scripts. A page without regions reloads and comes back to the same scroll position.
+- **The toolbar says what Publish did**: "Your changes are now live.", or why it could not publish. Before, the page reloaded with no word either way.
+
+### Fixed
+
+- **A photo uploaded from the page could not be used.** It waited on the queue as "processing", greyed out in the photo library - for good on a site with no worker running - so the client could only choose photos already there. It is now processed as she uploads it and put straight where she was choosing a photo. Photos still getting ready elsewhere say so, and the library checks on them every few seconds.
+- **Words inside a link could not be edited.** Clicking an editable title or description inside a card that links to its page followed the link, which looked like the page reloading. Clicks on anything editable no longer navigate while editing.
+- **Words inside a photo's area opened the photo library.** A heading over a hero image marked as the editable photo could never be typed into; clicking the words now types into them, and only the rest of the area opens the library.
+- Structure changes are refused while someone else holds the editing lock, as publishing already was.
+- The photo library and the design picker open in the middle of the screen on a site whose CSS reset takes away a dialog's margins (Tailwind's preflight), instead of in the top-left corner.
+
+### Upgrading
+
+Nothing is required. To offer the new controls, add the components to the site's section loop, header and footer and wrap the loop in `<x-gadya-cms::region>` (see [the live editor](docs/live-editor.md)); a site that marked links inside its own templates can drop any click-guard script of its own.
+
 ## 0.19.0
 
 ### Added
