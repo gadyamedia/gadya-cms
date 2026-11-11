@@ -41,6 +41,15 @@ class EditContext
         $this->enabled = Gate::allows((string) config('gadya-cms.gate', 'manage-content'))
             && session(self::SESSION_KEY) === true;
 
+        /*
+         * Each page the editor opens keeps the lock with them (or picks it up when it is free), so it does not
+         * run out under someone still working - which used to let the next person take it and leave her
+         * unable to publish her own changes.
+         */
+        if ($this->enabled && auth()->user() !== null) {
+            app(EditingLock::class)->acquire(auth()->user());
+        }
+
         $until = session(self::PREVIEW_SESSION_KEY);
         $this->previewing = is_int($until) && $until > now()->getTimestamp();
     }

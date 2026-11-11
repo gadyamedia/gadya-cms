@@ -28,6 +28,15 @@ class EditModeController extends Controller
         return redirect()->to($registry->publicUrlFor($data['page'] ?? 'home', $registry->draftDocument()));
     }
 
+    public function takeOver(Request $request, EditingLock $lock): RedirectResponse
+    {
+        /** @var Authenticatable $user */
+        $user = $request->user();
+        $lock->takeOver($user);
+
+        return back()->with('status', 'You are editing now.');
+    }
+
     public function disable(Request $request, EditingLock $lock): RedirectResponse
     {
         $request->session()->forget(EditContext::SESSION_KEY);

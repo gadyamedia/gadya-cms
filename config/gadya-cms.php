@@ -41,6 +41,8 @@ return [
     'editor' => [
         'prefix' => 'cms',
         'lock_ttl_minutes' => 15,
+        /* Seconds a save waits for another change to the draft to finish before saying "try again". */
+        'draft_lock_wait' => 15,
     ],
 
     /*

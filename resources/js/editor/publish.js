@@ -14,6 +14,11 @@ document.querySelectorAll('[data-cms-publish]').forEach((form) => {
 
         event.preventDefault();
 
+        /* "Publish anyway" says whose changes go live with it before it does. */
+        if (form.dataset.cmsConfirm && !window.confirm(form.dataset.cmsConfirm)) {
+            return;
+        }
+
         const button = form.querySelector('button[type="submit"]');
         button.disabled = true;
 
@@ -26,6 +31,33 @@ document.querySelectorAll('[data-cms-publish]').forEach((form) => {
         if (hasFailedSaves()) {
             button.disabled = false;
 
+            return;
+        }
+
+        form.dataset.cmsSaved = 'true';
+        form.requestSubmit();
+    });
+});
+
+/*
+ * "Exit editing" waits for the last edit to land too, so leaving the
+ * editor straight after typing never drops what was just typed.
+ */
+document.querySelectorAll('[data-cms-exit]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+        if (form.dataset.cmsSaved === 'true') {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+
+        await whenSaved();
+
+        if (hasFailedSaves() && !window.confirm('Some changes did not save. Leave the editor anyway?')) {
             return;
         }
 

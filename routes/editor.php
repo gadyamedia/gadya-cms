@@ -21,6 +21,7 @@ Route::prefix((string) config('gadya-cms.editor.prefix', 'cms'))
     ->group(function (): void {
         Route::post('edit-mode', [EditModeController::class, 'enable'])->name('edit-mode.enable');
         Route::delete('edit-mode', [EditModeController::class, 'disable'])->name('edit-mode.disable');
+        Route::post('edit-mode/take-over', [EditModeController::class, 'takeOver'])->name('edit-mode.take-over');
 
         Route::post('publish', PublishController::class)
             ->middleware('can:'.Abilities::gate(Abilities::PUBLISH))

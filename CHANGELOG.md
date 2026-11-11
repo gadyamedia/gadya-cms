@@ -2,6 +2,17 @@
 
 All notable changes to `gadya/cms` are documented here.
 
+## 0.20.1
+
+### Fixed
+
+- **Edits could be lost.** Every change reads the whole draft and writes it back, so two at once - a field saved while another saved, a card added just after typing, a photo chosen mid-save - each wrote back a draft missing the other's change. Changes to the draft now take turns (`SiteContentRepository::withDraftLock()`, waiting up to `gadya-cms.editor.draft_lock_wait` seconds), a layout change or a photo waits for the words typed just before it, and **Exit editing** waits for the last save. A save that did not land is said in red on the toolbar, and leaving the page asks first.
+- **The editing lock ran out under the person editing.** It was taken when the editor was switched on and never kept, so after 15 minutes the next person to open the editor took it, and the one still working could no longer publish - with no word why, before 0.20.0. Every page the editor opens and every save now keep it.
+
+### Added
+
+- **Publish anyway** and **Take over editing** on the toolbar while someone else holds the lock, for anyone allowed to publish. Publish anyway says first that it puts everyone's changes live, theirs included - how a colleague publishes for the person editing. **Publish changes** in the admin publishes too, saying who is editing, instead of refusing.
+
 ## 0.20.0
 
 ### Added

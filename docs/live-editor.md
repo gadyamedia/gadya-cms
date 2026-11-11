@@ -177,7 +177,12 @@ Keys of card lists are deliberately never renumbered when a card is hidden, beca
 
 ## Locks
 
-One person edits at a time. Opening the editor takes a lock for `gadya-cms.editor.lock_ttl_minutes`; a second editor sees who holds it and can read but not publish.
+One person edits at a time. Switching the editor on takes a lock, and every page the editor opens and every save keeps it, so it never runs out under someone still working; it lapses after `gadya-cms.editor.lock_ttl_minutes` of no editing. While someone else holds it, the toolbar says who, layout changes are refused, and two buttons keep nobody stuck:
+
+- **Take over editing** moves the lock to you - for a colleague who walked away with the editor open, or a lock a closed laptop left behind.
+- **Publish anyway** publishes after saying so: the draft is one for everyone, so it puts their changes live with yours. It is how a colleague publishes for the person editing. **Publish changes** in the admin does the same, and its confirmation says who is editing.
+
+Saves to the draft take turns (`SiteContentRepository::withDraftLock()`): each reads the whole draft and writes it back, so two at once used to lose one. A save that waits longer than `gadya-cms.editor.draft_lock_wait` seconds answers "try again", and the toolbar says when a save did not land. Leaving the page, or **Exit editing**, waits for the last save, and the browser asks first when one failed.
 
 ## Preview links
 

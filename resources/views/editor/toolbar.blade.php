@@ -37,14 +37,28 @@
         <div class="gadya-cms-toolbar__actions">
             <a class="gadya-cms-link" href="{{ $panelUrl }}">Admin</a>
 
-            @if (! $heldByOther && auth()->user()?->can(\Gadya\Cms\Access\Abilities::gate(\Gadya\Cms\Access\Abilities::PUBLISH)))
-                <form method="POST" action="{{ route('gadya-cms.publish') }}" data-cms-publish>
-                    @csrf
-                    <button class="gadya-cms-button" type="submit">Publish</button>
-                </form>
+            @if (auth()->user()?->can(\Gadya\Cms\Access\Abilities::gate(\Gadya\Cms\Access\Abilities::PUBLISH)))
+                @if (! $heldByOther)
+                    <form method="POST" action="{{ route('gadya-cms.publish') }}" data-cms-publish>
+                        @csrf
+                        <button class="gadya-cms-button" type="submit">Publish</button>
+                    </form>
+                @else
+                    {{-- Never stuck behind someone else's editor, or a lock a closed laptop left behind. --}}
+                    <form method="POST" action="{{ route('gadya-cms.edit-mode.take-over') }}">
+                        @csrf
+                        <button class="gadya-cms-link" type="submit">Take over editing</button>
+                    </form>
+                    <form method="POST" action="{{ route('gadya-cms.publish') }}" data-cms-publish
+                        data-cms-confirm="{{ $holder }} is editing right now. Publishing puts everyone's changes live, {{ $holder }}'s included.">
+                        @csrf
+                        <input type="hidden" name="anyway" value="1">
+                        <button class="gadya-cms-button" type="submit">Publish anyway</button>
+                    </form>
+                @endif
             @endif
 
-            <form method="POST" action="{{ route('gadya-cms.edit-mode.disable') }}">
+            <form method="POST" action="{{ route('gadya-cms.edit-mode.disable') }}" data-cms-exit>
                 @csrf
                 @method('DELETE')
                 <button class="gadya-cms-link" type="submit">Exit editing</button>

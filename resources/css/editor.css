@@ -535,3 +535,9 @@
     font-style: italic;
     opacity: .55;
 }
+
+/* A save that did not land is said out loud, not in the toolbar's quiet grey. */
+.gadya-cms-toolbar__status--failing {
+    color: var(--gadya-cms-danger);
+    font-weight: 700;
+}

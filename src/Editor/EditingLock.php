@@ -43,6 +43,15 @@ class EditingLock
      * The display name of whoever currently holds the lock, or null when
      * the lock is free (either never taken, released, or expired).
      */
+    /**
+     * Take the lock from whoever has it: someone who walked away with the editor open, or a lock left by a
+     * closed laptop, never keeps everyone else out.
+     */
+    public function takeOver(Authenticatable $user): void
+    {
+        Cache::put(self::KEY, ['id' => $user->getAuthIdentifier(), 'name' => $user->name], now()->addMinutes($this->ttlMinutes()));
+    }
+
     public function holder(): ?string
     {
         return Cache::get(self::KEY)['name'] ?? null;

@@ -28,7 +28,14 @@ class PublishChangesAction
             ->color('success')
             ->visible(fn (): bool => auth()->user()?->can(Abilities::gate(Abilities::PUBLISH)) ?? false)
             ->modalHeading('Publish changes')
-            ->modalDescription('Everything you have edited becomes visible to visitors. Leave the time blank to do it now.')
+            ->modalDescription(function (EditingLock $lock): string {
+                $user = auth()->user();
+                $holder = $user !== null && ! $lock->isHeldBy($user) ? $lock->holder() : null;
+
+                return $holder === null
+                    ? 'Everything you have edited becomes visible to visitors. Leave the time blank to do it now.'
+                    : "{$holder} is editing right now. Publishing puts everyone's changes live, {$holder}'s included. Leave the time blank to do it now.";
+            })
             ->modalSubmitActionLabel('Publish')
             ->fillForm(fn (SchedulePublish $schedule): array => ['at' => $schedule->at()])
             ->schema([
@@ -40,17 +47,6 @@ class PublishChangesAction
             ])
             ->action(function (array $data, PublishSiteContent $publish, EditingLock $lock, SchedulePublish $schedule): void {
                 $user = auth()->user();
-                $holder = $lock->holder();
-
-                if ($holder !== null && $user !== null && ! $lock->isHeldBy($user)) {
-                    Notification::make()
-                        ->warning()
-                        ->title("{$holder} is editing right now")
-                        ->body('Wait until they finish before publishing.')
-                        ->send();
-
-                    return;
-                }
 
                 $at = filled($data['at'] ?? null) ? Carbon::parse((string) $data['at']) : null;
 

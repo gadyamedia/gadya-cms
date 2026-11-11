@@ -16,14 +16,20 @@ class PublishController extends Controller
         /** @var Authenticatable $user */
         $user = $request->user();
 
-        if ($lock->holder() !== null && ! $lock->isHeldBy($user)) {
+        $holder = $lock->isHeldBy($user) ? null : $lock->holder();
+
+        /*
+         * Someone else is editing: publishing still goes ahead when asked to on purpose ("Publish anyway"),
+         * since the draft is one for everyone - it is how a colleague puts her changes live for her.
+         */
+        if ($holder !== null && ! $request->boolean('anyway')) {
             return back()->withErrors([
-                'publish' => "{$lock->holder()} is editing right now. Wait until they finish before publishing.",
+                'publish' => "{$holder} is editing right now. Wait until they finish, or publish anyway to put everyone's changes live.",
             ]);
         }
 
         $action->handle($user);
 
-        return back()->with('status', 'Your changes are now live.');
+        return back()->with('status', $holder === null ? 'Your changes are now live.' : "Everyone's changes are now live, {$holder}'s included.");
     }
 }
