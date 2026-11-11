@@ -1,6 +1,6 @@
 # Photos
 
-Uploads are staged on a local disk and processed on the queue: resized to `gadya-cms.media.max_edge`, stripped of metadata (including GPS), written as WebP with a thumbnail, and optimised with `jpegoptim`, `pngquant` and `cwebp` when the server has them. Imagick is used when installed - it handles HEIC and large photos better - and GD otherwise. `php artisan gadya-cms:doctor` says which.
+Uploads are staged on a local disk and processed on the queue (a photo uploaded from the live editor's photo library is processed there and then instead, so it can go on the page straight away, with or without a queue worker running): resized to `gadya-cms.media.max_edge`, stripped of metadata (including GPS), written as WebP with a thumbnail, and optimised with `jpegoptim`, `pngquant` and `cwebp` when the server has them. Imagick is used when installed - it handles HEIC and large photos better - and GD otherwise. `php artisan gadya-cms:doctor` says which.
 
 The document stores the filename, never a URL, so a photo can be re-processed or moved without every page that uses it going stale. `@siteImage($ref)` resolves it.
 

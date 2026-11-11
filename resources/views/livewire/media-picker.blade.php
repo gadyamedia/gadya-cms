@@ -1,4 +1,5 @@
-<div class="gadya-cms-picker">
+{{-- Photos still being made ready (uploaded in the admin, waiting on the queue) are checked on every few seconds. --}}
+<div class="gadya-cms-picker" @if ($items->contains(fn ($item) => $item->status === \Gadya\Cms\Models\Media::STATUS_PROCESSING)) wire:poll.4s @endif>
     <div class="gadya-cms-picker__bar">
         <input class="gadya-cms-input" type="search" wire:model.live.debounce.300ms="search" placeholder="Search photos">
         <label class="gadya-cms-button cursor-pointer">
@@ -16,7 +17,7 @@
             <li wire:key="gadya-media-{{ $item->id }}">
                 <button class="gadya-cms-picker__item" type="button" wire:click="select({{ $item->id }})" @disabled(! $item->isReady())>
                     <img src="@siteThumbnail($item->filename)" alt="{{ $item->alt_text ?? $item->original_name }}" loading="lazy">
-                    <span>{{ $item->original_name }}</span>
+                    <span>{{ match (true) { $item->isReady() => $item->original_name, $item->status === \Gadya\Cms\Models\Media::STATUS_FAILED => 'Could not be used', default => 'Getting ready…' } }}</span>
                 </button>
             </li>
         @endforeach

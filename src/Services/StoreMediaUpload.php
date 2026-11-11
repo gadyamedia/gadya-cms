@@ -37,4 +37,29 @@ class StoreMediaUpload
 
         return $media;
     }
+
+    /**
+     * The same, processed while the editor waits: a photo uploaded from the page is wanted on the page
+     * there and then, and must not depend on a queue worker being up to become usable.
+     */
+    public function handleNow(UploadedFile $upload, ?int $uploadedBy = null, ?string $altText = null, bool $decorative = false): Media
+    {
+        $stagingDisk = (string) config('gadya-cms.media.staging_disk', 'local');
+
+        $media = Media::query()->create([
+            'site_id' => $this->siteContext->id(),
+            'filename' => Str::random(32).'.webp',
+            'original_name' => $upload->getClientOriginalName(),
+            'disk' => (string) config('gadya-cms.media.disk', 'public'),
+            'path' => '',
+            'uploaded_by' => $uploadedBy,
+            'alt_text' => $decorative ? '' : ($altText !== null && trim($altText) !== '' ? trim($altText) : null),
+            'decorative' => $decorative,
+            'status' => Media::STATUS_PROCESSING,
+        ]);
+
+        ProcessMediaUpload::dispatchSync($media, $stagingDisk, $upload->store('media-staging', $stagingDisk));
+
+        return $media->refresh();
+    }
 }

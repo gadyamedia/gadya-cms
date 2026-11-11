@@ -94,9 +94,23 @@ class MediaPicker extends Component
 
         $this->validate((new UploadMediaRequest($capabilities))->rules());
 
-        $storeMediaUpload->handle($this->upload, auth()->id());
+        /*
+         * Processed now rather than on the queue: the client uploaded it to put it here, and a photo left
+         * "processing" until a worker gets to it - or forever, with no worker running - could not be chosen.
+         */
+        $media = $storeMediaUpload->handleNow($this->upload, auth()->id());
 
         $this->reset('upload');
+
+        if (! $media->isReady()) {
+            $this->addError('upload', 'That photo could not be used. Try another, or a smaller one.');
+
+            return;
+        }
+
+        if ($this->targetPath !== '') {
+            $this->select($media->id, app(UpdateDraftField::class));
+        }
     }
 
     public function render(): View
